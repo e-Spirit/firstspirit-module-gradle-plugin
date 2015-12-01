@@ -34,133 +34,131 @@ import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.plugins.fsm.tasks.bundling.FSM;
 
 /**
- * <p>
- * A {@link Plugin} with tasks which assembles an (java) application into a FSM (FirstSpirit module) file.
- * </p>
+ * <p> A {@link Plugin} with tasks which assembles an (java) application into a FSM (FirstSpirit module) file. </p>
  */
 public class FSMPlugin implements Plugin<Project> {
 
-	static final String NAME = "com.github.moritzzimmer.fsm";
-	static final String FSM_TASK_NAME = "fsm";
-	static final String PLUGIN_CONVENTION_NAME = "fsm";
+    static final String NAME = "com.github.moritzzimmer.fsm";
+    static final String FSM_TASK_NAME = "fsm";
+    static final String PLUGIN_CONVENTION_NAME = "fsm";
 
-	static final String PROVIDED_COMPILE_CONFIGURATION_NAME = "fsProvidedCompile";
-	static final String PROVIDED_RUNTIME_CONFIGURATION_NAME = "fsProvidedRuntime";
+    static final String PROVIDED_COMPILE_CONFIGURATION_NAME = "fsProvidedCompile";
+    static final String PROVIDED_RUNTIME_CONFIGURATION_NAME = "fsProvidedRuntime";
 
-	@Override
-	public void apply(Project project) {
-		project.getPlugins().apply(JavaPlugin.class);
+    @Override
+    public void apply(Project project) {
+        project.getPlugins().apply(JavaPlugin.class);
 
-		FSMPluginConvention pluginConvention = new FSMPluginConvention();
-		project.getConvention().getPlugins()
-				.put(PLUGIN_CONVENTION_NAME, pluginConvention);
+        FSMPluginConvention pluginConvention = new FSMPluginConvention();
+        project.getConvention().getPlugins()
+            .put(PLUGIN_CONVENTION_NAME, pluginConvention);
 
-		configureTask(project, pluginConvention);
+        configureTask(project, pluginConvention);
 
-		configureConfigurations(project.getConfigurations());
-		
-		configureJarTask(project);
-	}
+        configureConfigurations(project.getConfigurations());
 
-	private void configureTask(final Project project,
-			final FSMPluginConvention pluginConvention) {
-		FSM fsm = project.getTasks().create(FSM_TASK_NAME, FSM.class);
-		fsm.setDescription("Assembles a fsm archive containing the FirstSpirit module.");
-		fsm.setGroup(BasePlugin.BUILD_GROUP);
+        configureJarTask(project);
+    }
 
-		addPublication(project, fsm);
+    private void configureTask(final Project project,
+                               final FSMPluginConvention pluginConvention) {
+        FSM fsm = project.getTasks().create(FSM_TASK_NAME, FSM.class);
+        fsm.setDescription("Assembles a fsm archive containing the FirstSpirit module.");
+        fsm.setGroup(BasePlugin.BUILD_GROUP);
 
-		mapPluginConvention(fsm, pluginConvention);
+        addPublication(project, fsm);
 
-		project.getTasks().withType(FSM.class, new Action<FSM>() {
-			public void execute(FSM task) {
-				task.dependsOn(new Callable<FileCollection>() {
-					@Override
-					public FileCollection call() throws Exception {
-						return project.getConvention()
-								.getPlugin(JavaPluginConvention.class)
-								.getSourceSets()
-								.getByName(SourceSet.MAIN_SOURCE_SET_NAME)
-								.getRuntimeClasspath();
-					}
-				});
+        mapPluginConvention(fsm, pluginConvention);
 
-				task.dependsOn(new Callable<String>() {
-					@Override
-					public String call() throws Exception {
-						return JavaPlugin.JAR_TASK_NAME;
-					}
-				});
-				
-				task.classpath(new Object[] { new Callable<FileCollection>() {
-					public FileCollection call() throws Exception {
-						final FileCollection runtimeClasspath = project
-								.getConvention()
-								.getPlugin(JavaPluginConvention.class)
-								.getSourceSets()
-								.getByName(SourceSet.MAIN_SOURCE_SET_NAME)
-								.getRuntimeClasspath();
-						final FileCollection outputs = project.getTasks()
-								.findByName(JavaPlugin.JAR_TASK_NAME)
-								.getOutputs().getFiles();
-								
-						final Configuration providedRuntime = project
-								.getConfigurations().getByName(
-										PROVIDED_RUNTIME_CONFIGURATION_NAME);
-						return runtimeClasspath.minus(providedRuntime).plus(outputs);
-					}
-				} });
-			}
-		});
-	}
+        project.getTasks().withType(FSM.class, new Action<FSM>() {
+            public void execute(FSM task) {
+                task.dependsOn(new Callable<FileCollection>() {
+                    @Override
+                    public FileCollection call() throws Exception {
+                        return project.getConvention()
+                            .getPlugin(JavaPluginConvention.class)
+                            .getSourceSets()
+                            .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
+                            .getRuntimeClasspath();
+                    }
+                });
 
-	private void addPublication(Project project, FSM fsm) {
-		// remove jar artifact added by java the plugin (see http://issues.gradle.org/browse/GRADLE-687)
-		Configuration archivesConfig = project.getConfigurations().getByName(Dependency.ARCHIVES_CONFIGURATION);
-		archivesConfig.getArtifacts().clear();
-		
-		DefaultArtifactPublicationSet publicationSet = project.getExtensions()
-				.getByType(DefaultArtifactPublicationSet.class);
-		
-		publicationSet.addCandidate(new ArchivePublishArtifact(fsm));
-	}
+                task.dependsOn(new Callable<String>() {
+                    @Override
+                    public String call() throws Exception {
+                        return JavaPlugin.JAR_TASK_NAME;
+                    }
+                });
 
-	private void mapPluginConvention(FSM fsm,
-			final FSMPluginConvention pluginConvention) {
-		fsm.getConventionMapping().map(
-				FSMPluginConvention.MODULE_DIR_NAME_CONVENTION,
-				new Callable<String>() {
+                task.classpath(new Object[]{new Callable<FileCollection>() {
+                    public FileCollection call() throws Exception {
+                        final FileCollection runtimeClasspath = project
+                            .getConvention()
+                            .getPlugin(JavaPluginConvention.class)
+                            .getSourceSets()
+                            .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
+                            .getRuntimeClasspath();
+                        final FileCollection outputs = project.getTasks()
+                            .findByName(JavaPlugin.JAR_TASK_NAME)
+                            .getOutputs().getFiles();
 
-					@Override
-					public String call() throws Exception {
-						return pluginConvention.getModuleDirName();
-					}
-				});
-	}
+                        final Configuration providedRuntime = project
+                            .getConfigurations().getByName(
+                                PROVIDED_RUNTIME_CONFIGURATION_NAME);
+                        return runtimeClasspath.minus(providedRuntime).plus(outputs);
+                    }
+                }});
+            }
+        });
+    }
 
-	private void configureConfigurations(
-			ConfigurationContainer configurationContainer) {
-		Configuration provideCompileConfiguration = configurationContainer
-				.create(PROVIDED_COMPILE_CONFIGURATION_NAME)
-				.setVisible(false)
-				.setDescription(
-						"Additional compile classpath for libraries that should not be part of the FSM archive.");
+    private void addPublication(Project project, FSM fsm) {
+        // remove jar artifact added by java the plugin (see http://issues.gradle.org/browse/GRADLE-687)
+        Configuration archivesConfig = project.getConfigurations().getByName(Dependency.ARCHIVES_CONFIGURATION);
+        archivesConfig.getArtifacts().clear();
 
-		Configuration provideRuntimeConfiguration = configurationContainer
-				.create(PROVIDED_RUNTIME_CONFIGURATION_NAME)
-				.setVisible(false)
-				.extendsFrom(provideCompileConfiguration)
-				.setDescription(
-						"Additional runtime classpath for libraries that should not be part of the FSM archive.");
+        DefaultArtifactPublicationSet publicationSet = project.getExtensions()
+            .getByType(DefaultArtifactPublicationSet.class);
 
-		configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
-				.extendsFrom(provideCompileConfiguration);
-		configurationContainer.getByName(JavaPlugin.RUNTIME_CONFIGURATION_NAME)
-				.extendsFrom(provideRuntimeConfiguration);
-	}
-	
-	private void configureJarTask(Project project) {
-		final Jar jarTask = (Jar) project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
-		jarTask.exclude("module.xml");
-	}
+        publicationSet.addCandidate(new ArchivePublishArtifact(fsm));
+    }
+
+    private void mapPluginConvention(FSM fsm,
+                                     final FSMPluginConvention pluginConvention) {
+        fsm.getConventionMapping().map(
+            FSMPluginConvention.MODULE_DIR_NAME_CONVENTION,
+            new Callable<String>() {
+
+                @Override
+                public String call() throws Exception {
+                    return pluginConvention.getModuleDirName();
+                }
+            });
+    }
+
+    private void configureConfigurations(
+        ConfigurationContainer configurationContainer) {
+        Configuration provideCompileConfiguration = configurationContainer
+            .create(PROVIDED_COMPILE_CONFIGURATION_NAME)
+            .setVisible(false)
+            .setDescription(
+                "Additional compile classpath for libraries that should not be part of the FSM archive.");
+
+        Configuration provideRuntimeConfiguration = configurationContainer
+            .create(PROVIDED_RUNTIME_CONFIGURATION_NAME)
+            .setVisible(false)
+            .extendsFrom(provideCompileConfiguration)
+            .setDescription(
+                "Additional runtime classpath for libraries that should not be part of the FSM archive.");
+
+        configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
+            .extendsFrom(provideCompileConfiguration);
+        configurationContainer.getByName(JavaPlugin.RUNTIME_CONFIGURATION_NAME)
+            .extendsFrom(provideRuntimeConfiguration);
+    }
+
+    private void configureJarTask(Project project) {
+        final Jar jarTask = (Jar) project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
+        jarTask.exclude("module.xml");
+    }
 }

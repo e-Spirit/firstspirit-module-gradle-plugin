@@ -22,19 +22,20 @@ import java.util.Set;
 import org.gradle.api.artifacts.Configuration;
 
 public final class TestUtil {
-	private TestUtil() {
-		
-	}
-	
-	/**
-	 * Copied from {@link org.gradle.api.internal.artifacts.configurations.Configurations#getNames}
-	 */
-	public static Set<String> getNames(Collection<? extends Configuration> configurations) {
-		Set<Configuration> allConfigurations = new HashSet<Configuration>(configurations);
-		Set<String> names = new HashSet<String>();
-		for (Configuration configuration : allConfigurations) {
-			names.add(configuration.getName());
-		}
-		return names;
-	}
+
+    private TestUtil() {
+
+    }
+
+    /**
+     * Copied from {@link org.gradle.api.internal.artifacts.configurations.Configurations#getNames}
+     */
+    public static Set<String> getNames(Collection<? extends Configuration> configurations) {
+        Set<Configuration> allConfigurations = new HashSet<Configuration>(configurations);
+        Set<String> names = new HashSet<String>();
+        for (Configuration configuration : allConfigurations) {
+            names.add(configuration.getName());
+        }
+        return names;
+    }
 }
