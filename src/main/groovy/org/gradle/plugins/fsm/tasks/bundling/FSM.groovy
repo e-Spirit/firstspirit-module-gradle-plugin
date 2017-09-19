@@ -15,12 +15,13 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
+import org.gradle.api.artifacts.ModuleVersionIdentifier
+import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.file.FileCollection
-import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
-
 
 /**
  * Bundles the FSM using libraries from the internal {@link FileCollection} classpath
@@ -63,11 +64,45 @@ class FSM extends Jar {
 			expand(name: project.name,
 				version: project.version,
 				description: project.description,
-				artifact: project.jar.archiveName)
+				artifact: project.jar.archiveName,
+				resources: projectResources)
 		}
 		super.copy();
 	}
-	
+
+	public void list(List<URL> urlsList, File file) {
+		if(file.isFile()) {
+			urlsList.add(file.toURI().toURL())
+		}
+		File[] children = file.listFiles()
+		for (File child : children) {
+			list(urlsList, child)
+		}
+	}
+
+	String getResourcesTags() {
+		String projectResources = ""
+		Set<ResolvedArtifact> compileDependenciesServerScoped = project.configurations.fsServerCompile.getResolvedConfiguration().getResolvedArtifacts()
+		Set<ResolvedArtifact> compileDependenciesModuleScoped = project.configurations.fsModuleCompile.getResolvedConfiguration().getResolvedArtifacts()
+		Set<ResolvedArtifact> providedCompileDependencies = project.configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()
+
+		// TODO: Make this pretty
+		compileDependenciesServerScoped.forEach {
+			if (!providedCompileDependencies.contains(it)) {
+				ModuleVersionIdentifier dependencyId = it.moduleVersion.id
+				projectResources += """<resource name="${dependencyId.group}.${dependencyId.name}" scope="server" version="${dependencyId.version}">lib/${dependencyId.name}-${dependencyId.version}.${it.extension}</resource>\n"""
+			}
+		}
+		projectResources += "\n"
+		compileDependenciesModuleScoped.forEach {
+			if (!providedCompileDependencies.contains(it)) {
+				ModuleVersionIdentifier dependencyId = it.moduleVersion.id
+				projectResources += """<resource name="${dependencyId.group}.${dependencyId.name}" scope="module" version="${dependencyId.version}">lib/${dependencyId.name}-${dependencyId.version}.${it.extension}</resource>\n"""
+			}
+		}
+		projectResources
+	}
+
 	/**
 	 * Returns the classpath to include in the FSM archive. Any JAR or ZIP files in this classpath are included in the
 	 * {@code lib} directory.

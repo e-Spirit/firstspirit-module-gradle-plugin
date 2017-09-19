@@ -45,6 +45,9 @@ public class FSMPlugin implements Plugin<Project> {
     static final String PROVIDED_COMPILE_CONFIGURATION_NAME = "fsProvidedCompile";
     static final String PROVIDED_RUNTIME_CONFIGURATION_NAME = "fsProvidedRuntime";
 
+    static final String FS_SERVER_COMPILE_CONFIGURATION_NAME = "fsModuleCompile";
+    static final String FS_MODULE_COMPILE_CONFIGURATION_NAME = "fsServerCompile";
+
     @Override
     public void apply(Project project) {
         project.getPlugins().apply(JavaPlugin.class);
@@ -136,8 +139,23 @@ public class FSMPlugin implements Plugin<Project> {
             });
     }
 
-    private void configureConfigurations(
-        ConfigurationContainer configurationContainer) {
+    private void configureConfigurations(ConfigurationContainer configurationContainer) {
+        Configuration fsServerCompileConfiguration = configurationContainer
+                .create(FS_SERVER_COMPILE_CONFIGURATION_NAME)
+                .setVisible(false)
+                .setDescription("Added automatically to module.xml with server scope");
+        Configuration fsModuleCompileConfiguration = configurationContainer
+                .create(FS_MODULE_COMPILE_CONFIGURATION_NAME)
+                .setVisible(false)
+                .setDescription("Added automatically to module.xml with module scope");
+        configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
+                .extendsFrom(fsServerCompileConfiguration);
+        configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
+                .extendsFrom(fsModuleCompileConfiguration);
+
+
+
+
         Configuration provideCompileConfiguration = configurationContainer
             .create(PROVIDED_COMPILE_CONFIGURATION_NAME)
             .setVisible(false)

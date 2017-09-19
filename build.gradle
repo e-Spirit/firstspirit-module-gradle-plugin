@@ -16,6 +16,7 @@
 buildscript {
     repositories {
         jcenter()
+        mavenCentral()
     }
 
 	dependencies {
@@ -27,9 +28,9 @@ apply plugin: 'groovy'
 apply plugin: 'maven-publish'
 
 description = 'Gradle plugin to build FirstSpirit modules (FSMs).'
-group = 'com.github.moritzzimmer'
-version = '0.4.0'
-ext.pluginId = 'com.github.moritzzimmer.fsm'
+group = 'com.espirit.moddev'
+version = '0.4.0_DEV'
+ext.pluginId = 'com.espirit.moddev.fsm-gradle-plugin'
 ext.artifactName = 'fsm-gradle-plugin'
 
 repositories {
@@ -39,6 +40,7 @@ repositories {
 dependencies {
     compile gradleApi()
     compile localGroovy()
+    compile 'org.reflections:reflections:0.9.11'
 	
     testCompile (
 		'junit:junit:4.12',
