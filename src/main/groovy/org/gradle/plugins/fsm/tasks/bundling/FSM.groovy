@@ -15,13 +15,18 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
+import com.google.common.base.Charsets
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
+import org.gradle.plugins.fsm.FSMPluginExtension
+
+import java.util.zip.ZipFile
 
 /**
  * Bundles the FSM using libraries from the internal {@link FileCollection} classpath
@@ -31,11 +36,6 @@ import org.gradle.api.tasks.bundling.Jar
 class FSM extends Jar {
 	static final String FSM_EXTENSION = 'fsm'
 
-	/**
-	 * Directory containing the module.xml, mapped from plugin convention
-	 */
-	String moduleDirName
-	
 	/**
 	 * The fsm runtime classpath. All libraries in this
 	 * classpath will be copied to 'fsm/lib' folder
@@ -52,15 +52,18 @@ class FSM extends Jar {
 				classpath ? classpath.filter {File file -> file.isFile()} : []
 			}
 		}
-		metaInf {
-			from project.file(moduleDirName)
-			include 'module.xml'
 
-			expand(name: project.name,
-					version: project.version,
-					description: project.description,
-					artifact: project.jar.archiveName,
-					resources: projectResources)
+		configure {
+			metaInf {
+				from project.file(moduleDirName)
+				include 'module.xml'
+
+//				expand(name: project.name,
+//						version: project.version,
+//						description: project.description,
+//						artifact: project.jar.archiveName,
+//						resources: projectResources)
+			}
 		}
 	}
 	

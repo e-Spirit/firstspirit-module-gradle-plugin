@@ -40,7 +40,6 @@ public class FSMPlugin implements Plugin<Project> {
 
     static final String NAME = "com.github.moritzzimmer.fsm";
     static final String FSM_TASK_NAME = "fsm";
-    static final String PLUGIN_CONVENTION_NAME = "fsm";
 
     static final String PROVIDED_COMPILE_CONFIGURATION_NAME = "fsProvidedCompile";
     static final String PROVIDED_RUNTIME_CONFIGURATION_NAME = "fsProvidedRuntime";
@@ -52,26 +51,19 @@ public class FSMPlugin implements Plugin<Project> {
     public void apply(Project project) {
         project.getPlugins().apply(JavaPlugin.class);
 
-        FSMPluginConvention pluginConvention = new FSMPluginConvention();
-        project.getConvention().getPlugins()
-            .put(PLUGIN_CONVENTION_NAME, pluginConvention);
-
-        configureTask(project, pluginConvention);
+        configureTask(project);
 
         configureConfigurations(project.getConfigurations());
 
         configureJarTask(project);
     }
 
-    private void configureTask(final Project project,
-                               final FSMPluginConvention pluginConvention) {
+    private void configureTask(final Project project) {
         FSM fsm = project.getTasks().create(FSM_TASK_NAME, FSM.class);
         fsm.setDescription("Assembles a fsm archive containing the FirstSpirit module.");
         fsm.setGroup(BasePlugin.BUILD_GROUP);
 
         addPublication(project, fsm);
-
-        mapPluginConvention(fsm, pluginConvention);
 
         project.getTasks().withType(FSM.class, new Action<FSM>() {
             public void execute(FSM task) {
@@ -124,19 +116,6 @@ public class FSMPlugin implements Plugin<Project> {
             .getByType(DefaultArtifactPublicationSet.class);
 
         publicationSet.addCandidate(new ArchivePublishArtifact(fsm));
-    }
-
-    private void mapPluginConvention(FSM fsm,
-                                     final FSMPluginConvention pluginConvention) {
-        fsm.getConventionMapping().map(
-            FSMPluginConvention.MODULE_DIR_NAME_CONVENTION,
-            new Callable<String>() {
-
-                @Override
-                public String call() throws Exception {
-                    return pluginConvention.getModuleDirName();
-                }
-            });
     }
 
     private void configureConfigurations(ConfigurationContainer configurationContainer) {

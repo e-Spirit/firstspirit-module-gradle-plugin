@@ -19,7 +19,7 @@ package org.gradle.plugins.fsm
  * Convention object to configure this plugin from gradle DSL.
  *
  */
-class FSMPluginConvention {
+class FSMPluginExtension {
 
 	public static final String MODULE_DIR_NAME_CONVENTION = "moduleDirName"
 	
