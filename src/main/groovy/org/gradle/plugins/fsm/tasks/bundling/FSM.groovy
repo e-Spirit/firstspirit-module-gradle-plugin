@@ -52,21 +52,21 @@ class FSM extends Jar {
 				classpath ? classpath.filter {File file -> file.isFile()} : []
 			}
 		}
-	}
-	
-	@Override
-	@TaskAction
-	protected void copy() {
 		metaInf {
 			from project.file(moduleDirName)
 			include 'module.xml'
 
 			expand(name: project.name,
-				version: project.version,
-				description: project.description,
-				artifact: project.jar.archiveName,
-				resources: projectResources)
+					version: project.version,
+					description: project.description,
+					artifact: project.jar.archiveName,
+					resources: projectResources)
 		}
+	}
+	
+	@Override
+	@TaskAction
+	protected void copy() {
 		super.copy();
 	}
 
