@@ -15,9 +15,6 @@
  */
 package org.gradle.plugins.fsm;
 
-import java.util.concurrent.Callable;
-
-import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -33,6 +30,8 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.plugins.fsm.tasks.bundling.FSM;
 
+import java.util.concurrent.Callable;
+
 /**
  * <p> A {@link Plugin} with tasks which assembles an (java) application into a FSM (FirstSpirit module) file. </p>
  */
@@ -44,67 +43,69 @@ public class FSMPlugin implements Plugin<Project> {
     static final String PROVIDED_COMPILE_CONFIGURATION_NAME = "fsProvidedCompile";
     static final String PROVIDED_RUNTIME_CONFIGURATION_NAME = "fsProvidedRuntime";
 
-    static final String FS_SERVER_COMPILE_CONFIGURATION_NAME = "fsModuleCompile";
-    static final String FS_MODULE_COMPILE_CONFIGURATION_NAME = "fsServerCompile";
+    static final String FS_SERVER_COMPILE_CONFIGURATION_NAME = "fsServerCompile";
+    static final String FS_MODULE_COMPILE_CONFIGURATION_NAME = "fsModuleCompile";
 
     @Override
     public void apply(Project project) {
+        project.getExtensions().create("fsm", FSMPluginExtension.class);
+
         project.getPlugins().apply(JavaPlugin.class);
 
         configureTask(project);
 
         configureConfigurations(project.getConfigurations());
+        project.getPlugins().apply(JavaPlugin.class);
 
         configureJarTask(project);
     }
 
-    private void configureTask(final Project project) {
+    private FSM configureTask(final Project project) {
+
         FSM fsm = project.getTasks().create(FSM_TASK_NAME, FSM.class);
         fsm.setDescription("Assembles a fsm archive containing the FirstSpirit module.");
         fsm.setGroup(BasePlugin.BUILD_GROUP);
 
         addPublication(project, fsm);
 
-        project.getTasks().withType(FSM.class, new Action<FSM>() {
-            public void execute(FSM task) {
-                task.dependsOn(new Callable<FileCollection>() {
-                    @Override
-                    public FileCollection call() throws Exception {
-                        return project.getConvention()
-                            .getPlugin(JavaPluginConvention.class)
-                            .getSourceSets()
-                            .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
-                            .getRuntimeClasspath();
-                    }
-                });
+        fsm.dependsOn(new Callable<FileCollection>() {
+            @Override
+            public FileCollection call() throws Exception {
+                return project.getConvention()
+                    .getPlugin(JavaPluginConvention.class)
+                    .getSourceSets()
+                    .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
+                    .getRuntimeClasspath();
+            }
+        });
 
-                task.dependsOn(new Callable<String>() {
+        fsm.dependsOn(new Callable<String>() {
                     @Override
                     public String call() throws Exception {
                         return JavaPlugin.JAR_TASK_NAME;
                     }
                 });
 
-                task.classpath(new Object[]{new Callable<FileCollection>() {
-                    public FileCollection call() throws Exception {
-                        final FileCollection runtimeClasspath = project
-                            .getConvention()
-                            .getPlugin(JavaPluginConvention.class)
-                            .getSourceSets()
-                            .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
-                            .getRuntimeClasspath();
-                        final FileCollection outputs = project.getTasks()
-                            .findByName(JavaPlugin.JAR_TASK_NAME)
-                            .getOutputs().getFiles();
+        fsm.classpath(new Callable<FileCollection>() {
+            public FileCollection call() throws Exception {
+                final FileCollection runtimeClasspath = project
+                    .getConvention()
+                    .getPlugin(JavaPluginConvention.class)
+                    .getSourceSets()
+                    .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
+                    .getRuntimeClasspath();
+                final FileCollection outputs = project.getTasks()
+                    .findByName(JavaPlugin.JAR_TASK_NAME)
+                    .getOutputs().getFiles();
 
-                        final Configuration providedRuntime = project
-                            .getConfigurations().getByName(
-                                PROVIDED_RUNTIME_CONFIGURATION_NAME);
-                        return runtimeClasspath.minus(providedRuntime).plus(outputs);
-                    }
-                }});
+                final Configuration providedRuntime = project
+                    .getConfigurations().getByName(
+                        PROVIDED_RUNTIME_CONFIGURATION_NAME);
+                return runtimeClasspath.minus(providedRuntime).plus(outputs);
             }
         });
+
+        return fsm;
     }
 
     private void addPublication(Project project, FSM fsm) {
@@ -122,17 +123,14 @@ public class FSMPlugin implements Plugin<Project> {
         Configuration fsServerCompileConfiguration = configurationContainer
                 .create(FS_SERVER_COMPILE_CONFIGURATION_NAME)
                 .setVisible(false)
+//                .extendsFrom(configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME))
                 .setDescription("Added automatically to module.xml with server scope");
+
         Configuration fsModuleCompileConfiguration = configurationContainer
                 .create(FS_MODULE_COMPILE_CONFIGURATION_NAME)
+//                .extendsFrom(configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME))
                 .setVisible(false)
                 .setDescription("Added automatically to module.xml with module scope");
-        configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
-                .extendsFrom(fsServerCompileConfiguration);
-        configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
-                .extendsFrom(fsModuleCompileConfiguration);
-
-
 
 
         Configuration provideCompileConfiguration = configurationContainer
@@ -142,16 +140,21 @@ public class FSMPlugin implements Plugin<Project> {
                 "Additional compile classpath for libraries that should not be part of the FSM archive.");
 
         Configuration provideRuntimeConfiguration = configurationContainer
-            .create(PROVIDED_RUNTIME_CONFIGURATION_NAME)
-            .setVisible(false)
-            .extendsFrom(provideCompileConfiguration)
-            .setDescription(
-                "Additional runtime classpath for libraries that should not be part of the FSM archive.");
+                .create(PROVIDED_RUNTIME_CONFIGURATION_NAME)
+                .setVisible(false)
+//            .extendsFrom(provideCompileConfiguration)
+                .setDescription(
+                        "Additional runtime classpath for libraries that should not be part of the FSM archive.");
 
         configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
             .extendsFrom(provideCompileConfiguration);
         configurationContainer.getByName(JavaPlugin.RUNTIME_CONFIGURATION_NAME)
             .extendsFrom(provideRuntimeConfiguration);
+
+        configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
+                .extendsFrom(fsServerCompileConfiguration);
+        configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
+                .extendsFrom(fsModuleCompileConfiguration);
     }
 
     private void configureJarTask(Project project) {

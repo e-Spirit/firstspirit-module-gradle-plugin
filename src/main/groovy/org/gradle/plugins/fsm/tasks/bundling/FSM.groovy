@@ -15,7 +15,7 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
-import com.google.common.base.Charsets
+import com.sun.nio.zipfs.ZipFileSystem
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.file.FileCollection
@@ -26,6 +26,12 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.FileSystems
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
 import java.util.zip.ZipFile
 
 /**
@@ -47,13 +53,12 @@ class FSM extends Jar {
 	FSM() {
 		extension = FSM_EXTENSION
 		destinationDir = project.file('build/fsm')
-		pluginExtension = project.getExtensions().create("fsm", FSMPluginExtension.class)
-
+		pluginExtension = project.getExtensions().getByType(FSMPluginExtension)
 
 		into('lib') {
 			from {
 				def classpath = getClasspath()
-				classpath ? classpath.filter {File file -> file.isFile()} : []
+				classpath ? classpath.filter { File file -> file.isFile() } : []
 			}
 		}
 
@@ -70,11 +75,69 @@ class FSM extends Jar {
 			}
 		}
 	}
-	
-	@Override
 	@TaskAction
-	protected void copy() {
-		super.copy();
+	protected void generateModuleXml() {
+		println "#########################################"
+		File archive = getArchivePath()
+		println "Archive path:" + archive.getPath()
+
+		ZipFile zipFile = new ZipFile(archive)
+		def moduleXmlFile = zipFile.getEntry("META-INF/module.xml")
+
+		String unfilteredModuleXml = zipFile.getInputStream(moduleXmlFile).getText("utf-8")
+		zipFile.close()
+		String filteredModuleXml = unfilteredModuleXml.replaceFirst("\\\$name", project.name)
+		filteredModuleXml = filteredModuleXml.replaceFirst("\\\$description", project.description ?: project.name)
+		filteredModuleXml = filteredModuleXml.replaceFirst("\\\$artifact", project.jar.archiveName)
+		filteredModuleXml = filteredModuleXml.replaceFirst("\\\$resources", getResourcesTags())
+		println filteredModuleXml
+
+		Map<String, String> env = new HashMap<>()
+		env.put("create", "true")
+		URI uri = archive.toURI()
+		ZipFileSystem fs = FileSystems.newFileSystem(Paths.get(uri), getClass().getClassLoader())
+		Path nf = fs.getPath("/META-INF/module.xml")
+		Writer writer = Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE)
+		writer.write(filteredModuleXml)
+
+		writer.close()
+		fs.close()
+
+	}
+
+	def patchModuleXml() {
+
+		SourceSetContainer sourceSets = (SourceSetContainer) project.getProperties().get("sourceSets")
+		def classesDir = sourceSets.getByName("main").output.classesDir
+		System.out.println("##################################################")
+		System.out.println(classesDir)
+
+		try {
+			// Convert File to a URL
+			URL url = classesDir.toURL()
+			List<URL> urlsList = new ArrayList<URL>()
+			list(urlsList, new File(url.path))
+
+			URL[] urls = urlsList.toArray(new URL[urlsList.size()])
+			new ArrayList(Arrays.asList(urls)).forEach{
+				System.out.println(it)
+			}
+			ClassLoader cl = new URLClassLoader(urls)
+
+//				Reflections reflections = new Reflections(cl)
+//				Set<Class<?>> subTypes = reflections.getSubTypesOf(Class.forName("org.example.Foo"))
+//				subTypes.forEach{
+//					System.out.println(it)
+//				}
+
+//				Class cls = cl.loadClass("org.example.SimpleFoo")
+//				println cls
+		} catch (MalformedURLException e) {
+			System.err.println(e)
+		} catch (ClassNotFoundException e) {
+			System.err.println(e)
+		}
+
 	}
 
 	public void list(List<URL> urlsList, File file) {
@@ -87,27 +150,31 @@ class FSM extends Jar {
 		}
 	}
 
+
 	String getResourcesTags() {
 		String projectResources = ""
 		Set<ResolvedArtifact> compileDependenciesServerScoped = project.configurations.fsServerCompile.getResolvedConfiguration().getResolvedArtifacts()
 		Set<ResolvedArtifact> compileDependenciesModuleScoped = project.configurations.fsModuleCompile.getResolvedConfiguration().getResolvedArtifacts()
 		Set<ResolvedArtifact> providedCompileDependencies = project.configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()
 
-		// TODO: Make this pretty
+		projectResources = addResourceTagsForDependencies(compileDependenciesServerScoped, providedCompileDependencies, projectResources, "server")
+		projectResources += "\n"
+		projectResources = addResourceTagsForDependencies(compileDependenciesModuleScoped, providedCompileDependencies, projectResources, "module")
+		return projectResources
+	}
+
+	private String addResourceTagsForDependencies(Set<ResolvedArtifact> compileDependenciesServerScoped, providedCompileDependencies, String projectResources, String scope) {
 		compileDependenciesServerScoped.forEach {
 			if (!providedCompileDependencies.contains(it)) {
 				ModuleVersionIdentifier dependencyId = it.moduleVersion.id
-				projectResources += """<resource name="${dependencyId.group}.${dependencyId.name}" scope="server" version="${dependencyId.version}">lib/${dependencyId.name}-${dependencyId.version}.${it.extension}</resource>\n"""
+				projectResources += getResourceTagForDependency(dependencyId, it, scope)
 			}
 		}
-		projectResources += "\n"
-		compileDependenciesModuleScoped.forEach {
-			if (!providedCompileDependencies.contains(it)) {
-				ModuleVersionIdentifier dependencyId = it.moduleVersion.id
-				projectResources += """<resource name="${dependencyId.group}.${dependencyId.name}" scope="module" version="${dependencyId.version}">lib/${dependencyId.name}-${dependencyId.version}.${it.extension}</resource>\n"""
-			}
-		}
-		projectResources
+		return projectResources
+	}
+
+	protected GString getResourceTagForDependency(ModuleVersionIdentifier dependencyId, ResolvedArtifact it, String scope) {
+		"""<resource name="${dependencyId.group}.${dependencyId.name}" scope="${scope}" version="${dependencyId.version}">lib/${dependencyId.name}-${dependencyId.version}.${it.extension}</resource>\n"""
 	}
 
 	/**
@@ -139,4 +206,5 @@ class FSM extends Jar {
 		FileCollection oldClasspath = getClasspath()
 		this.classpath = project.files(oldClasspath ?: [], classpath)
 	}
+
 }
