@@ -41,11 +41,15 @@ class FSM extends Jar {
 	 * classpath will be copied to 'fsm/lib' folder
 	 */
 	private FileCollection classpath
-	
+
+	public FSMPluginExtension pluginExtension
+
 	FSM() {
 		extension = FSM_EXTENSION
 		destinationDir = project.file('build/fsm')
-		
+		pluginExtension = project.getExtensions().create("fsm", FSMPluginExtension.class)
+
+
 		into('lib') {
 			from {
 				def classpath = getClasspath()
@@ -55,7 +59,7 @@ class FSM extends Jar {
 
 		configure {
 			metaInf {
-				from project.file(moduleDirName)
+				from project.file(pluginExtension.moduleDirName)
 				include 'module.xml'
 
 //				expand(name: project.name,
