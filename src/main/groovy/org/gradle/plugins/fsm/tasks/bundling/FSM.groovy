@@ -16,12 +16,13 @@
 package org.gradle.plugins.fsm.tasks.bundling
 
 import com.sun.nio.zipfs.ZipFileSystem
+import de.espirit.firstspirit.module.ProjectApp
+import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
@@ -32,7 +33,9 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
+import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
+import java.util.zip.ZipInputStream
 
 /**
  * Bundles the FSM using libraries from the internal {@link FileCollection} classpath
@@ -41,6 +44,9 @@ import java.util.zip.ZipFile
  */
 class FSM extends Jar {
 	static final String FSM_EXTENSION = 'fsm'
+
+	//TODO: We could determine classes by scanning access.jar - worth it?
+	static final List<String> projectAppBlacklist = ["de.espirit.firstspirit.feature.ContentTransportProjectApp"]
 
 	/**
 	 * The fsm runtime classpath. All libraries in this
@@ -66,78 +72,110 @@ class FSM extends Jar {
 			metaInf {
 				from project.file(pluginExtension.moduleDirName)
 				include 'module.xml'
-
-//				expand(name: project.name,
-//						version: project.version,
-//						description: project.description,
-//						artifact: project.jar.archiveName,
-//						resources: projectResources)
 			}
 		}
 	}
 	@TaskAction
 	protected void generateModuleXml() {
 		println "#########################################"
+
 		File archive = getArchivePath()
 		println "Archive path:" + archive.getPath()
 
-		ZipFile zipFile = new ZipFile(archive)
-		def moduleXmlFile = zipFile.getEntry("META-INF/module.xml")
+		def resourcesTags = getResourcesTags()
 
-		String unfilteredModuleXml = zipFile.getInputStream(moduleXmlFile).getText("utf-8")
-		zipFile.close()
-		String filteredModuleXml = unfilteredModuleXml.replaceFirst("\\\$name", project.name)
-		filteredModuleXml = filteredModuleXml.replaceFirst("\\\$description", project.description ?: project.name)
-		filteredModuleXml = filteredModuleXml.replaceFirst("\\\$artifact", project.jar.archiveName)
-		filteredModuleXml = filteredModuleXml.replaceFirst("\\\$resources", getResourcesTags())
-		println filteredModuleXml
+		ZipFile zipFile = null
+		ZipFileSystem fs = null
+		Writer writer = null
+		try {
 
-		Map<String, String> env = new HashMap<>()
-		env.put("create", "true")
-		URI uri = archive.toURI()
-		ZipFileSystem fs = FileSystems.newFileSystem(Paths.get(uri), getClass().getClassLoader())
-		Path nf = fs.getPath("/META-INF/module.xml")
-		Writer writer = Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE)
-		writer.write(filteredModuleXml)
+			zipFile = new ZipFile(archive)
 
-		writer.close()
-		fs.close()
+			def moduleXmlFile = zipFile.getEntry("META-INF/module.xml")
+			def unfilteredModuleXml = zipFile.getInputStream(moduleXmlFile).getText("utf-8")
 
+			if(unfilteredModuleXml == null || unfilteredModuleXml.isEmpty()) {
+				throw new IllegalStateException("No module.xml file found or it is empty!")
+			}
+
+			def componentTags = getComponentTags(archive)
+
+			String filteredModuleXml = unfilteredModuleXml.replaceFirst("\\\$name", project.name)
+			filteredModuleXml = filteredModuleXml.replaceFirst("\\\$version", project.version)
+			filteredModuleXml = filteredModuleXml.replaceFirst("\\\$description", project.description ?: project.name)
+			filteredModuleXml = filteredModuleXml.replaceFirst("\\\$artifact", project.jar.archiveName)
+			filteredModuleXml = filteredModuleXml.replaceFirst("\\\$resources", resourcesTags)
+			filteredModuleXml = filteredModuleXml.replaceFirst("\\\$components", componentTags)
+			println filteredModuleXml
+
+			Map<String, String> env = new HashMap<>()
+			env.put("create", "true")
+			URI uri = archive.toURI()
+			fs = FileSystems.newFileSystem(Paths.get(uri), getClass().getClassLoader()) as ZipFileSystem
+			Path nf = fs.getPath("/META-INF/module.xml")
+			writer = Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE)
+			writer.write(filteredModuleXml)
+		} finally {
+			zipFile?.close()
+			writer?.close()
+			fs?.close()
+		}
 	}
 
-	def patchModuleXml() {
+	String getComponentTags(File archive) {
+		String result = ""
+		System.out.println("################## Extracting archive")
+		def tempDir = getTemporaryDirFactory().create()
 
-		SourceSetContainer sourceSets = (SourceSetContainer) project.getProperties().get("sourceSets")
-		def classesDir = sourceSets.getByName("main").output.classesDir
-		System.out.println("##################################################")
-		System.out.println(classesDir)
-
+		UnzipUtility unzipper = new UnzipUtility()
 		try {
-			// Convert File to a URL
-			URL url = classesDir.toURL()
-			List<URL> urlsList = new ArrayList<URL>()
-			list(urlsList, new File(url.path))
+			unzipper.unzip(archive.getPath(), tempDir.getPath())
+		} catch (Exception ex) {
+			ex.printStackTrace()
+		}
 
-			URL[] urls = urlsList.toArray(new URL[urlsList.size()])
-			new ArrayList(Arrays.asList(urls)).forEach{
-				System.out.println(it)
+		List<URL> jarFilesUrls = new ArrayList()
+
+		def libDir = new File(Paths.get(tempDir.getPath(), "lib").toString())
+		Arrays.asList(libDir.listFiles()).forEach { jarFile ->
+			try {
+				URL url = new File(jarFile.path).toURL()
+				jarFilesUrls.add(url)
+			} catch (Exception e) {
+				e.printStackTrace()
 			}
-			ClassLoader cl = new URLClassLoader(urls)
+		}
+		try {
+			def jarFilesArray = jarFilesUrls.toArray(new URL[0])
+			URLClassLoader cl = new URLClassLoader(jarFilesArray, getClass().getClassLoader())
 
-//				Reflections reflections = new Reflections(cl)
-//				Set<Class<?>> subTypes = reflections.getSubTypesOf(Class.forName("org.example.Foo"))
-//				subTypes.forEach{
-//					System.out.println(it)
-//				}
+			"This is a compiletime dependency to " + ProjectApp.class.toString() + " that does nothing."
 
-//				Class cls = cl.loadClass("org.example.SimpleFoo")
-//				println cls
+			new FastClasspathScanner().addClassLoader(cl).scan().getNamesOfClassesImplementing(ProjectApp).forEach {
+
+				if(!projectAppBlacklist.contains(it)) {
+					def projectAppClass = cl.loadClass(it)
+					println "Found ProjectAppClass " + projectAppClass
+
+					result += """
+						<project-app>
+							<name>AB-Testing_ProjectApp</name>
+							<displayname>A/B-Testing Project Configuration</displayname>
+							<description>Project configuration implementation</description>
+							<class>com.espirit.moddev.abtesting.projectapp.AbTestingProjectApp</class>
+							<configurable>com.espirit.moddev.abtesting.projectapp.AbTestingProjectAppConfigurator</configurable>
+						</project-app>
+						"""
+				}
+			}
+
 		} catch (MalformedURLException e) {
 			System.err.println(e)
 		} catch (ClassNotFoundException e) {
 			System.err.println(e)
 		}
 
+		return result
 	}
 
 	public void list(List<URL> urlsList, File file) {
@@ -205,6 +243,65 @@ class FSM extends Jar {
 	void classpath(Object... classpath) {
 		FileCollection oldClasspath = getClasspath()
 		this.classpath = project.files(oldClasspath ?: [], classpath)
+	}
+
+
+	/**
+	* This utility extracts files and directories of a standard zip file to
+	* a destination directory.
+	* @author www.codejava.net
+	*
+	*/
+	public class UnzipUtility {
+		/**
+		 * Size of the buffer to read/write data
+		 */
+		private static final int BUFFER_SIZE = 4096;
+		/**
+		 * Extracts a zip file specified by the zipFilePath to a directory specified by
+		 * destDirectory (will be created if does not exists)
+		 * @param zipFilePath
+		 * @param destDirectory
+		 * @throws IOException
+		 */
+		public void unzip(String zipFilePath, String destDirectory) throws IOException {
+			File destDir = new File(destDirectory);
+			if (!destDir.exists()) {
+				destDir.mkdir();
+			}
+			ZipInputStream zipIn = new ZipInputStream(new FileInputStream(zipFilePath));
+			ZipEntry entry = zipIn.getNextEntry();
+			// iterates over entries in the zip file
+			while (entry != null) {
+				String filePath = destDirectory + File.separator + entry.getName();
+				if (!entry.isDirectory()) {
+					// if the entry is a file, extracts it
+					extractFile(zipIn, filePath);
+				} else {
+					// if the entry is a directory, make the directory
+					File dir = new File(filePath);
+					dir.mkdir();
+				}
+				zipIn.closeEntry();
+				entry = zipIn.getNextEntry();
+			}
+			zipIn.close();
+		}
+		/**
+		 * Extracts a zip entry (file entry)
+		 * @param zipIn
+		 * @param filePath
+		 * @throws IOException
+		 */
+		private void extractFile(ZipInputStream zipIn, String filePath) throws IOException {
+			BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(filePath));
+			byte[] bytesIn = new byte[BUFFER_SIZE];
+			int read = 0;
+			while ((read = zipIn.read(bytesIn)) != -1) {
+				bos.write(bytesIn, 0, read);
+			}
+			bos.close();
+		}
 	}
 
 }

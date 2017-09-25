@@ -142,7 +142,7 @@ public class FSMPlugin implements Plugin<Project> {
         Configuration provideRuntimeConfiguration = configurationContainer
                 .create(PROVIDED_RUNTIME_CONFIGURATION_NAME)
                 .setVisible(false)
-//            .extendsFrom(provideCompileConfiguration)
+            .extendsFrom(provideCompileConfiguration)
                 .setDescription(
                         "Additional runtime classpath for libraries that should not be part of the FSM archive.");
 
