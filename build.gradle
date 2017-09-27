@@ -34,8 +34,8 @@ buildscript {
 apply plugin: 'groovy'
 apply plugin: 'maven-publish'
 
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 description = 'Gradle plugin to build FirstSpirit modules (FSMs).'
 group = 'com.espirit.moddev'

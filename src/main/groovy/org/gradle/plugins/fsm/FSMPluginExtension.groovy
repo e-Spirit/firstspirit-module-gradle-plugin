@@ -15,14 +15,7 @@
  */
 package org.gradle.plugins.fsm
 
-/**
- * Convention object to configure this plugin from gradle DSL.
- *
- */
 class FSMPluginExtension {
-
-	public static final String MODULE_DIR_NAME_CONVENTION = "moduleDirName"
-	
 	/**
 	 * The name of the directory containing the module.xml, relative to the project directory.
 	 */
