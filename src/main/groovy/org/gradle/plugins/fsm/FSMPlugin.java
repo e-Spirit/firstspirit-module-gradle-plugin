@@ -46,6 +46,8 @@ public class FSMPlugin implements Plugin<Project> {
     static final String FS_SERVER_COMPILE_CONFIGURATION_NAME = "fsServerCompile";
     static final String FS_MODULE_COMPILE_CONFIGURATION_NAME = "fsModuleCompile";
 
+    static final String FS_WEB_COMPILE_CONFIGURATION_NAME = "fsWebCompile";
+
     @Override
     public void apply(Project project) {
         project.getExtensions().create("fsm", FSMPluginExtension.class);
@@ -123,28 +125,29 @@ public class FSMPlugin implements Plugin<Project> {
         Configuration fsServerCompileConfiguration = configurationContainer
                 .create(FS_SERVER_COMPILE_CONFIGURATION_NAME)
                 .setVisible(false)
-//                .extendsFrom(configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME))
                 .setDescription("Added automatically to module.xml with server scope");
 
         Configuration fsModuleCompileConfiguration = configurationContainer
                 .create(FS_MODULE_COMPILE_CONFIGURATION_NAME)
-//                .extendsFrom(configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME))
                 .setVisible(false)
                 .setDescription("Added automatically to module.xml with module scope");
+
+        Configuration fsWebCompileConfiguration = configurationContainer
+                .create(FS_WEB_COMPILE_CONFIGURATION_NAME)
+                .setVisible(false)
+                .setDescription("Added automatically to web resources of WebApp components in module.xml");
 
 
         Configuration provideCompileConfiguration = configurationContainer
             .create(PROVIDED_COMPILE_CONFIGURATION_NAME)
             .setVisible(false)
-            .setDescription(
-                "Additional compile classpath for libraries that should not be part of the FSM archive.");
+            .setDescription("Additional compile classpath for libraries that should not be part of the FSM archive.");
 
         Configuration provideRuntimeConfiguration = configurationContainer
                 .create(PROVIDED_RUNTIME_CONFIGURATION_NAME)
                 .setVisible(false)
-            .extendsFrom(provideCompileConfiguration)
-                .setDescription(
-                        "Additional runtime classpath for libraries that should not be part of the FSM archive.");
+                .extendsFrom(provideCompileConfiguration)
+                .setDescription("Additional runtime classpath for libraries that should not be part of the FSM archive.");
 
         configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
             .extendsFrom(provideCompileConfiguration);
@@ -155,6 +158,8 @@ public class FSMPlugin implements Plugin<Project> {
                 .extendsFrom(fsServerCompileConfiguration);
         configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
                 .extendsFrom(fsModuleCompileConfiguration);
+        configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
+                .extendsFrom(fsWebCompileConfiguration);
     }
 
     private void configureJarTask(Project project) {

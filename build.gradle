@@ -56,10 +56,11 @@ repositories {
 }
 
 dependencies {
-    compileOnly gradleApi()
-    compileOnly localGroovy()
+    compile gradleApi()
+    compile localGroovy()
     compile 'io.github.lukehutch:fast-classpath-scanner:2.6.2'
     compile 'de.espirit.firstspirit:fs-access:5.2.1306'
+    compile 'com.espirit.moddev.components:annotations:0.0.1-SNAPSHOT'
 
     testCompile (
 		'junit:junit:4.12',

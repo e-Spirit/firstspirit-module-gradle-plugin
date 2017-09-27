@@ -15,8 +15,11 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
+import com.espirit.moddev.components.annotations.ProjectAppComponent
+import com.espirit.moddev.components.annotations.WebAppComponent
 import com.sun.nio.zipfs.ZipFileSystem
 import de.espirit.firstspirit.module.ProjectApp
+import de.espirit.firstspirit.module.WebApp
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
@@ -27,12 +30,9 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
 
+import java.lang.annotation.Annotation
 import java.nio.charset.StandardCharsets
-import java.nio.file.FileSystems
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.StandardOpenOption
+import java.nio.file.*
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipInputStream
@@ -98,14 +98,14 @@ class FSM extends Jar {
 				throw new IllegalStateException("No module.xml file found or it is empty!")
 			}
 
-			def componentTags = getComponentTags(archive)
+			def componentTags = getComponentTags(archive)//.replaceAll('\\$', '\\\$')
 
-			String filteredModuleXml = unfilteredModuleXml.replaceFirst("\\\$name", project.name)
-			filteredModuleXml = filteredModuleXml.replaceFirst("\\\$version", project.version)
-			filteredModuleXml = filteredModuleXml.replaceFirst("\\\$description", project.description ?: project.name)
-			filteredModuleXml = filteredModuleXml.replaceFirst("\\\$artifact", project.jar.archiveName)
-			filteredModuleXml = filteredModuleXml.replaceFirst("\\\$resources", resourcesTags)
-			filteredModuleXml = filteredModuleXml.replaceFirst("\\\$components", componentTags)
+			String filteredModuleXml = unfilteredModuleXml.replace('$name', project.name.toString())
+			filteredModuleXml = filteredModuleXml.replace('$version', project.version.toString())
+			filteredModuleXml = filteredModuleXml.replace('$description', project.description.toString() ?: project.name.toString())
+			filteredModuleXml = filteredModuleXml.replace('$artifact', project.jar.archiveName.toString())
+			filteredModuleXml = filteredModuleXml.replace('$resources', resourcesTags)
+			filteredModuleXml = filteredModuleXml.replace('$components', componentTags)
 			println filteredModuleXml
 
 			Map<String, String> env = new HashMap<>()
@@ -145,27 +145,68 @@ class FSM extends Jar {
 				e.printStackTrace()
 			}
 		}
+		URLClassLoader cl
 		try {
 			def jarFilesArray = jarFilesUrls.toArray(new URL[0])
-			URLClassLoader cl = new URLClassLoader(jarFilesArray, getClass().getClassLoader())
+			cl = new URLClassLoader(jarFilesArray, getClass().getClassLoader())
 
 			"This is a compiletime dependency to " + ProjectApp.class.toString() + " that does nothing."
 
-			new FastClasspathScanner().addClassLoader(cl).scan().getNamesOfClassesImplementing(ProjectApp).forEach {
+			def scan = new FastClasspathScanner().addClassLoader(cl).scan()
 
-				if(!projectAppBlacklist.contains(it)) {
-					def projectAppClass = cl.loadClass(it)
-					println "Found ProjectAppClass " + projectAppClass
+			def projectAppClasses = scan.getNamesOfClassesImplementing(ProjectApp)
+			projectAppClasses.forEach {
+				def projectAppClass = cl.loadClass(it)
+				Arrays.asList(projectAppClass.annotations).forEach { annotation ->
+					Class<? extends Annotation> type = annotation.annotationType()
+					if(type == ProjectAppComponent) {
+						if(!projectAppBlacklist.contains(it)) {
+							result += """
+								<project-app>
+									<name>${evaluateAnnotation(type, annotation, "name")}</name>
+									<displayname>${evaluateAnnotation(type, annotation, "displayName")}</displayname>
+									<description>${evaluateAnnotation(type, annotation, "description")}</description>
+									<class>${projectAppClass.toString()}</class>
+									<configurable>${evaluateAnnotation(type, annotation, "configurable").toString()}</configurable>
+								</project-app>
+								"""
+						}
+					}
+				}
+			}
 
-					result += """
-						<project-app>
-							<name>AB-Testing_ProjectApp</name>
-							<displayname>A/B-Testing Project Configuration</displayname>
-							<description>Project configuration implementation</description>
-							<class>com.espirit.moddev.abtesting.projectapp.AbTestingProjectApp</class>
-							<configurable>com.espirit.moddev.abtesting.projectapp.AbTestingProjectAppConfigurator</configurable>
-						</project-app>
-						"""
+			def webAppClasses = scan.getNamesOfClassesImplementing(WebApp)
+			println webAppClasses
+			webAppClasses.forEach {
+				def webAppClass = cl.loadClass(it)
+
+				Arrays.asList(webAppClass.annotations).forEach { annotation ->
+
+					Set<ResolvedArtifact> webCompileDependencies = project.configurations.fsWebCompile.getResolvedConfiguration().getResolvedArtifacts()
+					Set<ResolvedArtifact> providedCompileDependencies = project.configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()
+					String webResources = ""
+					webResources = addResourceTagsForDependencies(webCompileDependencies, providedCompileDependencies, webResources, "")
+
+					Class<? extends Annotation> type = annotation.annotationType()
+					if(type == WebAppComponent) {
+						result += """
+							<web-app>
+								<name>${evaluateAnnotation(type, annotation, "name")}</name>
+								<displayname>${evaluateAnnotation(type, annotation, "displayName")}</displayname>
+								<description>${evaluateAnnotation(type, annotation, "description")}</description>
+								<class>${webAppClass.toString()}</class>
+								<configurable>${evaluateAnnotation(type, annotation, "configurable").toString()}</configurable>
+								<web-xml>${evaluateAnnotation(type, annotation, "webXml").toString()}</web-xml>
+								<web-resources>
+									<resource>lib/${project.jar.archiveName.toString()}</resource>
+									<resource>${evaluateAnnotation(type, annotation, "webXml").toString()}</resource>
+									<resource>web/abtesting.tld</resource>
+									${evaluateAnnotation(type, annotation, "webResourcesTags").toString()}
+									$webResources
+								</web-resources>
+							</web-app>
+							"""
+					}
 				}
 			}
 
@@ -173,9 +214,15 @@ class FSM extends Jar {
 			System.err.println(e)
 		} catch (ClassNotFoundException e) {
 			System.err.println(e)
+		} finally {
+			cl?.close()
 		}
 
 		return result
+	}
+
+	protected static Object evaluateAnnotation(Class<? extends Annotation> type, Annotation annotation, String methodName) {
+		type.getDeclaredMethod(methodName, null).invoke(annotation, null)
 	}
 
 	public void list(List<URL> urlsList, File file) {
@@ -201,8 +248,9 @@ class FSM extends Jar {
 		return projectResources
 	}
 
-	private String addResourceTagsForDependencies(Set<ResolvedArtifact> compileDependenciesServerScoped, providedCompileDependencies, String projectResources, String scope) {
-		compileDependenciesServerScoped.forEach {
+//	TODO: Pass a stringbuilder
+	protected String addResourceTagsForDependencies(Set<ResolvedArtifact> dependencies, Set<ResolvedArtifact> providedCompileDependencies, String projectResources, String scope) {
+		dependencies.forEach {
 			if (!providedCompileDependencies.contains(it)) {
 				ModuleVersionIdentifier dependencyId = it.moduleVersion.id
 				projectResources += getResourceTagForDependency(dependencyId, it, scope)
@@ -212,7 +260,8 @@ class FSM extends Jar {
 	}
 
 	protected GString getResourceTagForDependency(ModuleVersionIdentifier dependencyId, ResolvedArtifact it, String scope) {
-		"""<resource name="${dependencyId.group}.${dependencyId.name}" scope="${scope}" version="${dependencyId.version}">lib/${dependencyId.name}-${dependencyId.version}.${it.extension}</resource>\n"""
+		def scopeAttribute = scope == null || scope.isEmpty() ? "" : """scope="${scope}"""
+		"""<resource name="${dependencyId.group}.${dependencyId.name}" $scopeAttribute version="${dependencyId.version}">lib/${dependencyId.name}-${dependencyId.version}.${it.extension}</resource>\n"""
 	}
 
 	/**
