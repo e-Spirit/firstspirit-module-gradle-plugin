@@ -20,4 +20,5 @@ class FSMPluginExtension {
 	 * The name of the directory containing the module.xml, relative to the project directory.
 	 */
 	String moduleDirName = 'src/main/resources'
+	String archivePath
 }

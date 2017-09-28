@@ -15,6 +15,8 @@
  */
 package org.gradle.plugins.fsm;
 
+import groovy.transform.CompileStatic;
+
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -50,11 +52,12 @@ public class FSMPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project project) {
-        project.getExtensions().create("fsm", FSMPluginExtension.class);
+        FSMPluginExtension fsmPluginExtension = project.getExtensions().create("fsm", FSMPluginExtension.class);
 
         project.getPlugins().apply(JavaPlugin.class);
 
-        configureTask(project);
+        FSM fsm = configureTask(project);
+        fsmPluginExtension.setArchivePath(fsm.getArchivePath().getPath());
 
         configureConfigurations(project.getConfigurations());
         project.getPlugins().apply(JavaPlugin.class);
