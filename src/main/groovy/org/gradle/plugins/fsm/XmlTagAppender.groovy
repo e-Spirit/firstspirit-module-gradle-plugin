@@ -2,114 +2,128 @@ package org.gradle.plugins.fsm
 
 import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
-import de.espirit.firstspirit.module.ProjectApp
-import de.espirit.firstspirit.module.WebApp
-import io.github.lukehutch.fastclasspathscanner.scanner.ScanResult
+import com.espirit.moddev.components.annotations.WebAppComponent
+import groovy.transform.CompileStatic
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
-import org.gradle.plugins.fsm.tasks.bundling.FSM
 
 import java.lang.annotation.Annotation
+
+import static org.gradle.plugins.fsm.FSMPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME
+import static org.gradle.plugins.fsm.FSMPlugin.PROVIDED_COMPILE_CONFIGURATION_NAME
 
 class XmlTagAppender {
 
     //TODO: We could determine classes by scanning access.jar - worth it?
     static final List<String> PROJECTAPP_BLACKLIST = ["de.espirit.firstspirit.feature.ContentTransportProjectApp"]
 
-    public static void appendPublicComponentTags(ScanResult scan, URLClassLoader cl, StringBuilder result) {
-        def publicComponentClasses = scan.getNamesOfClassesWithAnnotation(PublicComponent)
-        println publicComponentClasses
-        publicComponentClasses.forEach {
-            def publicComponentClass = cl.loadClass(it)
+    @CompileStatic
+    static void appendPublicComponentTags(URLClassLoader cl, List<String> publicComponentClasses, StringBuilder result) {
+        def loadedClasses = publicComponentClasses.collect { cl.loadClass(it) }
 
-            Arrays.asList(publicComponentClass.annotations).forEach { annotation ->
+        appendPublicComponentTagsOfClasses(loadedClasses, result)
+    }
 
-                Class<? extends Annotation> type = annotation.annotationType()
-                result.append("""
+    private static appendPublicComponentTagsOfClasses(List<Class<?>> loadedClasses, StringBuilder result) {
+        loadedClasses.forEach { publicComponentClass ->
+
+            Arrays.asList(publicComponentClass.annotations)
+                .findAll { it instanceof PublicComponent }
+                .forEach { annotation ->
+
+                    result.append("""
 <public>
-	<name>${evaluateAnnotation(type, annotation, "name")}</name>
-	<class>${publicComponentClass.getName().toString()}</class>
+    <name>${evaluateAnnotation(annotation, "name")}</name>
+    <class>${publicComponentClass.getName().toString()}</class>
 </public>""")
 
-            }
+                }
         }
     }
 
-    public static void appendWebAppTags(Project project, ScanResult scan, URLClassLoader cl, StringBuilder result) {
-        def webAppClasses = scan.getNamesOfClassesImplementing(WebApp)
-        webAppClasses.forEach {
-            def webAppClass = cl.loadClass(it)
+    @CompileStatic
+    static void appendWebAppTags(Project project, URLClassLoader cl, List<String> webAppClasses, StringBuilder result) {
+        List<Class<?>> loadedClasses = webAppClasses
+            .collect{ cl.loadClass(it) }
 
-            Arrays.asList(webAppClass.annotations).forEach { annotation ->
+        appendWebAppComponentTagsOfClasses(loadedClasses, project, result)
+    }
 
-                Set<ResolvedArtifact> webCompileDependencies = project.configurations.fsWebCompile.getResolvedConfiguration().getResolvedArtifacts()
-                Set<ResolvedArtifact> providedCompileDependencies = project.configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()
-                StringBuilder webResources = new StringBuilder()
-                addResourceTagsForDependencies(webCompileDependencies, providedCompileDependencies, webResources, "")
+    private static appendWebAppComponentTagsOfClasses(List<Class<?>> loadedClasses, Project project, result) {
+        Set<ResolvedArtifact> webCompileDependencies = project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()
+        Set<ResolvedArtifact> providedCompileDependencies = project.configurations.getByName(PROVIDED_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()
 
-                Class<? extends Annotation> type = annotation.annotationType()
-                result.append("""
+        loadedClasses.forEach { webAppClass ->
+            Arrays.asList(webAppClass.annotations)
+                .findAll { it instanceof WebAppComponent }
+                .forEach { annotation ->
+
+                    StringBuilder webResources = new StringBuilder()
+                    addResourceTagsForDependencies(webCompileDependencies, providedCompileDependencies, webResources, "")
+
+                    result.append("""
 <web-app>
-	<name>${evaluateAnnotation(type, annotation, "name")}</name>
-	<displayname>${evaluateAnnotation(type, annotation, "displayName")}</displayname>
-	<description>${evaluateAnnotation(type, annotation, "description")}</description>
-	<class>${webAppClass.getName().toString()}</class>
-	<configurable>${evaluateAnnotation(type, annotation, "configurable").toString()}</configurable>
-	<web-xml>${evaluateAnnotation(type, annotation, "webXml").toString()}</web-xml>
-	<web-resources>
-		<resource>lib/${project.jar.archiveName.toString()}</resource>
-		<resource>${evaluateAnnotation(type, annotation, "webXml").toString()}</resource>
-		<resource>web/abtesting.tld</resource>
-		${evaluateAnnotation(type, annotation, "webResourcesTags").toString()}
-		${webResources.toString()}
-	</web-resources>
+    <name>${evaluateAnnotation(annotation, "name")}</name>
+    <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
+    <description>${evaluateAnnotation(annotation, "description")}</description>
+    <class>${webAppClass.getName().toString()}</class>
+    <configurable>${evaluateAnnotation(annotation, "configurable").getName().toString()}</configurable>
+    <web-xml>${evaluateAnnotation(annotation, "webXml").toString()}</web-xml>
+    <web-resources>
+        <resource>lib/${project.jar.archiveName.toString()}</resource>
+        <resource>${evaluateAnnotation(annotation, "webXml").toString()}</resource>
+        ${evaluateAnnotation(annotation, "webResourcesTags").toString()}
+        ${webResources.toString()}
+    </web-resources>
 </web-app>
 """)
-            }
+                }
         }
     }
 
-    public static void appendProjectAppTags(ScanResult scan, URLClassLoader cl, StringBuilder result) {
-        def projectAppClasses = scan.getNamesOfClassesImplementing(ProjectApp)
-        projectAppClasses.forEach {
-            if (!PROJECTAPP_BLACKLIST.contains(it)) {
-                def projectAppClass = cl.loadClass(it)
-                Arrays.asList(projectAppClass.annotations).forEach { annotation ->
-                    Class<? extends Annotation> type = annotation.annotationType()
-                    if (type == ProjectAppComponent) {
-                        result.append("""
+    @CompileStatic
+    static void appendProjectAppTags(URLClassLoader cl, List<String> projectAppClasses, StringBuilder result) {
+        def loadedClasses = projectAppClasses.findAll { !PROJECTAPP_BLACKLIST.contains(it) }.collect { cl.loadClass(it) }
+
+        appendProjectAppTagsOfClasses(loadedClasses, result)
+    }
+
+    static appendProjectAppTagsOfClasses(List<Class<?>> loadedClasses, result) {
+        loadedClasses.forEach { projectAppClass ->
+            Arrays.asList(projectAppClass.annotations)
+                .findAll { it.annotationType() == ProjectAppComponent }
+                .forEach { annotation ->
+                    result.append("""
 <project-app>
-    <name>${evaluateAnnotation(type, annotation, "name")}</name>
-    <displayname>${evaluateAnnotation(type, annotation, "displayName")}</displayname>
-    <description>${evaluateAnnotation(type, annotation, "description")}</description>
+    <name>${evaluateAnnotation(annotation, "name")}</name>
+    <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
+    <description>${evaluateAnnotation(annotation, "description")}</description>
     <class>${projectAppClass.getName().toString()}</class>
-    <configurable>${evaluateAnnotation(type, annotation, "configurable").toString()}</configurable>
+    <configurable>${evaluateAnnotation(annotation, "configurable").getName().toString()}</configurable>
 </project-app>
 """)
-                    }
-                }
             }
         }
     }
 
-    private static Object evaluateAnnotation(Class<? extends Annotation> type, Annotation annotation, String methodName) {
-        type.getDeclaredMethod(methodName, null).invoke(annotation, null)
+    private static Object evaluateAnnotation(Annotation annotation, String methodName) {
+        annotation.annotationType().getDeclaredMethod(methodName, null).invoke(annotation, null)
     }
 
     private static void addResourceTagsForDependencies(Set<ResolvedArtifact> dependencies, Set<ResolvedArtifact> providedCompileDependencies, StringBuilder projectResources, String scope) {
-        dependencies.forEach {
-            if (!providedCompileDependencies.contains(it)) {
+        dependencies.
+            findAll{ !providedCompileDependencies.contains(it) }
+            .forEach {
                 ModuleVersionIdentifier dependencyId = it.moduleVersion.id
-                projectResources + getResourceTagForDependency(dependencyId, it, scope)
+                projectResources.append(getResourceTagForDependency(dependencyId, it, scope))
             }
-        }
     }
 
-    static String getResourceTagForDependency(ModuleVersionIdentifier dependencyId, ResolvedArtifact it, String scope) {
-        def scopeAttribute = scope == null || scope.isEmpty() ? "" : """scope="${scope}"""
-        """<resource name="${dependencyId.group}.${dependencyId.name}" $scopeAttribute version="${dependencyId.version}">lib/${dependencyId.name}-${dependencyId.version}.${it.extension}</resource>"""
+    static String getResourceTagForDependency(ModuleVersionIdentifier dependencyId, ResolvedArtifact artifact, String scope) {
+        def scopeAttribute = scope == null || scope.isEmpty() ? "" : """ scope="${scope}\""""
+        """<resource name="${dependencyId.group}.${dependencyId.name}"$scopeAttribute version="${dependencyId.version}">lib/${dependencyId.name}-${dependencyId.version}.${artifact.extension}</resource>"""
     }
 
     static String getResourcesTags(ConfigurationContainer configurations) {

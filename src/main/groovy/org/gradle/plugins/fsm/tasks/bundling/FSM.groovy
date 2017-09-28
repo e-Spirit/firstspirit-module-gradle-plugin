@@ -15,6 +15,9 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
+import com.espirit.moddev.components.annotations.PublicComponent
+import de.espirit.firstspirit.module.ProjectApp
+import de.espirit.firstspirit.module.WebApp
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.InputFiles
@@ -118,11 +121,11 @@ class FSM extends Jar {
 			try {
 				def scan = new FastClasspathScanner().addClassLoader(classLoader).scan()
 
-				appendProjectAppTags(scan, classLoader, result)
+				appendProjectAppTags(classLoader, scan.getNamesOfClassesImplementing(ProjectApp), result)
 
-				appendWebAppTags(project, scan, classLoader, result)
+				appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result)
 
-				appendPublicComponentTags(scan, classLoader, result)
+				appendPublicComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(PublicComponent), result)
 
 			} catch (MalformedURLException e) {
 				getLogger().error("Passed URL is malformed", e)
