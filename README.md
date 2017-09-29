@@ -68,7 +68,7 @@ The configuration for your implemented FirstSpirit components has to be placed s
 Your project app, web app and other components can be annotated with our custom annotations that can be found in a seperate project.
 In order to be able to use them, add the following dependency to your project:
 
-compile 'com.espirit.moddev.components:annotations:0.0.1-SNAPSHOT'
+compile 'com.espirit.moddev.components:annotations:1.5.0'
 
 The annotations should be selfexplanatory. If a component doesn't provide annotations, it won't be treated for module.xml generation.
 You could add tags to you module.xml template by hand in this case.

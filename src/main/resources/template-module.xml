@@ -10,7 +10,7 @@ $components
         <library>
             <name>$name-library</name>
             <resources>
-                <resource>lib/$artifact</resource>
+                <resource scope="module">lib/$artifact</resource>
 $resources
             </resources>
         </library>
