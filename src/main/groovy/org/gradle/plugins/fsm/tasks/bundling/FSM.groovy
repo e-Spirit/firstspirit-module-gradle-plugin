@@ -61,6 +61,11 @@ class FSM extends Jar {
 				classpath ? classpath.filter { File file -> file.isFile() } : []
 			}
 		}
+		into('/') {
+			from("src/main/resources") {
+				include("**/*")
+			}
+		}
 
 		configure {
 			metaInf {
