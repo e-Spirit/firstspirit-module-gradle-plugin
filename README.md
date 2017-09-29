@@ -2,10 +2,6 @@
 
 # Gradle FSM plugin
 
-[![Build Status](https://travis-ci.org/moritzzimmer/gradle-fsm.svg?branch=master)](https://travis-ci.org/moritzzimmer/gradle-fsm) 
-
-[ ![Download](https://api.bintray.com/packages/kachelzaehler/gradle-plugins/com.github.moritzzimmer.fsm/images/download.png) ](https://bintray.com/kachelzaehler/gradle-plugins/com.github.moritzzimmer.fsm/_latestVersion)
-
 [Gradle](http://www.gradle.org/) plugin to build [FirstSpirit](http://www.e-spirit.com/en/product/advantage/advantages.html) modules (FSMs).
 
 ## Usage
@@ -13,14 +9,11 @@
 To use the plugin, include the following snippet on top of your build script:
 
 ```groovy
-buildscript {
-    repositories {
-        jcenter()
-    }
-    dependencies { classpath 'com.github.moritzzimmer:fsm-gradle-plugin:0.3.1' }
-}
 apply plugin: 'com.github.moritzzimmer.fsm'
 ```
+
+Keep in mind, that you have to add a repository where the plugin can be found.
+For example you can install it in your local Maven repo and add mavenLocal() to the buildScript configuration.
 
 ## Project layout
 
@@ -53,14 +46,32 @@ fsm {
 
 ## module.xml
 
-This plugin supports the following placeholders in the _module.xml_ which will be replaced at build time:
+If you supply a module.xml resource in your project (as a standard resource that gets embedded into the fsm archive), it will be filtered by the plugin.
+The plugin adds tags to the xml file that depend on the module project.
+The following placeholders in the _module.xml_ will be replaced at build time:
 
 Placeholder | Value | Description
 -------|-------|------------
 $name | project.name | Name of the FSM
 $version | project.version | Version of the FSM
 $description | project.description | Description of the FSM
-$artifact | project.jar.archiveName | Artifact (jar) name if the FSM 
+$artifact | project.jar.archiveName | Artifact (jar) name if the FSM
+$components | "complicated" | All FirstSpirit components that can be found in the FSM archive
+$resources | "complicated" | All FirstSpirit resources that can be found in the FSM archive
+
+If no module.xml file can be found in the archive, a small generic template module.xml file is used by the plugin.
+This is useful, if you don't want to add any custom behaviour to your module.xml.
+
+### FirstSpirit components
+
+The configuration for your implemented FirstSpirit components has to be placed somewhere, so that the plugin can generate a module.xml file.
+Your project app, web app and other components can be annotated with our custom annotations that can be found in a seperate project.
+In order to be able to use them, add the following dependency to your project:
+
+compile 'com.espirit.moddev.components:annotations:0.0.1-SNAPSHOT'
+
+The annotations should be selfexplanatory. If a component doesn't provide annotations, it won't be treated for module.xml generation.
+You could add tags to you module.xml template by hand in this case.
 
 ### Example
 
@@ -71,9 +82,11 @@ $artifact | project.jar.archiveName | Artifact (jar) name if the FSM
     <version>$version</version>
     <description>$description</description>
     <components>
+$components
         <library>
             <resources>
                 <resource>lib/$artifact</resource>
+$resources
             </resources>
         </library>
     </components>
@@ -82,7 +95,18 @@ $artifact | project.jar.archiveName | Artifact (jar) name if the FSM
 
 ## Dependency management
 
-The FSM plugin adds two dependency configurations: _fsProvidedCompile_ and _fsProvidedRuntime_. Those configurations have the same scope as the respective compile and runtime configurations, except that they are not added to the FSM archive.
+The FSM plugin adds the following dependency configurations:
+
+name | Description
+-----|------------
+fsServerCompile | Same as the usual compile configuration, but the dependency and all transitive dependencies are added to the module.xml with server scope
+fsModuleCompile | Same as the usual compile configuration, but the dependency and all transitive dependencies are added to the module.xml with module scope
+fsWebCompile | Same as the usual compile configuration, but the dependency and all transitive dependencies are added to the web-resources tag in the module.xml
+fsProvidedCompile | Same as the usual compileOnly configuration - the dependency and all transitive dependencies are not added to the FSM archive.
+fsProvidedRuntime | Same scope as the usual runtime dependency. Use if you want to do some kind of integration testing without FirstSpirit server.
+
+Dependencies with other scopes then these (for example the regular compile scope) are not treated as a resource to be used for module.xml file generation.
+That means if you use compile scope, you can compile your source files against it like in any other project, but the resource won't be listed in the module.xml.
 
 ### Example
 
@@ -91,6 +115,15 @@ dependencies {
   // Library required to compile the production source code of 
   // this FSM which is provided by FirstSpirit. 
   fsProvidedCompile ('commons-logging:commons-logging:1.1.3')
+
+  // Embeds this and transitive deps as a server scoped resource
+  fsServerCompile 'joda-time:joda-time:2.3'
+
+  // Embeds this and transitive deps as a module scoped resource
+  fsModuleCompile 'org.apache.activemq:activemq-all:5.14.2'
+
+  // Embeds this and transitive deps as a web resource to all web app components
+  fsWebCompile 'org.apache.activemq:activemq-all:5.14.2'
 }
 ```
 
@@ -130,10 +163,6 @@ You can either use this [example project](https://github.com/moritzzimmer/gradle
 
 ```groovy
 buildscript {
-    repositories {
-        jcenter()
-    }
-
     dependencies { classpath 'com.github.moritzzimmer:fsm-gradle-plugin:0.3.1' }
 }
 apply plugin: 'com.github.moritzzimmer.fsm'
@@ -143,20 +172,18 @@ apply plugin: 'idea'
 description = 'Example FSM Gradle build'
 version = '0.1.0'
 
-repositories { mavenCentral() }
-
 dependencies {
-  compile ('joda-time:joda-time:2.3')
+    fsServerCompile 'joda-time:joda-time:2.3'
+    fsModuleCompile 'org.apache.activemq:activemq-all:5.14.2'
+    fsWebCompile 'org.apache.activemq:activemq-all:5.14.2'
 
-  runtime ()
-  
-  fsProvidedCompile ('commons-logging:commons-logging:1.1.3')
+	fsProvidedCompile 'commons-logging:commons-logging:1.1.3'
 
-  fsProvidedRuntime ()
-  
-  testCompile (
-  	'junit:junit:4.11'
-  )
+    fsProvidedCompile 'de.espirit.firstspirit:fs-access:5.2.1306'
+
+	testCompile 'junit:junit:4.12'
+
+    compile 'com.espirit.moddev.components:annotations:1.4.0'
 }
 
 fsm {
@@ -179,5 +206,5 @@ idea.module.scopes.COMPILE.plus += [configurations.fsProvidedRuntime]
 
 ## Requirements
 
-* [Java](http://www.java.com/en/download/) 1.6+
-* [Gradle](http://www.gradle.org/downloads) 1.7+
+* [Java](http://www.java.com/en/download/) 1.8+
+* [Gradle](http://www.gradle.org/downloads) 4.1+

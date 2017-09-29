@@ -8,6 +8,7 @@
 $components
 
         <library>
+            <name>$name-library</name>
             <resources>
                 <resource>lib/$artifact</resource>
 $resources
