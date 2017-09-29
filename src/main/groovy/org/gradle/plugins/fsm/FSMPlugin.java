@@ -152,16 +152,14 @@ public class FSMPlugin implements Plugin<Project> {
                 .extendsFrom(provideCompileConfiguration)
                 .setDescription("Additional runtime classpath for libraries that should not be part of the FSM archive.");
 
-        configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
-            .extendsFrom(provideCompileConfiguration);
+        configurationContainer.getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME)
+                .extendsFrom(provideCompileConfiguration);
         configurationContainer.getByName(JavaPlugin.RUNTIME_CONFIGURATION_NAME)
             .extendsFrom(provideRuntimeConfiguration);
 
         configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
-                .extendsFrom(fsServerCompileConfiguration);
-        configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
-                .extendsFrom(fsModuleCompileConfiguration);
-        configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
+                .extendsFrom(fsServerCompileConfiguration)
+                .extendsFrom(fsModuleCompileConfiguration)
                 .extendsFrom(fsWebCompileConfiguration);
     }
 

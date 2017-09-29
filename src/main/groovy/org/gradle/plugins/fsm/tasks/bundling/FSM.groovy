@@ -81,13 +81,9 @@ class FSM extends Jar {
 
 		(FileSystems.newFileSystem(Paths.get(uri), getClass().getClassLoader())).withCloseable { fs ->
 			new ZipFile(archive).withCloseable { zipFile ->
-				def moduleXmlFile = zipFile.getEntry("META-INF/module.xml")
-				def unfilteredModuleXml = zipFile.getInputStream(moduleXmlFile).getText("utf-8")
+				def unfilteredModuleXml
 
-				//TODO Add support for non-existent module.xml
-				if(unfilteredModuleXml == null || unfilteredModuleXml.isEmpty()) {
-					throw new IllegalStateException("No module.xml file found or it is empty!")
-				}
+				unfilteredModuleXml = getUnfilteredModuleXml(zipFile)
 
 				def componentTags = getComponentTags(archive)
 
@@ -99,6 +95,18 @@ class FSM extends Jar {
 				}
 			}
 		}
+	}
+
+	String getUnfilteredModuleXml(ZipFile zipFile) {
+		def unfilteredModuleXml
+		def moduleXmlFile = zipFile.getEntry("META-INF/module.xml")
+		if (moduleXmlFile == null) {
+			getLogger().info("module.xml not found in ZipArchive ${zipFile.getName()}, using an empty one")
+			unfilteredModuleXml = getClass().getResource("/template-module.xml").getText("utf-8")
+		} else {
+			unfilteredModuleXml = zipFile.getInputStream(moduleXmlFile).getText("utf-8")
+		}
+		unfilteredModuleXml
 	}
 
 	protected String filterModuleXml(String unfilteredModuleXml, String resourcesTags, String componentTags) {

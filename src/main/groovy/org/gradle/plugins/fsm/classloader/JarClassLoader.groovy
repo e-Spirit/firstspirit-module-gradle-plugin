@@ -10,7 +10,11 @@ class JarClassLoader extends URLClassLoader {
 
     private static URL[] getUrls(File libDir) {
         List<URL> jarFilesUrls = new ArrayList()
-        Arrays.asList(libDir.listFiles()).forEach { jarFile ->
+        def libFiles = libDir.listFiles()
+        if(libFiles == null) {
+            return jarFilesUrls
+        }
+        Arrays.asList(libFiles).forEach { jarFile ->
             try {
                 URL url = new File(jarFile.path).toURL()
                 jarFilesUrls.add(url)

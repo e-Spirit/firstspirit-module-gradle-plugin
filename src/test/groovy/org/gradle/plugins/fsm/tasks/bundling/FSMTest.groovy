@@ -53,7 +53,7 @@ class FSMTest {
 		}
 	}
 
-	@Test 
+	@Test
 	public void testExecute() {
 		fsm.execute()
 		assertTrue(fsm.destinationDir.isDirectory())
