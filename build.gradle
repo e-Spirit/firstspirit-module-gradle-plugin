@@ -132,3 +132,20 @@ task install(dependsOn: 'publishMavenJavaPublicationToMavenLocal', group:'publis
     }
 }
 
+task integrationTest() {
+    dependsOn("jar")
+}
+
+task setVersion() {
+    doFirst {
+        if(!System.getProperties().containsKey("nextVersion")) {
+            throw new IllegalStateException("Pass a nextVersion parameter")
+        }
+        Properties props = new Properties()
+        File propsFile = new File('gradle.properties')
+        props.load(propsFile.newDataInputStream())
+        props.setProperty('version', System.getProperty("nextVersion"))
+        props.store(propsFile.newWriter(), null)
+        props.load(propsFile.newDataInputStream())
+    }
+}
