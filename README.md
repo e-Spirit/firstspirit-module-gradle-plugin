@@ -9,7 +9,7 @@
 To use the plugin, include the following snippet on top of your build script:
 
 ```groovy
-apply plugin: 'com.github.moritzzimmer.fsm'
+apply plugin: 'fsmgradleplugin'
 ```
 
 Keep in mind, that you have to add a repository where the plugin can be found.
@@ -159,13 +159,13 @@ eclipse {
 
 ## Example
 
-You can either use this [example project](https://github.com/moritzzimmer/gradle-fsm-example) as a starting point or the following snippet:
+You can use the following snippet as a starting point:
 
 ```groovy
 buildscript {
-    dependencies { classpath 'com.github.moritzzimmer:fsm-gradle-plugin:0.3.1' }
+    dependencies { classpath 'com.espirit.moddev:fsmgradleplugin:0.4.0-SNAPSHOT' }
 }
-apply plugin: 'com.github.moritzzimmer.fsm'
+apply plugin: 'fsmgradleplugin'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 

@@ -39,7 +39,7 @@ import java.util.concurrent.Callable;
  */
 public class FSMPlugin implements Plugin<Project> {
 
-    static final String NAME = "com.github.moritzzimmer.fsm";
+    static final String NAME = "fsmgradleplugin";
     static final String FSM_TASK_NAME = "fsm";
 
     static final String PROVIDED_COMPILE_CONFIGURATION_NAME = "fsProvidedCompile";

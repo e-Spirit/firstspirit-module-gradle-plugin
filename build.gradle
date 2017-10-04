@@ -35,8 +35,8 @@ targetCompatibility = 1.8
 description = 'Gradle plugin to build FirstSpirit modules (FSMs).'
 group = 'com.espirit.moddev'
 version = '0.4.0-SNAPSHOT'
-ext.pluginId = 'com.espirit.moddev.fsm-gradle-plugin'
-ext.artifactName = 'fsm-gradle-plugin'
+ext.pluginId = 'com.espirit.moddev.fsmgradleplugin'
+ext.artifactName = 'fsmgradleplugin'
 
 repositories {
     mavenLocal()
@@ -107,6 +107,11 @@ publishing {
                 developer.appendNode('id', 'moritzzimmer')
                 developer.appendNode('name', 'Moritz Zimmer')
                 developer.appendNode('email', 'moritz.zmmr@gmail.com')
+
+                developer = developers.appendNode('developer')
+                developer.appendNode('id', 'e-spirit')
+                developer.appendNode('name', 'E-Spirit AG')
+                developer.appendNode('email', 'produktmanagement@e-spirit.com')
             }
         }
     }
