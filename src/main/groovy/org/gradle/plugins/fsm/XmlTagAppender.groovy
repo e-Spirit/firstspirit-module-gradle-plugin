@@ -16,7 +16,6 @@ import static org.gradle.plugins.fsm.FSMPlugin.PROVIDED_COMPILE_CONFIGURATION_NA
 
 class XmlTagAppender {
 
-    //TODO: We could determine classes by scanning access.jar - worth it?
     static final List<String> PROJECTAPP_BLACKLIST = ["de.espirit.firstspirit.feature.ContentTransportProjectApp"]
 
     @CompileStatic

@@ -207,4 +207,4 @@ idea.module.scopes.COMPILE.plus += [configurations.fsProvidedRuntime]
 ## Requirements
 
 * [Java](http://www.java.com/en/download/) 1.8+
-* [Gradle](http://www.gradle.org/downloads) 4.1+
+* [Gradle](http://www.gradle.org/downloads) 4.2+

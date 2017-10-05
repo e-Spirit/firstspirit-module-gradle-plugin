@@ -15,8 +15,6 @@
  */
 package org.gradle.plugins.fsm;
 
-import groovy.transform.CompileStatic;
-
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -73,41 +71,29 @@ public class FSMPlugin implements Plugin<Project> {
 
         addPublication(project, fsm);
 
-        fsm.dependsOn(new Callable<FileCollection>() {
-            @Override
-            public FileCollection call() throws Exception {
-                return project.getConvention()
-                    .getPlugin(JavaPluginConvention.class)
-                    .getSourceSets()
-                    .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
-                    .getRuntimeClasspath();
-            }
-        });
+        fsm.dependsOn((Callable<FileCollection>) () -> project.getConvention()
+            .getPlugin(JavaPluginConvention.class)
+            .getSourceSets()
+            .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
+            .getRuntimeClasspath());
 
-        fsm.dependsOn(new Callable<String>() {
-                    @Override
-                    public String call() throws Exception {
-                        return JavaPlugin.JAR_TASK_NAME;
-                    }
-                });
+        fsm.dependsOn((Callable<String>) () -> JavaPlugin.JAR_TASK_NAME);
 
-        fsm.classpath(new Callable<FileCollection>() {
-            public FileCollection call() throws Exception {
-                final FileCollection runtimeClasspath = project
-                    .getConvention()
-                    .getPlugin(JavaPluginConvention.class)
-                    .getSourceSets()
-                    .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
-                    .getRuntimeClasspath();
-                final FileCollection outputs = project.getTasks()
-                    .findByName(JavaPlugin.JAR_TASK_NAME)
-                    .getOutputs().getFiles();
+        fsm.classpath((Callable<FileCollection>) () -> {
+            final FileCollection runtimeClasspath = project
+                .getConvention()
+                .getPlugin(JavaPluginConvention.class)
+                .getSourceSets()
+                .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
+                .getRuntimeClasspath();
+            final FileCollection outputs = project.getTasks()
+                .findByName(JavaPlugin.JAR_TASK_NAME)
+                .getOutputs().getFiles();
 
-                final Configuration providedRuntime = project
-                    .getConfigurations().getByName(
-                        PROVIDED_RUNTIME_CONFIGURATION_NAME);
-                return runtimeClasspath.minus(providedRuntime).plus(outputs);
-            }
+            final Configuration providedRuntime = project
+                .getConfigurations().getByName(
+                    PROVIDED_RUNTIME_CONFIGURATION_NAME);
+            return runtimeClasspath.minus(providedRuntime).plus(outputs);
         });
 
         return fsm;
