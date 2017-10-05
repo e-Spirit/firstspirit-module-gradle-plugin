@@ -15,7 +15,6 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
-import static org.hamcrest.Matchers.*
 import static org.junit.Assert.*
 
 import org.gradle.api.Project
@@ -25,8 +24,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
-
-// FIXME: test module.xml 
 class FSMTest {
 
 	private final File testDir = new File("build/tmp/tests")
@@ -53,7 +50,7 @@ class FSMTest {
 		}
 	}
 
-	@Test 
+	@Test
 	public void testExecute() {
 		fsm.execute()
 		assertTrue(fsm.destinationDir.isDirectory())

@@ -15,45 +15,60 @@
  */
 buildscript {
     repositories {
-        jcenter()
-        mavenCentral()
+        mavenLocal()
+        maven {
+            url 'https://artifactory.e-spirit.de/artifactory/repo'
+            credentials {
+                username = "${artifactory_user}"
+                password = "${artifactory_password}"
+            }
+        }
     }
-
-	dependencies {
-		classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:0.5'
-	}
 }
 
 apply plugin: 'groovy'
 apply plugin: 'maven-publish'
 
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 description = 'Gradle plugin to build FirstSpirit modules (FSMs).'
 group = 'com.espirit.moddev'
-version = '0.4.0_DEV'
-ext.pluginId = 'com.espirit.moddev.fsm-gradle-plugin'
-ext.artifactName = 'fsm-gradle-plugin'
+ext.pluginId = 'com.espirit.moddev.fsmgradleplugin'
+ext.artifactName = 'fsmgradleplugin'
 
 repositories {
-	mavenCentral()
+    mavenLocal()
+    maven {
+        url 'https://artifactory.e-spirit.de/artifactory/repo'
+        credentials {
+            username = "${artifactory_user}"
+            password = "${artifactory_password}"
+        }
+    }
+    mavenCentral()
 }
 
 dependencies {
     compile gradleApi()
     compile localGroovy()
-    compile 'org.reflections:reflections:0.9.11'
-	
+    compile 'io.github.lukehutch:fast-classpath-scanner:2.6.2'
+    compile 'de.espirit.firstspirit:fs-access:5.2.1306'
+    compile 'com.espirit.moddev.components:annotations:1.5.0'
+
     testCompile (
 		'junit:junit:4.12',
 		'org.hamcrest:hamcrest-all:1.3'
 	)
+    testCompile gradleTestKit()
+    testCompile 'org.mockito:mockito-core:2.10.0'
 }
 
-plugins.withType(JavaPlugin) {
-    sourceCompatibility = 1.6
-    targetCompatibility = 1.6
+sourceSets {
+    test {
+        resources.srcDirs += ['src/test/resources']
+        resources.srcDirs += ['src/main/resources']
+    }
 }
 
 jar {
@@ -73,9 +88,7 @@ publishing {
             artifactId artifactName
             from components.java
 
-            artifact sourceJar {
-                classifier "sources"
-            }
+            artifact sourceJar
 
             pom.withXml {
                 def root = asNode()
@@ -93,16 +106,50 @@ publishing {
                 developer.appendNode('id', 'moritzzimmer')
                 developer.appendNode('name', 'Moritz Zimmer')
                 developer.appendNode('email', 'moritz.zmmr@gmail.com')
+
+                developer = developers.appendNode('developer')
+                developer.appendNode('id', 'e-spirit')
+                developer.appendNode('name', 'E-Spirit AG')
+                developer.appendNode('email', 'produktmanagement@e-spirit.com')
             }
+        }
+    }
+    repositories {
+        maven {
+            credentials {
+                username "${artifactory_user}"
+                password "${artifactory_password}"
+            }
+            url "https://artifactory.e-spirit.de/artifactory/${((version.endsWith("SNAPSHOT")) ? {'plugins-snapshot-local'} : {'plugins-release-local'})()}"
         }
     }
 }
 
-task install(dependsOn: 'publishMavenJavaPublicationToMavenLocal'
-        , group:'publishing', description: 'Installs the maven Java artifact to the local Maven repository') << {
-    logger.info "Installed $project.name"
-}
-
 task sourceJar(type: Jar) {
     from sourceSets.main.allJava
+    classifier "sources"
+}
+
+task install(dependsOn: 'publishMavenJavaPublicationToMavenLocal', group:'publishing', description: 'Installs the maven Java artifact to the local Maven repository') {
+    doLast {
+        logger.info "Installed $project.name"
+    }
+}
+
+task integrationTest() {
+    dependsOn("jar")
+}
+
+task setVersion() {
+    doFirst {
+        if(!System.getProperties().containsKey("nextVersion")) {
+            throw new IllegalStateException("Pass a nextVersion parameter")
+        }
+        Properties props = new Properties()
+        File propsFile = new File('gradle.properties')
+        props.load(propsFile.newDataInputStream())
+        props.setProperty('version', System.getProperty("nextVersion"))
+        props.store(propsFile.newWriter(), null)
+        props.load(propsFile.newDataInputStream())
+    }
 }

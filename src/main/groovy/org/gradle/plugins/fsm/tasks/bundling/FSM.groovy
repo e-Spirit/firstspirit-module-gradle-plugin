@@ -15,24 +15,24 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
-import com.sun.nio.zipfs.ZipFileSystem
-import org.gradle.api.artifacts.ModuleVersionIdentifier
-import org.gradle.api.artifacts.ResolvedArtifact
+import com.espirit.moddev.components.annotations.PublicComponent
+import de.espirit.firstspirit.module.ProjectApp
+import de.espirit.firstspirit.module.WebApp
+import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
+import org.gradle.plugins.fsm.classloader.JarClassLoader
+import org.gradle.plugins.fsm.zip.UnzipUtility
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.FileSystems
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.StandardOpenOption
+import java.nio.file.*
 import java.util.zip.ZipFile
+
+import static org.gradle.plugins.fsm.XmlTagAppender.*
 
 /**
  * Bundles the FSM using libraries from the internal {@link FileCollection} classpath
@@ -61,86 +61,109 @@ class FSM extends Jar {
 				classpath ? classpath.filter { File file -> file.isFile() } : []
 			}
 		}
+		into('/') {
+			from("src/main/resources") {
+				include("**/*")
+			}
+		}
 
 		configure {
 			metaInf {
 				from project.file(pluginExtension.moduleDirName)
 				include 'module.xml'
-
-//				expand(name: project.name,
-//						version: project.version,
-//						description: project.description,
-//						artifact: project.jar.archiveName,
-//						resources: projectResources)
 			}
 		}
 	}
 	@TaskAction
 	protected void generateModuleXml() {
-		println "#########################################"
+		getLogger().info("Generating module.xml")
 		File archive = getArchivePath()
-		println "Archive path:" + archive.getPath()
+		getLogger().info("Found archive ${archive.getPath()}")
 
-		ZipFile zipFile = new ZipFile(archive)
-		def moduleXmlFile = zipFile.getEntry("META-INF/module.xml")
+		def resourcesTags = getResourcesTags(project.configurations)
 
-		String unfilteredModuleXml = zipFile.getInputStream(moduleXmlFile).getText("utf-8")
-		zipFile.close()
-		String filteredModuleXml = unfilteredModuleXml.replaceFirst("\\\$name", project.name)
-		filteredModuleXml = filteredModuleXml.replaceFirst("\\\$description", project.description ?: project.name)
-		filteredModuleXml = filteredModuleXml.replaceFirst("\\\$artifact", project.jar.archiveName)
-		filteredModuleXml = filteredModuleXml.replaceFirst("\\\$resources", getResourcesTags())
-		println filteredModuleXml
-
-		Map<String, String> env = new HashMap<>()
-		env.put("create", "true")
 		URI uri = archive.toURI()
-		ZipFileSystem fs = FileSystems.newFileSystem(Paths.get(uri), getClass().getClassLoader())
-		Path nf = fs.getPath("/META-INF/module.xml")
-		Writer writer = Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE)
-		writer.write(filteredModuleXml)
 
-		writer.close()
-		fs.close()
+		(FileSystems.newFileSystem(Paths.get(uri), getClass().getClassLoader())).withCloseable { fs ->
+			new ZipFile(archive).withCloseable { zipFile ->
+				def unfilteredModuleXml
 
+				unfilteredModuleXml = getUnfilteredModuleXml(zipFile)
+
+				def componentTags = getComponentTags(archive)
+
+				String filteredModuleXml = filterModuleXml(unfilteredModuleXml, resourcesTags, componentTags)
+
+				Path nf = fs.getPath("/META-INF/module.xml")
+				Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE).withCloseable {
+					it.write(filteredModuleXml)
+				}
+			}
+		}
 	}
 
-	def patchModuleXml() {
+	String getUnfilteredModuleXml(ZipFile zipFile) {
+		def unfilteredModuleXml
+		def moduleXmlFile = zipFile.getEntry("META-INF/module.xml")
+		if (moduleXmlFile == null) {
+			getLogger().info("module.xml not found in ZipArchive ${zipFile.getName()}, using an empty one")
+			unfilteredModuleXml = getClass().getResource("/template-module.xml").getText("utf-8")
+		} else {
+			unfilteredModuleXml = zipFile.getInputStream(moduleXmlFile).getText("utf-8")
+		}
+		unfilteredModuleXml
+	}
 
-		SourceSetContainer sourceSets = (SourceSetContainer) project.getProperties().get("sourceSets")
-		def classesDir = sourceSets.getByName("main").output.classesDir
-		System.out.println("##################################################")
-		System.out.println(classesDir)
+	protected String filterModuleXml(String unfilteredModuleXml, String resourcesTags, String componentTags) {
+		String filteredModuleXml = unfilteredModuleXml.replace('$name', project.name.toString())
+		filteredModuleXml = filteredModuleXml.replace('$version', project.version.toString())
+		filteredModuleXml = filteredModuleXml.replace('$description', project.description?.toString() ?: project.name.toString())
+		filteredModuleXml = filteredModuleXml.replace('$artifact', project.jar.archiveName.toString())
+		filteredModuleXml = filteredModuleXml.replace('$resources', resourcesTags)
+		filteredModuleXml = filteredModuleXml.replace('$components', componentTags)
+		getLogger().info("Generated module.xml: \n$filteredModuleXml")
+		filteredModuleXml
+	}
 
-		try {
-			// Convert File to a URL
-			URL url = classesDir.toURL()
-			List<URL> urlsList = new ArrayList<URL>()
-			list(urlsList, new File(url.path))
+	String getComponentTags(File archive) {
+		StringBuilder result = new StringBuilder()
+		File tempDir = unzipFsmToNewTempDir(archive)
 
-			URL[] urls = urlsList.toArray(new URL[urlsList.size()])
-			new ArrayList(Arrays.asList(urls)).forEach{
-				System.out.println(it)
+		def libDir = new File(Paths.get(tempDir.getPath(), "lib").toString())
+		new JarClassLoader(libDir, getClass().getClassLoader()).withCloseable { classLoader ->
+			try {
+				def scan = new FastClasspathScanner().addClassLoader(classLoader).scan()
+
+				appendProjectAppTags(classLoader, scan.getNamesOfClassesImplementing(ProjectApp), result)
+
+				appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result)
+
+				appendPublicComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(PublicComponent), result)
+
+			} catch (MalformedURLException e) {
+				getLogger().error("Passed URL is malformed", e)
+			} catch (ClassNotFoundException e) {
+				getLogger().error("Cannot find class", e)
 			}
-			ClassLoader cl = new URLClassLoader(urls)
-
-//				Reflections reflections = new Reflections(cl)
-//				Set<Class<?>> subTypes = reflections.getSubTypesOf(Class.forName("org.example.Foo"))
-//				subTypes.forEach{
-//					System.out.println(it)
-//				}
-
-//				Class cls = cl.loadClass("org.example.SimpleFoo")
-//				println cls
-		} catch (MalformedURLException e) {
-			System.err.println(e)
-		} catch (ClassNotFoundException e) {
-			System.err.println(e)
 		}
 
+		return result.toString()
 	}
 
-	public void list(List<URL> urlsList, File file) {
+
+	private File unzipFsmToNewTempDir(File archive) {
+		def tempDir = getTemporaryDirFactory().create()
+		getLogger().info("Extracting archive to $tempDir")
+
+		try {
+			new UnzipUtility().unzip(archive.getPath(), tempDir.getPath())
+		} catch (IOException ex) {
+			getLogger().error("Problem with fsm unzipping", ex)
+		}
+		tempDir
+	}
+
+	void list(List<URL> urlsList, File file) {
 		if(file.isFile()) {
 			urlsList.add(file.toURI().toURL())
 		}
@@ -148,33 +171,6 @@ class FSM extends Jar {
 		for (File child : children) {
 			list(urlsList, child)
 		}
-	}
-
-
-	String getResourcesTags() {
-		String projectResources = ""
-		Set<ResolvedArtifact> compileDependenciesServerScoped = project.configurations.fsServerCompile.getResolvedConfiguration().getResolvedArtifacts()
-		Set<ResolvedArtifact> compileDependenciesModuleScoped = project.configurations.fsModuleCompile.getResolvedConfiguration().getResolvedArtifacts()
-		Set<ResolvedArtifact> providedCompileDependencies = project.configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()
-
-		projectResources = addResourceTagsForDependencies(compileDependenciesServerScoped, providedCompileDependencies, projectResources, "server")
-		projectResources += "\n"
-		projectResources = addResourceTagsForDependencies(compileDependenciesModuleScoped, providedCompileDependencies, projectResources, "module")
-		return projectResources
-	}
-
-	private String addResourceTagsForDependencies(Set<ResolvedArtifact> compileDependenciesServerScoped, providedCompileDependencies, String projectResources, String scope) {
-		compileDependenciesServerScoped.forEach {
-			if (!providedCompileDependencies.contains(it)) {
-				ModuleVersionIdentifier dependencyId = it.moduleVersion.id
-				projectResources += getResourceTagForDependency(dependencyId, it, scope)
-			}
-		}
-		return projectResources
-	}
-
-	protected GString getResourceTagForDependency(ModuleVersionIdentifier dependencyId, ResolvedArtifact it, String scope) {
-		"""<resource name="${dependencyId.group}.${dependencyId.name}" scope="${scope}" version="${dependencyId.version}">lib/${dependencyId.name}-${dependencyId.version}.${it.extension}</resource>\n"""
 	}
 
 	/**
