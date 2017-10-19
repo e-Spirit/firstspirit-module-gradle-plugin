@@ -71,7 +71,8 @@ In order to be able to use them, add the following dependency to your project:
 compile 'com.espirit.moddev.components:annotations:1.5.0'
 
 The annotations should be self explanatory. If a component doesn't provide annotations, it won't be treated for module.xml generation.
-You could add tags to your module.xml template by hand in this case.
+You could add tags to your module.xml template by hand in this case. Please note, if you are using an @WebAppComponent annotation with 
+a webXml attribute, you need to have a matching file inside your project. Otherwise your .fsm cannot be installed on the FirstSpirit server.
 
 ### Examples
 
