@@ -55,26 +55,27 @@ Placeholder | Value | Description
 $name | project.name | Name of the FSM
 $version | project.version | Version of the FSM
 $description | project.description | Description of the FSM
-$artifact | project.jar.archiveName | Artifact (jar) name if the FSM
-$components | "complicated" | All FirstSpirit components that can be found in the FSM archive
-$resources | "complicated" | All FirstSpirit resources that can be found in the FSM archive
+$artifact | project.jar.archiveName | Artifact (jar) name of the FSM
+$components | complex (see component example) | All FirstSpirit components that can be found in the FSM archive
+$resources | complex (see resource example) | All FirstSpirit resources that can be found in the FSM archive
 
 If no module.xml file can be found in the archive, a small generic template module.xml file is used by the plugin.
-This is useful, if you don't want to add any custom behaviour to your module.xml.
+This is useful, if you don't want to add any custom behaviour to your module.xml. 
 
 ### FirstSpirit components
 
 The configuration for your implemented FirstSpirit components has to be placed somewhere, so that the plugin can generate a module.xml file.
-Your project app, web app and other components can be annotated with our custom annotations that can be found in a seperate project.
+Your project app, web app and other components can be annotated with our custom annotations that can be found in a separate project.
 In order to be able to use them, add the following dependency to your project:
 
 compile 'com.espirit.moddev.components:annotations:1.5.0'
 
-The annotations should be selfexplanatory. If a component doesn't provide annotations, it won't be treated for module.xml generation.
-You could add tags to you module.xml template by hand in this case.
+The annotations should be self explanatory. If a component doesn't provide annotations, it won't be treated for module.xml generation.
+You could add tags to your module.xml template by hand in this case.
 
-### Example
+### Examples
 
+#### module.xml example
 ```xml
 <!DOCTYPE module PUBLIC "module.dtd" "platform:/resource/fs-module-support/src/main/resources/dtds/module.dtd">
 <module>
@@ -84,6 +85,7 @@ You could add tags to you module.xml template by hand in this case.
     <components>
 $components
         <library>
+        <name>$name-library</name>
             <resources>
                 <resource>lib/$artifact</resource>
 $resources
@@ -93,9 +95,25 @@ $resources
 </module>
 ```
 
+#### Component example:
+In this minimalistic example, there will only one component inside $components tag.
+The value of $components can contain many more.
+```xml
+<public>
+    <name>MySimplePublicComponent</name>
+    <class>org.simple.ExampleComponent</class>
+</public>
+```
+#### Resource example:
+In this minimalistic example, there will only one resource inside $resources tag.
+The value of $resources can contain many more.
+```xml
+<resource scope="module">lib/someexample.jar</resource>
+```
+
 ## Dependency management
 
-The FSM plugin adds the following dependency configurations:
+The FSM plugin adds the following dependency configurations.
 
 name | Description
 -----|------------
@@ -105,8 +123,9 @@ fsWebCompile | Same as the usual compile configuration, but the dependency and a
 fsProvidedCompile | Same as the usual compileOnly configuration - the dependency and all transitive dependencies are not added to the FSM archive.
 fsProvidedRuntime | Same scope as the usual runtime dependency. Use if you want to do some kind of integration testing without FirstSpirit server.
 
-Dependencies with other scopes then these (for example the regular compile scope) are not treated as a resource to be used for module.xml file generation.
+Dependencies with other scopes than these (for example the regular compile scope) are not treated as a resource to be used for module.xml file generation.
 That means if you use compile scope, you can compile your source files against it like in any other project, but the resource won't be listed in the module.xml.
+
 
 ### Example
 
