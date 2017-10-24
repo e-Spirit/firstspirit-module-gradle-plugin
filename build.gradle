@@ -34,7 +34,6 @@ targetCompatibility = 1.8
 
 description = 'Gradle plugin to build FirstSpirit modules (FSMs).'
 group = 'com.espirit.moddev'
-ext.pluginId = 'com.espirit.moddev.fsmgradleplugin'
 ext.artifactName = 'fsmgradleplugin'
 
 repositories {
@@ -85,10 +84,12 @@ jar {
 publishing {
     publications {
         mavenJava(MavenPublication) {
+            groupId 'com.espirit.moddev'
             artifactId artifactName
             from components.java
 
             artifact sourceJar
+            Artifact packageJavadoc
 
             pom.withXml {
                 def root = asNode()
@@ -130,6 +131,10 @@ task sourceJar(type: Jar) {
     classifier "sources"
 }
 
+task packageJavadoc(type: Jar, dependsOn: 'javadoc') {
+    from javadoc.destinationDir
+    classifier = 'javadoc'
+}
 task install(dependsOn: 'publishMavenJavaPublicationToMavenLocal', group:'publishing', description: 'Installs the maven Java artifact to the local Maven repository') {
     doLast {
         logger.info "Installed $project.name"
