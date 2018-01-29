@@ -56,6 +56,7 @@ public class FSMPlugin implements Plugin<Project> {
 
         FSM fsm = configureTask(project);
         fsmPluginExtension.setArchivePath(fsm.getArchivePath().getPath());
+        fsmPluginExtension.setArchiveName(fsm.getArchiveName());
 
         configureConfigurations(project.getConfigurations());
         project.getPlugins().apply(JavaPlugin.class);
