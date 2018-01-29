@@ -21,4 +21,5 @@ class FSMPluginExtension {
 	 */
 	String moduleDirName = 'src/main/resources'
 	String archivePath
+	String archiveName
 }
