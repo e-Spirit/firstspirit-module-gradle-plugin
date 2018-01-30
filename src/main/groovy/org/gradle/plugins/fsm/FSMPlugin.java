@@ -50,13 +50,12 @@ public class FSMPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project project) {
-        FSMPluginExtension fsmPluginExtension = project.getExtensions().create("fsm", FSMPluginExtension.class);
-
+        project.getExtensions().add("fsm", new FSMPluginExtension());
         project.getPlugins().apply(JavaPlugin.class);
 
         FSM fsm = configureTask(project);
-        fsmPluginExtension.setArchivePath(fsm.getArchivePath().getPath());
-        fsmPluginExtension.setArchiveName(fsm.getArchiveName());
+//        fsmPluginExtension.setArchivePath(fsm.getArchivePath().getPath());
+//        fsmPluginExtension.setArchiveName(fsm.getArchiveName());
 
         configureConfigurations(project.getConfigurations());
         project.getPlugins().apply(JavaPlugin.class);
