@@ -53,7 +53,7 @@ class FSM extends Jar {
 	FSM() {
 		extension = FSM_EXTENSION
 		destinationDir = project.file('build/fsm')
-		pluginExtension = project.getExtensions().getByType(FSMPluginExtension)
+		pluginExtension = project.getExtensions().findByType(FSMPluginExtension.class)
 		println("Archive Name  41: "+pluginExtension.archiveName)
 		archiveName = "WURST"
 		println("Archive Name  42: "+archiveName)

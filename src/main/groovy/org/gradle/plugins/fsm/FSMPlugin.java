@@ -76,7 +76,7 @@ public class FSMPlugin implements Plugin<Project> {
             .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
             .getRuntimeClasspath());
 
-        fsm.dependsOn((Callable<String>) () -> JavaPlugin.JAR_TASK_NAME);
+//        fsm.dependsOn((Callable<String>) () -> JavaPlugin.JAR_TASK_NAME);
 
         fsm.classpath((Callable<FileCollection>) () -> {
             final FileCollection runtimeClasspath = project
