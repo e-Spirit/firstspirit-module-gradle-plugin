@@ -78,8 +78,6 @@ class FSM extends Jar {
 		}
 	}
 
-	@Override
-
 	@TaskAction
 	protected void generateModuleXml() {
 		getLogger().info("Generating module.xml")
