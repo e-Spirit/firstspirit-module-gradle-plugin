@@ -53,7 +53,9 @@ class FSM extends Jar {
 	FSM() {
 		extension = FSM_EXTENSION
 		destinationDir = project.file('build/fsm')
-		pluginExtension = project.getExtensions().findByType(FSMPluginExtension.class)
+		pluginExtension = project.getExtensions().getByType(FSMPluginExtension)
+		archiveName = pluginExtension.archiveName
+
 		into('lib') {
 			from {
 				def classpath = getClasspath()

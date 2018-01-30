@@ -50,9 +50,12 @@ public class FSMPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project project) {
-        project.getExtensions().add("fsm", new FSMPluginExtension());
+        FSMPluginExtension fsmPluginExtension = project.getExtensions().create("fsm", FSMPluginExtension.class);
+
         project.getPlugins().apply(JavaPlugin.class);
-        configureTask(project);
+
+        FSM fsm = configureTask(project);
+        fsmPluginExtension.setArchivePath(fsm.getArchivePath().getPath());
 
         configureConfigurations(project.getConfigurations());
         project.getPlugins().apply(JavaPlugin.class);
@@ -65,6 +68,7 @@ public class FSMPlugin implements Plugin<Project> {
         FSM fsm = project.getTasks().create(FSM_TASK_NAME, FSM.class);
         fsm.setDescription("Assembles a fsm archive containing the FirstSpirit module.");
         fsm.setGroup(BasePlugin.BUILD_GROUP);
+
         addPublication(project, fsm);
 
         fsm.dependsOn((Callable<FileCollection>) () -> project.getConvention()
