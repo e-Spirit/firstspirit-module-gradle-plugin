@@ -23,7 +23,4 @@ class FSMPluginExtension {
 
 
 	String archivePath
-
-
-	String archiveName
 }
