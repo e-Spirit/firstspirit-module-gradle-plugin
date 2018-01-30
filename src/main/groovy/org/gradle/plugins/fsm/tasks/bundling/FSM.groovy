@@ -54,7 +54,8 @@ class FSM extends Jar {
 		extension = FSM_EXTENSION
 		destinationDir = project.file('build/fsm')
 		pluginExtension = project.getExtensions().getByType(FSMPluginExtension)
-		archiveName = pluginExtension.archiveName
+		println("Archive Name  41: "+pluginExtension.archiveName)
+		archiveName = "WURST"
 		println("Archive Name  42: "+archiveName)
 
 		into('lib') {
@@ -76,6 +77,9 @@ class FSM extends Jar {
 			}
 		}
 	}
+
+	@Override
+
 	@TaskAction
 	protected void generateModuleXml() {
 		getLogger().info("Generating module.xml")

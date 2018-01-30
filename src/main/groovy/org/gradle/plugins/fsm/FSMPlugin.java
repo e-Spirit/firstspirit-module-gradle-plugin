@@ -68,7 +68,6 @@ public class FSMPlugin implements Plugin<Project> {
         FSM fsm = project.getTasks().create(FSM_TASK_NAME, FSM.class);
         fsm.setDescription("Assembles a fsm archive containing the FirstSpirit module.");
         fsm.setGroup(BasePlugin.BUILD_GROUP);
-        fsm.setArchiveName(fsm.pluginExtension.getArchiveName());
         addPublication(project, fsm);
 
         fsm.dependsOn((Callable<FileCollection>) () -> project.getConvention()
