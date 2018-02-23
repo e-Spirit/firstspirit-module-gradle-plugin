@@ -76,7 +76,7 @@ class XmlTagAppender {
     <web-resources>
         <resource>lib/${project.jar.archiveName.toString()}</resource>
         <resource>${evaluateAnnotation(annotation, "webXml").toString()}</resource>
-        ${webResourcesFromAnnotations.length == 0 ? "" : webResourcesFromAnnotations.toString()}
+        ${evaluateResources(annotation)}
         ${webResources.toString()}
     </web-resources>
 </web-app>
@@ -104,6 +104,9 @@ class XmlTagAppender {
     <description>${evaluateAnnotation(annotation, "description")}</description>
     <class>${projectAppClass.getName().toString()}</class>
     <configurable>${evaluateAnnotation(annotation, "configurable").getName().toString()}</configurable>
+    <resources>
+        ${evaluateResources(annotation)}
+    </resources>
 </project-app>
 """)
             }
@@ -112,6 +115,28 @@ class XmlTagAppender {
 
     private static Object evaluateAnnotation(Annotation annotation, String methodName) {
         annotation.annotationType().getDeclaredMethod(methodName, null).invoke(annotation, null)
+    }
+
+    private static String evaluateResources(final Annotation annotation) {
+        final StringBuilder sb = new StringBuilder()
+
+        if (annotation instanceof ProjectAppComponent) {
+            annotation.resources().each {
+                final String minVersion = it.minVersion().isEmpty() ? "" : " ${it.minVersion()}"
+                final String maxVersion = it.maxVersion().isEmpty() ? "" : " ${it.maxVersion()}"
+
+                sb.append("""<resource name="${it.name()}" version="${it.version()}"${minVersion}${maxVersion} scope="${it.scope()}" mode="${it.mode()}">${it.path()}</resource>""")
+            }
+        } else if (annotation instanceof WebAppComponent) {
+            annotation.webResources().each {
+                final String minVersion = it.minVersion().isEmpty() ? "" : " ${it.minVersion()}"
+                final String maxVersion = it.maxVersion().isEmpty() ? "" : " ${it.maxVersion()}"
+
+                sb.append("""<resource name="${it.name()}" version="${it.version()}"${minVersion}${maxVersion}>${it.path()}</resource>""")
+            }
+        }
+
+        sb.toString()
     }
 
     private static void addResourceTagsForDependencies(Set<ResolvedArtifact> dependencies, Set<ResolvedArtifact> providedCompileDependencies, StringBuilder projectResources, String scope) {

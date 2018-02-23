@@ -2,6 +2,7 @@ package org.gradle.plugins.fsm
 
 import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
+import com.espirit.moddev.components.annotations.Resource
 import com.espirit.moddev.components.annotations.WebAppComponent
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -58,7 +59,7 @@ class XmlTagAppenderTest {
     <web-resources>
         <resource>lib/webapps-test-project.jar</resource>
         <resource>/test/web.xml</resource>
-        
+        <resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
         <resource name="joda-time.joda-time" version="2.3">lib/joda-time-2.3.jar</resource>
     </web-resources>
 </web-app>
@@ -77,6 +78,9 @@ class XmlTagAppenderTest {
     <description>TestDescription</description>
     <class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent</class>
     <configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent\$TestConfigurable</configurable>
+    <resources>
+        <resource name="com.google.guava:guava" version="24.0" scope="MODULE" mode="LEGACY">lib/guava-24.0.jar</resource>
+    </resources>
 </project-app>
 """, result.toString())
     }
@@ -97,7 +101,8 @@ class XmlTagAppenderTest {
     @ProjectAppComponent(name = "TestProjectAppComponentName",
             displayName = "TestDisplayName",
             description = "TestDescription",
-            configurable = TestProjectAppComponent.TestConfigurable)
+            configurable = TestConfigurable,
+            resources = [@Resource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0")])
     static class TestProjectAppComponent {
         static class TestConfigurable{}
     }
@@ -105,8 +110,9 @@ class XmlTagAppenderTest {
     @WebAppComponent(name = "TestWebAppComponentName",
             displayName = "TestDisplayName",
             description = "TestDescription",
-            configurable = TestWebAppComponent.TestConfigurable,
-            webXml = "/test/web.xml")
+            configurable = TestConfigurable,
+            webXml = "/test/web.xml",
+            webResources = [@Resource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0")])
     static class TestWebAppComponent {
         static class TestConfigurable{}
     }
