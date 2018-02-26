@@ -4,6 +4,7 @@ import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
 import com.espirit.moddev.components.annotations.Resource
 import com.espirit.moddev.components.annotations.WebAppComponent
+import de.espirit.firstspirit.server.module.ModuleInfo
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ConfigurationContainer
@@ -139,29 +140,30 @@ class XmlTagAppender {
         sb.toString()
     }
 
-    private static void addResourceTagsForDependencies(Set<ResolvedArtifact> dependencies, Set<ResolvedArtifact> providedCompileDependencies, StringBuilder projectResources, String scope) {
+    private static void addResourceTagsForDependencies(Set<ResolvedArtifact> dependencies, Set<ResolvedArtifact> providedCompileDependencies, StringBuilder projectResources, String scope, ModuleInfo.Mode mode) {
         dependencies.
             findAll{ !providedCompileDependencies.contains(it) }
             .forEach {
                 ModuleVersionIdentifier dependencyId = it.moduleVersion.id
-                projectResources.append(getResourceTagForDependency(dependencyId, it, scope))
+                projectResources.append(getResourceTagForDependency(dependencyId, it, scope, mode))
             }
     }
 
-    static String getResourceTagForDependency(ModuleVersionIdentifier dependencyId, ResolvedArtifact artifact, String scope) {
+    static String getResourceTagForDependency(ModuleVersionIdentifier dependencyId, ResolvedArtifact artifact, String scope, ModuleInfo.Mode mode) {
         def scopeAttribute = scope == null || scope.isEmpty() ? "" : """ scope="${scope}\""""
-        """<resource name="${dependencyId.group}.${dependencyId.name}"$scopeAttribute version="${dependencyId.version}">lib/${dependencyId.name}-${dependencyId.version}.${artifact.extension}</resource>"""
+        def modeAttribute = mode == null ? "" : """ mode="${mode.name().toLowerCase(Locale.ROOT)}\""""
+        """<resource name="${dependencyId.group}.${dependencyId.name}"$scopeAttribute$modeAttribute version="${dependencyId.version}">lib/${dependencyId.name}-${dependencyId.version}.${artifact.extension}</resource>"""
     }
 
-    static String getResourcesTags(ConfigurationContainer configurations) {
+    static String getResourcesTags(ConfigurationContainer configurations, ModuleInfo.Mode globalResourcesMode) {
         def projectResources = new StringBuilder()
         Set<ResolvedArtifact> compileDependenciesServerScoped = configurations.fsServerCompile.getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> compileDependenciesModuleScoped = configurations.fsModuleCompile.getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> providedCompileDependencies = configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()
 
-        addResourceTagsForDependencies(compileDependenciesServerScoped, providedCompileDependencies, projectResources, "server")
+        addResourceTagsForDependencies(compileDependenciesServerScoped, providedCompileDependencies, projectResources, "server", globalResourcesMode)
         projectResources + "\n"
-        addResourceTagsForDependencies(compileDependenciesModuleScoped, providedCompileDependencies, projectResources, "module")
+        addResourceTagsForDependencies(compileDependenciesModuleScoped, providedCompileDependencies, projectResources, "module", globalResourcesMode)
         return projectResources.toString()
     }
 }

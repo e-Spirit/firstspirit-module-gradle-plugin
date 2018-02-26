@@ -18,6 +18,7 @@ package org.gradle.plugins.fsm.tasks.bundling
 import com.espirit.moddev.components.annotations.PublicComponent
 import de.espirit.firstspirit.module.ProjectApp
 import de.espirit.firstspirit.module.WebApp
+import de.espirit.firstspirit.server.module.ModuleInfo
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.InputFiles
@@ -48,6 +49,8 @@ class FSM extends Jar {
 	 */
 	private FileCollection classpath
 
+    private ModuleInfo.Mode resourceMode
+
 	public FSMPluginExtension pluginExtension
 
 	FSM() {
@@ -55,6 +58,7 @@ class FSM extends Jar {
 		destinationDir = project.file('build/fsm')
 		pluginExtension = project.getExtensions().getByType(FSMPluginExtension)
 		archiveName = pluginExtension.archiveName
+        resourceMode = pluginExtension.resourceMode
 
 		into('lib') {
 			from {
@@ -75,13 +79,14 @@ class FSM extends Jar {
 			}
 		}
 	}
+
 	@TaskAction
 	protected void generateModuleXml() {
 		getLogger().info("Generating module.xml")
 		File archive = getArchivePath()
 		getLogger().info("Found archive ${archive.getPath()}")
 
-		def resourcesTags = getResourcesTags(project.configurations)
+		def resourcesTags = getResourcesTags(project.configurations, resourceMode)
 
 		URI uri = archive.toURI()
 
@@ -203,5 +208,15 @@ class FSM extends Jar {
 		FileCollection oldClasspath = getClasspath()
 		this.classpath = project.files(oldClasspath ?: [], classpath)
 	}
+
+    /**
+     * Sets the classloading mode for all resources which do not explicitly set another mode.
+     *
+     * @param mode the classloading mode
+     */
+    void setResourceMode(String resourceMode) {
+        this.resourceMode = ModuleInfo.Mode.valueOf(resourceMode.toUpperCase(Locale.ROOT))
+		pluginExtension.resourceMode = this.resourceMode
+    }
 
 }
