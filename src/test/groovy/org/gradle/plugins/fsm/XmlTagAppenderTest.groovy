@@ -6,7 +6,6 @@ import com.espirit.moddev.components.annotations.WebAppComponent
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
-import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Assert
 import org.junit.Before
@@ -38,6 +37,7 @@ class XmlTagAppenderTest {
         Assert.assertEquals("""
 <public>
     <name>TestPublicComponentName</name>
+    <displayname>TestDisplayName</displayname>
     <class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestPublicComponent</class>
 </public>""", result.toString())
     }
@@ -110,7 +110,7 @@ class XmlTagAppenderTest {
     static class TestWebAppComponent {
         static class TestConfigurable{}
     }
-    @PublicComponent(name = "TestPublicComponentName")
+    @PublicComponent(name = "TestPublicComponentName", displayName = "TestDisplayName")
     static class TestPublicComponent {
     }
 }

@@ -35,6 +35,7 @@ class XmlTagAppender {
                     result.append("""
 <public>
     <name>${evaluateAnnotation(annotation, "name")}</name>
+    <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
     <class>${publicComponentClass.getName().toString()}</class>
 </public>""")
 
