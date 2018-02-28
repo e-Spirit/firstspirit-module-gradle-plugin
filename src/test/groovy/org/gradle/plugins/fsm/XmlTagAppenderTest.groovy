@@ -2,7 +2,9 @@ package org.gradle.plugins.fsm
 
 import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
+import com.espirit.moddev.components.annotations.Resource
 import com.espirit.moddev.components.annotations.WebAppComponent
+import de.espirit.firstspirit.server.module.ModuleInfo
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
@@ -58,7 +60,7 @@ class XmlTagAppenderTest {
     <web-resources>
         <resource>lib/webapps-test-project.jar</resource>
         <resource>/test/web.xml</resource>
-        
+        <resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
         <resource name="joda-time.joda-time" version="2.3">lib/joda-time-2.3.jar</resource>
     </web-resources>
 </web-app>
@@ -77,6 +79,9 @@ class XmlTagAppenderTest {
     <description>TestDescription</description>
     <class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent</class>
     <configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent\$TestConfigurable</configurable>
+    <resources>
+        <resource name="com.google.guava:guava" version="24.0" scope="MODULE" mode="LEGACY">lib/guava-24.0.jar</resource>
+    </resources>
 </project-app>
 """, result.toString())
     }
@@ -90,14 +95,15 @@ class XmlTagAppenderTest {
         when(moduleVersionIdentifier.name).thenReturn("myname")
         when(moduleVersionIdentifier.version).thenReturn("1.0.0")
 
-        String result = XmlTagAppender.getResourceTagForDependency(moduleVersionIdentifier, resolvedArtifact, "server")
-        Assert.assertEquals("""<resource name="mygroup.myname" scope="server" version="1.0.0">lib/myname-1.0.0.jar</resource>""", result)
+        String result = XmlTagAppender.getResourceTagForDependency(moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED)
+        Assert.assertEquals("""<resource name="mygroup.myname" scope="server" mode="isolated" version="1.0.0">lib/myname-1.0.0.jar</resource>""", result)
     }
 
     @ProjectAppComponent(name = "TestProjectAppComponentName",
             displayName = "TestDisplayName",
             description = "TestDescription",
-            configurable = TestProjectAppComponent.TestConfigurable)
+            configurable = TestConfigurable,
+            resources = [@Resource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0")])
     static class TestProjectAppComponent {
         static class TestConfigurable{}
     }
@@ -105,8 +111,9 @@ class XmlTagAppenderTest {
     @WebAppComponent(name = "TestWebAppComponentName",
             displayName = "TestDisplayName",
             description = "TestDescription",
-            configurable = TestWebAppComponent.TestConfigurable,
-            webXml = "/test/web.xml")
+            configurable = TestConfigurable,
+            webXml = "/test/web.xml",
+            webResources = [@Resource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0")])
     static class TestWebAppComponent {
         static class TestConfigurable{}
     }

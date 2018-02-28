@@ -15,6 +15,8 @@
  */
 package org.gradle.plugins.fsm
 
+import de.espirit.firstspirit.server.module.ModuleInfo
+
 class FSMPluginExtension {
 	/**
 	 * The name of the directory containing the module.xml, relative to the project directory.
@@ -22,4 +24,10 @@ class FSMPluginExtension {
 	String moduleDirName = 'src/main/resources'
 	String archivePath
 	String archiveName
+
+    /**
+     * If set, this classloader isolation mode is used for all resource
+     */
+    ModuleInfo.Mode resourceMode
+
 }

@@ -15,24 +15,38 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
-import static org.junit.Assert.*
+import org.apache.commons.io.IOUtils
+import org.junit.Rule
+import org.junit.rules.TemporaryFolder
+
+import java.nio.charset.StandardCharsets
+import java.nio.file.Path
 
 import org.gradle.api.Project
 import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.testfixtures.ProjectBuilder
-import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+
+import static org.assertj.core.api.Assertions.assertThat
+
 class FSMTest {
 
-	private final File testDir = new File("build/tmp/tests")
+    @Rule
+	public TemporaryFolder temporaryFolder = new TemporaryFolder()
+
+	private File testDir
 	private Project project
 
 	FSM fsm
 
-	@Before 
-	public void setUp() {
+	@Before
+	void setUp() {
+        testDir = temporaryFolder.newFolder()
+
 		project = ProjectBuilder.builder().withProjectDir(testDir).build()
 		project.apply plugin: FSMPlugin.NAME
 		
@@ -43,27 +57,41 @@ class FSMTest {
 		fsm.version = '1.0'
 	}
 
-	@After
-	void tearDown() {
-		if(testDir.exists()) {
-			testDir.deleteDir()
-		}
+	@Test
+	void testExecute() {
+		fsm.execute()
+		assertThat(fsm.destinationDir).isDirectory()
+		assertThat(fsm.archivePath).isFile()
+	}
+	
+	@Test
+	void fsmExtensionUsed() {
+		assertThat(fsm.extension).isEqualTo(FSM.FSM_EXTENSION)
+	}
+	
+	@Test
+	void archivePathUsed() {
+		assertThat(fsm.archivePath.toPath()).isEqualTo(project.buildDir.toPath().resolve("fsm").resolve(fsm.archiveName))
 	}
 
-	@Test
-	public void testExecute() {
-		fsm.execute()
-		assertTrue(fsm.destinationDir.isDirectory())
-		assertTrue(fsm.archivePath.isFile())
-	}
-	
-	@Test
-	public void fsmExtensionUsed() {
-		assertEquals(FSM.FSM_EXTENSION, fsm.extension)
-	}
-	
-	@Test 
-	public void archivePathUsed() {
-		assertEquals(new File(new File(project.buildDir, "fsm"), fsm.archiveName), fsm.archivePath)
-	}
+    @Test
+    void useGlobalClassloaderIsolationMode() {
+        project.repositories.add(project.getRepositories().mavenCentral())
+        project.dependencies.add("fsModuleCompile", "com.google.guava:guava:24.0-jre")
+        fsm.resourceMode = 'isolated'
+
+        fsm.execute()
+
+        final Path fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.archiveName)
+        assertThat(fsmFile).exists()
+        final ZipFile zipFile = new ZipFile(fsmFile.toFile())
+        zipFile.withCloseable {
+            ZipEntry moduleXmlEntry = zipFile.getEntry("META-INF/module.xml")
+            assertThat(moduleXmlEntry).isNotNull()
+            zipFile.getInputStream(moduleXmlEntry).withCloseable {
+                final String moduleXml = IOUtils.toString(it, StandardCharsets.UTF_8)
+                assertThat(moduleXml).contains("""<resource name="com.google.guava.guava" scope="module" mode="isolated" version="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
+            }
+        }
+    }
 }

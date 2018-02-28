@@ -33,7 +33,7 @@ import org.gradle.plugins.fsm.tasks.bundling.FSM;
 import java.util.concurrent.Callable;
 
 /**
- * <p> A {@link Plugin} with tasks which assembles an (java) application into a FSM (FirstSpirit module) file. </p>
+ * <p>A {@link Plugin} with tasks which assemble a (java) application into an FSM (FirstSpirit module) file.</p>
  */
 public class FSMPlugin implements Plugin<Project> {
 
