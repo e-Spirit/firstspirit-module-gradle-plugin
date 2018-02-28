@@ -2,8 +2,9 @@ package org.gradle.plugins.fsm
 
 import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
-import com.espirit.moddev.components.annotations.Resource
 import com.espirit.moddev.components.annotations.WebAppComponent
+import de.espirit.firstspirit.module.Configuration
+import de.espirit.firstspirit.module.descriptor.WebAppDescriptor
 import de.espirit.firstspirit.server.module.ModuleInfo
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
@@ -18,7 +19,7 @@ import static org.gradle.plugins.fsm.FSMPlugin.PROVIDED_COMPILE_CONFIGURATION_NA
 
 class XmlTagAppender {
 
-    static final List<String> PROJECTAPP_BLACKLIST = ["de.espirit.firstspirit.feature.ContentTransportProjectApp"]
+    static final List<String> PROJECT_APP_BLACKLIST = ["de.espirit.firstspirit.feature.ContentTransportProjectApp"]
 
     @CompileStatic
     static void appendPublicComponentTags(URLClassLoader cl, List<String> publicComponentClasses, StringBuilder result) {
@@ -58,20 +59,23 @@ class XmlTagAppender {
         Set<ResolvedArtifact> providedCompileDependencies = project.configurations.getByName(PROVIDED_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()
 
         loadedClasses.forEach { webAppClass ->
-            Arrays.asList(webAppClass.annotations)
-                .findAll { it instanceof WebAppComponent }
-                .forEach { annotation ->
+            (Arrays.asList(webAppClass.annotations)
+                    .findAll { it instanceof WebAppComponent } as List<WebAppComponent>)
+                    .forEach { annotation ->
 
                     StringBuilder webResources = new StringBuilder()
                     addResourceTagsForDependencies(webCompileDependencies, providedCompileDependencies, webResources, "", null)
 
+                    final String scopes = scopes(annotation.scope())
+                    final String configurable = annotation.configurable() == Configuration.class ? "" : "<configurable>${annotation.configurable().name}</configurable>"
+
                     result.append("""
-<web-app>
+<web-app${scopes}>
     <name>${evaluateAnnotation(annotation, "name")}</name>
     <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
     <description>${evaluateAnnotation(annotation, "description")}</description>
     <class>${webAppClass.getName().toString()}</class>
-    <configurable>${evaluateAnnotation(annotation, "configurable").getName().toString()}</configurable>
+    ${configurable}
     <web-xml>${evaluateAnnotation(annotation, "webXml").toString()}</web-xml>
     <web-resources>
         <resource>lib/${project.jar.archiveName.toString()}</resource>
@@ -85,9 +89,17 @@ class XmlTagAppender {
         }
     }
 
+    private static String scopes(WebAppDescriptor.WebAppScope[] scopes) {
+        if (scopes.length == 0) {
+            ""
+        } else {
+            " scopes=\"" + scopes.collect({ scope -> scope.name().toLowerCase(Locale.ROOT)}).join(",") + '"'
+        }
+    }
+
     @CompileStatic
     static void appendProjectAppTags(URLClassLoader cl, List<String> projectAppClasses, StringBuilder result) {
-        def loadedClasses = projectAppClasses.findAll { !PROJECTAPP_BLACKLIST.contains(it) }.collect { cl.loadClass(it) }
+        def loadedClasses = projectAppClasses.findAll { !PROJECT_APP_BLACKLIST.contains(it) }.collect { cl.loadClass(it) }
 
         appendProjectAppTagsOfClasses(loadedClasses, result)
     }
