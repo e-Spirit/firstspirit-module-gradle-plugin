@@ -4,6 +4,7 @@ import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
 import com.espirit.moddev.components.annotations.Resource
 import com.espirit.moddev.components.annotations.WebAppComponent
+import de.espirit.firstspirit.server.module.ModuleInfo
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
@@ -94,8 +95,8 @@ class XmlTagAppenderTest {
         when(moduleVersionIdentifier.name).thenReturn("myname")
         when(moduleVersionIdentifier.version).thenReturn("1.0.0")
 
-        String result = XmlTagAppender.getResourceTagForDependency(moduleVersionIdentifier, resolvedArtifact, "server")
-        Assert.assertEquals("""<resource name="mygroup.myname" scope="server" version="1.0.0">lib/myname-1.0.0.jar</resource>""", result)
+        String result = XmlTagAppender.getResourceTagForDependency(moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED)
+        Assert.assertEquals("""<resource name="mygroup.myname" scope="server" mode="isolated" version="1.0.0">lib/myname-1.0.0.jar</resource>""", result)
     }
 
     @ProjectAppComponent(name = "TestProjectAppComponentName",

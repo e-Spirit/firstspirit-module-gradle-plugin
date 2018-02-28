@@ -63,9 +63,8 @@ class XmlTagAppender {
                 .forEach { annotation ->
 
                     StringBuilder webResources = new StringBuilder()
-                    addResourceTagsForDependencies(webCompileDependencies, providedCompileDependencies, webResources, "")
+                    addResourceTagsForDependencies(webCompileDependencies, providedCompileDependencies, webResources, "", null)
 
-                    def webResourcesFromAnnotations = (Resource[]) evaluateAnnotation(annotation, "webResources")
                     result.append("""
 <web-app>
     <name>${evaluateAnnotation(annotation, "name")}</name>
@@ -152,7 +151,8 @@ class XmlTagAppender {
     static String getResourceTagForDependency(ModuleVersionIdentifier dependencyId, ResolvedArtifact artifact, String scope, ModuleInfo.Mode mode) {
         def scopeAttribute = scope == null || scope.isEmpty() ? "" : """ scope="${scope}\""""
         def modeAttribute = mode == null ? "" : """ mode="${mode.name().toLowerCase(Locale.ROOT)}\""""
-        """<resource name="${dependencyId.group}.${dependencyId.name}"$scopeAttribute$modeAttribute version="${dependencyId.version}">lib/${dependencyId.name}-${dependencyId.version}.${artifact.extension}</resource>"""
+        """<resource name="${dependencyId.group}.${dependencyId.name}"$scopeAttribute$modeAttribute """ +
+            """version="${dependencyId.version}">lib/${dependencyId.name}-${dependencyId.version}.${artifact.extension}</resource>"""
     }
 
     static String getResourcesTags(ConfigurationContainer configurations, ModuleInfo.Mode globalResourcesMode) {
