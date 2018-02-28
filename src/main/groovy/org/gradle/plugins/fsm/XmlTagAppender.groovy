@@ -2,6 +2,7 @@ package org.gradle.plugins.fsm
 
 import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
+import com.espirit.moddev.components.annotations.Resource
 import com.espirit.moddev.components.annotations.WebAppComponent
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
@@ -63,6 +64,7 @@ class XmlTagAppender {
                     StringBuilder webResources = new StringBuilder()
                     addResourceTagsForDependencies(webCompileDependencies, providedCompileDependencies, webResources, "")
 
+                    def webResourcesFromAnnotations = (Resource[]) evaluateAnnotation(annotation, "webResources")
                     result.append("""
 <web-app>
     <name>${evaluateAnnotation(annotation, "name")}</name>
@@ -74,7 +76,7 @@ class XmlTagAppender {
     <web-resources>
         <resource>lib/${project.jar.archiveName.toString()}</resource>
         <resource>${evaluateAnnotation(annotation, "webXml").toString()}</resource>
-        ${evaluateAnnotation(annotation, "webResourcesTags").toString()}
+        ${webResourcesFromAnnotations.length == 0 ? "" : webResourcesFromAnnotations.toString()}
         ${webResources.toString()}
     </web-resources>
 </web-app>
