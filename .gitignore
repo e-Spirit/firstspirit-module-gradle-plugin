@@ -16,5 +16,7 @@ classes
 .gradle
 /.nb-gradle/
 
+# IntelliJ IDEA files #
 .idea/
 *.iml
+out
