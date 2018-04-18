@@ -91,7 +91,7 @@ publishing {
             from components.java
 
             artifact sourceJar
-            Artifact packageJavadoc
+            artifact packageJavadoc
 
             pom.withXml {
                 def root = asNode()
