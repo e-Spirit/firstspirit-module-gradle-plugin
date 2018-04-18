@@ -53,7 +53,7 @@ dependencies {
     compile localGroovy()
     compile 'io.github.lukehutch:fast-classpath-scanner:2.6.2'
     compile 'com.espirit.moddev.components:annotations:1.8.2'
-    compile 'de.espirit.firstspirit:fs-isolated-runtime:5.2.1806'
+    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.1806'
 
     testCompile (
 		'junit:junit:4.12',
