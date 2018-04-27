@@ -122,6 +122,7 @@ class FSM extends Jar {
 
 	protected String filterModuleXml(String unfilteredModuleXml, String resourcesTags, String componentTags) {
 		String filteredModuleXml = unfilteredModuleXml.replace('$name', project.name.toString())
+		filteredModuleXml = filteredModuleXml.replace('$displayName', project.displayName?.toString() ?: project.name.toString())
 		filteredModuleXml = filteredModuleXml.replace('$version', project.version.toString())
 		filteredModuleXml = filteredModuleXml.replace('$description', project.description?.toString() ?: project.name.toString())
 		filteredModuleXml = filteredModuleXml.replace('$artifact', project.jar.archiveName.toString())
