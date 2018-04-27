@@ -185,7 +185,10 @@ You can use the following snippet as a starting point:
 
 ```groovy
 buildscript {
-    dependencies { classpath 'com.espirit.moddev:fsmgradleplugin:0.4.0-SNAPSHOT' }
+    dependencies {
+        classpath 'com.espirit.moddev:fsmgradleplugin:0.10.7'
+        classpath 'de.espirit.firstspirit:fs-isolated-runtime:5.2.1306'
+    }
 }
 apply plugin: 'fsmgradleplugin'
 apply plugin: 'eclipse'
