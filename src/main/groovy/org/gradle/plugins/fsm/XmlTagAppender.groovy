@@ -174,6 +174,10 @@ class XmlTagAppender {
     static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode) {
 
         def projectResources = new StringBuilder()
+        def modeAttribute = globalResourcesMode == null ? "" : """ mode="${globalResourcesMode.name().toLowerCase(Locale.ROOT)}\""""
+        projectResources.append("""<resource name="${project.group}:${project.name}-lib" version="${project.version}" scope="module" """ +
+                                """mode="${modeAttribute}">lib/${project.name}-${project.version}.jar</resource>"""
+        )
         if (project.file('src/main/files').exists()) {
             projectResources.append("""<resource name="${project.group}:${project.name}-files" """ +
                                     """version="${project.version}">files/</resource>\n""")
