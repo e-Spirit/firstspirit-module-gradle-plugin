@@ -64,6 +64,10 @@ class XmlTagAppender {
                     .forEach { annotation ->
 
                     StringBuilder webResources = new StringBuilder()
+                    if (project.file('src/main/files').exists()) {
+                        webResources.append("""<resource name="${project.group}:${project.name}-files" """ +
+                                            """version="${project.version}">files/</resource>\n""")
+                    }
                     addResourceTagsForDependencies(webCompileDependencies, providedCompileDependencies, webResources, "", null)
 
                     final String scopes = scopes(annotation.scope())
@@ -167,8 +171,14 @@ class XmlTagAppender {
             """version="${dependencyId.version}">lib/${dependencyId.name}-${dependencyId.version}.${artifact.extension}</resource>"""
     }
 
-    static String getResourcesTags(ConfigurationContainer configurations, ModuleInfo.Mode globalResourcesMode) {
+    static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode) {
+
         def projectResources = new StringBuilder()
+        if (project.file('src/main/files').exists()) {
+            projectResources.append("""<resource name="${project.group}:${project.name}-files" """ +
+                                    """version="${project.version}">files/</resource>\n""")
+        }
+        ConfigurationContainer configurations = project.configurations
         Set<ResolvedArtifact> compileDependenciesServerScoped = configurations.fsServerCompile.getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> compileDependenciesModuleScoped = configurations.fsModuleCompile.getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> providedCompileDependencies = configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()
