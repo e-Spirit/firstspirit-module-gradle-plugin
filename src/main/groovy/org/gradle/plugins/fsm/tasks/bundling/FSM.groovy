@@ -49,8 +49,6 @@ class FSM extends Jar {
 	 */
 	private FileCollection classpath
 
-    private ModuleInfo.Mode resourceMode
-
 	public FSMPluginExtension pluginExtension
 
 	FSM() {
@@ -58,7 +56,6 @@ class FSM extends Jar {
 		destinationDir = project.file('build/fsm')
 		pluginExtension = project.getExtensions().getByType(FSMPluginExtension)
 		archiveName = pluginExtension.archiveName
-        resourceMode = pluginExtension.resourceMode
 
 		into('lib') {
 			from {
@@ -91,7 +88,7 @@ class FSM extends Jar {
 		File archive = getArchivePath()
 		getLogger().info("Found archive ${archive.getPath()}")
 
-		def resourcesTags = getResourcesTags(project, resourceMode)
+		def resourcesTags = getResourcesTags(project, pluginExtension.resourceMode)
 
 		(FileSystems.newFileSystem(archive.toPath(), getClass().getClassLoader())).withCloseable { fs ->
 			new ZipFile(archive).withCloseable { zipFile ->
@@ -125,7 +122,7 @@ class FSM extends Jar {
 
 	protected String filterModuleXml(String unfilteredModuleXml, String resourcesTags, String componentTags) {
 		String filteredModuleXml = unfilteredModuleXml.replace('$name', project.name.toString())
-		filteredModuleXml = filteredModuleXml.replace('$displayName', project.displayName?.toString() ?: project.name.toString())
+		filteredModuleXml = filteredModuleXml.replace('$displayName', pluginExtension.displayName?.toString() ?: project.name.toString())
 		filteredModuleXml = filteredModuleXml.replace('$version', project.version.toString())
 		filteredModuleXml = filteredModuleXml.replace('$description', project.description?.toString() ?: project.name.toString())
 		filteredModuleXml = filteredModuleXml.replace('$artifact', project.jar.archiveName.toString())
@@ -214,13 +211,21 @@ class FSM extends Jar {
 	}
 
     /**
+     * Sets the human-readable name of the module.
+     *
+     * @param displayName the human-readable name of the module
+     */
+    void setDisplayName(String displayName) {
+        pluginExtension.displayName = displayName
+    }
+
+    /**
      * Sets the classloading mode for all resources which do not explicitly set another mode.
      *
      * @param mode the classloading mode
      */
-    void setResourceMode(String resourceMode) {
-        this.resourceMode = ModuleInfo.Mode.valueOf(resourceMode.toUpperCase(Locale.ROOT))
-		pluginExtension.resourceMode = this.resourceMode
+    void setResourceMode(ModuleInfo.Mode resourceMode) {
+		pluginExtension.resourceMode = resourceMode
     }
 
 }

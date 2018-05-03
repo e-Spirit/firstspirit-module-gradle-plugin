@@ -25,8 +25,13 @@ class FSMPluginExtension {
 	String archivePath
 	String archiveName
 
+	/**
+	 * Human-readable display name of the module
+	 */
+	String displayName
+
     /**
-     * If set, this classloader isolation mode is used for all resource
+     * If set, this classloader isolation mode is used for all resources
      */
     ModuleInfo.Mode resourceMode
 
