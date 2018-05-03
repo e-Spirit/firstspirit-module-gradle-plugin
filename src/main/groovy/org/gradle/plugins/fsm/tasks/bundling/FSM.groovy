@@ -66,11 +66,16 @@ class FSM extends Jar {
 				classpath ? classpath.filter { File file -> file.isFile() } : []
 			}
 		}
+
 		into('/') {
 			from("src/main/resources") {
 				include("**/*")
 			}
 		}
+
+        into('/files') {
+            from('src/main/files')
+        }
 
 		configure {
 			metaInf {
@@ -86,11 +91,9 @@ class FSM extends Jar {
 		File archive = getArchivePath()
 		getLogger().info("Found archive ${archive.getPath()}")
 
-		def resourcesTags = getResourcesTags(project.configurations, resourceMode)
+		def resourcesTags = getResourcesTags(project, resourceMode)
 
-		URI uri = archive.toURI()
-
-		(FileSystems.newFileSystem(Paths.get(uri), getClass().getClassLoader())).withCloseable { fs ->
+		(FileSystems.newFileSystem(archive.toPath(), getClass().getClassLoader())).withCloseable { fs ->
 			new ZipFile(archive).withCloseable { zipFile ->
 				def unfilteredModuleXml
 

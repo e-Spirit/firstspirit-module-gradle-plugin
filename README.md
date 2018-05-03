@@ -75,6 +75,11 @@ The annotations should be self explanatory. If a component doesn't provide annot
 You could add tags to your module.xml template by hand in this case. Please note, if you are using an @WebAppComponent annotation with 
 a webXml attribute, you need to have a matching file inside your project. Otherwise your .fsm cannot be installed on the FirstSpirit server.
 
+### Resources by convention
+
+The Jar file resulting from the Java Plugin is included in the module.xml as `${project.name}-lib` with the given group id and version.
+Additionally, files in `src/main/files` will be placed in the `/files` directory of the FSM with a resource definition named `${project.name}-files`. 
+
 ### Examples
 
 #### module.xml example

@@ -15,11 +15,13 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
+import de.espirit.firstspirit.server.module.ModuleInfo
 import org.apache.commons.io.IOUtils
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 
 import java.nio.charset.StandardCharsets
+import java.nio.file.Files
 import java.nio.file.Path
 
 import org.gradle.api.Project
@@ -78,10 +80,32 @@ class FSMTest {
     void useGlobalClassloaderIsolationMode() {
         project.repositories.add(project.getRepositories().mavenCentral())
         project.dependencies.add("fsModuleCompile", "com.google.guava:guava:24.0-jre")
-        fsm.resourceMode = 'isolated'
+        fsm.resourceMode = ModuleInfo.Mode.ISOLATED
 
         fsm.execute()
 
+        assertThat(moduleXml()).contains("""<resource name="com.google.guava.guava" scope="module" mode="isolated" version="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
+    }
+
+    @Test
+    void staticFilesResource() {
+        Path filesDir = fsm.project.file('src/main/files').toPath()
+        Files.createDirectories(filesDir)
+        Files.write(filesDir.resolve("testFile"), "Test".getBytes(StandardCharsets.UTF_8))
+
+        fsm.execute()
+
+        assertThat(moduleXml()).contains("""<resource name=":test-files" version="unspecified">files/</resource>""")
+    }
+
+    @Test
+    void noStaticFilesResource() {
+        fsm.execute()
+
+        assertThat(moduleXml()).doesNotContain(":test-files")
+    }
+
+    private String moduleXml() {
         final Path fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.archiveName)
         assertThat(fsmFile).exists()
         final ZipFile zipFile = new ZipFile(fsmFile.toFile())
@@ -89,8 +113,7 @@ class FSMTest {
             ZipEntry moduleXmlEntry = zipFile.getEntry("META-INF/module.xml")
             assertThat(moduleXmlEntry).isNotNull()
             zipFile.getInputStream(moduleXmlEntry).withCloseable {
-                final String moduleXml = IOUtils.toString(it, StandardCharsets.UTF_8)
-                assertThat(moduleXml).contains("""<resource name="com.google.guava.guava" scope="module" mode="isolated" version="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
+                return IOUtils.toString(it, StandardCharsets.UTF_8)
             }
         }
     }
