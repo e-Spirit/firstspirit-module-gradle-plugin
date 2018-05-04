@@ -3,9 +3,14 @@ package org.gradle.plugins.fsm
 import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
 import com.espirit.moddev.components.annotations.Resource
+import com.espirit.moddev.components.annotations.ScheduleTaskComponent
 import com.espirit.moddev.components.annotations.WebAppComponent
+import de.espirit.firstspirit.agency.SpecialistsBroker
 import de.espirit.firstspirit.module.Configuration
+import de.espirit.firstspirit.module.ScheduleTaskSpecification
 import de.espirit.firstspirit.module.ServerEnvironment
+import de.espirit.firstspirit.scheduling.ScheduleTaskForm
+import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
 import de.espirit.firstspirit.server.module.ModuleInfo
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -23,7 +28,8 @@ import static org.mockito.Mockito.when
 
 class XmlTagAppenderTest {
 
-    List<String> componentImplementingClasses = [TestPublicComponent.getName(), TestWebAppComponent.getName(), TestProjectAppComponent.getName()]
+    List<String> componentImplementingClasses = [TestPublicComponent.getName(), TestWebAppComponent.getName(), TestProjectAppComponent.getName(),
+                                                 TestScheduleTaskComponentWithForm.getName(), TestScheduleTaskComponentWithoutForm.getName()]
     List<String> validAndInvalidProjectAppClasses = [XmlTagAppender.PROJECT_APP_BLACKLIST, componentImplementingClasses].flatten()
 
     Project project
@@ -46,6 +52,39 @@ class XmlTagAppenderTest {
     <name>TestPublicComponentName</name>
     <displayname>TestDisplayName</displayname>
     <class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestPublicComponent</class>
+</public>""", result.toString())
+    }
+
+    @Test
+    void testScheduleTaskComponentTagAppendingWithForm() {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendScheduleTaskComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestScheduleTaskComponentWithForm.getName()], result)
+
+        Assert.assertEquals("""
+<public>
+    <name>Test task</name>
+    <description>A task for test purpose</description>
+    <class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
+    <configuration>
+        <application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithForm</application>
+        <form>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskFormFactory</form>
+    </configuration>
+</public>""", result.toString())
+    }
+
+    @Test
+    void testScheduleTaskComponentTagAppendingWithoutForm() {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendScheduleTaskComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()),[TestScheduleTaskComponentWithoutForm.getName()], result)
+
+        Assert.assertEquals("""
+<public>
+    <name>Test task</name>
+    <description>A task for test purpose</description>
+    <class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
+    <configuration>
+        <application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithoutForm</application>
+    </configuration>
 </public>""", result.toString())
     }
 
@@ -122,6 +161,24 @@ class XmlTagAppenderTest {
     }
     @PublicComponent(name = "TestPublicComponentName", displayName = "TestDisplayName")
     static class TestPublicComponent {
+    }
+
+    @ScheduleTaskComponent(taskName = "Test task", description = "A task for test purpose")
+    static class TestScheduleTaskComponentWithoutForm {
+
+    }
+
+    @ScheduleTaskComponent(taskName = "Test task", description = "A task for test purpose", formClass = TestScheduleTaskFormFactory.class )
+    static class TestScheduleTaskComponentWithForm {
+
+    }
+
+    static class TestScheduleTaskFormFactory implements ScheduleTaskFormFactory {
+
+        @Override
+        ScheduleTaskForm createForm(final SpecialistsBroker specialistsBroker) {
+            return null
+        }
     }
 
     static class TestConfigurable implements Configuration<ServerEnvironment> {
