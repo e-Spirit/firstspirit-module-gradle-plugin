@@ -75,6 +75,20 @@ The annotations should be self explanatory. If a component doesn't provide annot
 You could add tags to your module.xml template by hand in this case. Please note, if you are using an @WebAppComponent annotation with 
 a webXml attribute, you need to have a matching file inside your project. Otherwise your .fsm cannot be installed on the FirstSpirit server.
 
+#### Special case for server plugins
+
+If the <code>@ScheduleTaskComponent</code> annotation is used, some things need to be considered. For serialization purpose it is required to have the class which implements
+the <code>ScheduleTaskData</code> interface in server scope. Most of the time this class is part of the project which uses the fsmgradleplugin and therefore part of the generated jar which
+is <u>NOT</u> in server scope. To make this work the following can be done.
+
+<ul>
+<li>Make an extra subproject for the sources which should be in server scope</li>
+<li>Put <code>include 'SubProject'</code> or <code>include 'SubProject:SubSubProject'</code> (if there is more than one level of subprojects) in your <code>settings.gradle</code></li>
+<li>Put <code>fsServerCompile project(:'SubProject')</code> or <code>fsServerCompile project(':SubProject:SubSubProject')</code> in the <code>build.gradle</code> file of your fsm generating module. (See "Dependency management" below for more details about dependency configurations)</li>
+</ul>
+
+With this a <code>.fsm</code> file is generated which includes a jar with all the classes which are needed in server scope and the module.xml with the corresponding resource entry.
+
 ### Resources by convention
 
 The Jar file resulting from the Java Plugin is included in the module.xml as `${project.name}-lib` with the given group id and version.
