@@ -16,8 +16,10 @@
 package org.gradle.plugins.fsm.tasks.bundling
 
 import com.espirit.moddev.components.annotations.PublicComponent
+import com.espirit.moddev.components.annotations.ScheduleTaskComponent
 import de.espirit.firstspirit.module.ProjectApp
 import de.espirit.firstspirit.module.WebApp
+import de.espirit.firstspirit.scheduling.ScheduleTaskForm
 import de.espirit.firstspirit.server.module.ModuleInfo
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
 import org.gradle.api.file.FileCollection
@@ -146,6 +148,8 @@ class FSM extends Jar {
 				appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result)
 
 				appendPublicComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(PublicComponent), result)
+
+				appendScheduleTaskComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(ScheduleTaskComponent), result)
 
 			} catch (MalformedURLException e) {
 				getLogger().error("Passed URL is malformed", e)

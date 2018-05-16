@@ -2,9 +2,12 @@ package org.gradle.plugins.fsm
 
 import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
+import com.espirit.moddev.components.annotations.ScheduleTaskComponent
 import com.espirit.moddev.components.annotations.WebAppComponent
 import de.espirit.firstspirit.module.Configuration
+import de.espirit.firstspirit.module.ScheduleTaskSpecification
 import de.espirit.firstspirit.module.descriptor.WebAppDescriptor
+import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
 import de.espirit.firstspirit.server.module.ModuleInfo
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
@@ -40,6 +43,45 @@ class XmlTagAppender {
     <name>${evaluateAnnotation(annotation, "name")}</name>
     <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
     <class>${publicComponentClass.getName().toString()}</class>
+</public>""")
+
+                }
+        }
+    }
+
+
+    @CompileStatic
+    static void appendScheduleTaskComponentTags(URLClassLoader cl, List<String> scheduleTaskComponentClasses, StringBuilder result) {
+        def loadedClasses = scheduleTaskComponentClasses.collect { cl.loadClass(it) }
+        appendScheduleTaskComponentTagsOfClasses(loadedClasses, result)
+    }
+
+    private static appendScheduleTaskComponentTagsOfClasses(List<Class<?>> loadedClasses, StringBuilder result) {
+        loadedClasses.forEach {
+            scheduleTaskComponentClass ->
+                Arrays.asList(scheduleTaskComponentClass.annotations)
+                .findAll { it instanceof ScheduleTaskComponent }
+                .forEach { annotation ->
+
+                    result.append("""
+<public>
+    <name>${evaluateAnnotation(annotation, "taskName")}</name>
+    <description>${evaluateAnnotation(annotation, "description")}</description>
+    <class>${ScheduleTaskSpecification.getName()}</class>
+    <configuration>
+        <application>${scheduleTaskComponentClass.getName()}</application>""")
+
+                    Object o = evaluateAnnotation(annotation, "formClass")
+                    /*
+                    * The default interface ScheduleTaskFormFactory should
+                    * not be written in the xml so it gets filtered.
+                    */
+                    if( o != ScheduleTaskFormFactory) {
+                        result.append("""
+        <form>${o.getName()}</form>""")
+                    }
+                    result.append("""
+    </configuration>
 </public>""")
 
                 }
