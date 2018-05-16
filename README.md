@@ -106,14 +106,11 @@ Additionally, files in `src/main/files` will be placed in the `/files` directory
     <description>$description</description>
     <components>
 $components
-        <library>
-        <name>$name-library</name>
-            <resources>
-                <resource>lib/$artifact</resource>
-$resources
-            </resources>
-        </library>
     </components>
+    <resources>
+        <resource>lib/$artifact</resource>
+$resources
+    </resources>
 </module>
 ```
 

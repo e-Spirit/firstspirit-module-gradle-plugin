@@ -83,17 +83,7 @@ class FSMTest {
 
 		fsm.execute()
 
-		final Path fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.archiveName)
-		assertThat(fsmFile).exists()
-		final ZipFile zipFile = new ZipFile(fsmFile.toFile())
-		zipFile.withCloseable {
-			ZipEntry moduleXmlEntry = zipFile.getEntry("META-INF/module.xml")
-			assertThat(moduleXmlEntry).isNotNull()
-			zipFile.getInputStream(moduleXmlEntry).withCloseable {
-				final String moduleXml = IOUtils.toString(it, StandardCharsets.UTF_8)
-				assertThat(moduleXml).contains("""<displayname>${displayName}</displayname>""")
-			}
-		}
+		assertThat(moduleXml()).contains("""<displayname>${displayName}</displayname>""")
 	}
 
     @Test

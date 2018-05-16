@@ -12,19 +12,14 @@
 			TODO: auto-generate entries
 		-->
 		
-		<!-- 
-			example
-		 -->
-		<library>
-			<name></name>
-			<description></description>
-			<resources>
-				<!-- production code  -->
-				<resource>lib/$artifact</resource>
-				
-				<!-- example of an included JAR (TODO: auto-generate) -->
-				<resource name="joda-time" version="2.3">lib/joda-time-2.3.jar</resource>
-			</resources>
-		</library>
 	</components>
+
+	<resources>
+		<!-- production code  -->
+		<resource>lib/$artifact</resource>
+
+		<!-- example of an included JAR (TODO: auto-generate) -->
+		<resource name="joda-time" version="2.3">lib/joda-time-2.3.jar</resource>
+	</resources>
+
 </module>
