@@ -34,9 +34,15 @@ class XmlTagAppenderTest {
 
     Project project
 
+    private static final String NAME = "webapps-test-project"
+    private static final String GROUP = "test"
+    private static final String VERSION = "1.2"
+
     @Before
     void setUp() {
-        project = ProjectBuilder.builder().withName("webapps-test-project").build()
+        project = ProjectBuilder.builder().withName(NAME).build()
+        project.setGroup(GROUP)
+        project.setVersion(VERSION)
         project.repositories.add(project.repositories.mavenCentral())
         project.pluginManager.apply(FSMPlugin)
         project.dependencies.add(FSMPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, "joda-time:joda-time:2.3")
@@ -141,6 +147,12 @@ class XmlTagAppenderTest {
 
         String result = XmlTagAppender.getResourceTagForDependency(moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED)
         Assert.assertEquals("""<resource name="mygroup.myname" scope="server" mode="isolated" version="1.0.0">lib/myname-1.0.0.jar</resource>""", result)
+    }
+
+    @Test
+    void getResourcesTags() {
+        String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED)
+        Assert.assertEquals("""<resource name="$GROUP:$NAME-lib" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>""".toString(), result)
     }
 
     @ProjectAppComponent(name = "TestProjectAppComponentName",
