@@ -108,13 +108,13 @@ class XmlTagAppenderTest {
     <configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
     <web-xml>/test/web.xml</web-xml>
     <web-resources>
-        <resource>lib/webapps-test-project.jar</resource>
+        <resource>lib/$NAME-${VERSION}.jar</resource>
         <resource>/test/web.xml</resource>
         <resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
         <resource name="joda-time.joda-time" version="2.3">lib/joda-time-2.3.jar</resource>
     </web-resources>
 </web-app>
-""", result.toString())
+""".toString(), result.toString())
     }
 
     @Test
