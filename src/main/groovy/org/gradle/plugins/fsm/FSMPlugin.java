@@ -17,6 +17,7 @@ package org.gradle.plugins.fsm;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
@@ -24,11 +25,14 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.artifacts.publish.ArchivePublishArtifact;
 import org.gradle.api.internal.plugins.DefaultArtifactPublicationSet;
 import org.gradle.api.plugins.BasePlugin;
+import org.gradle.api.plugins.JavaBasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.Jar;
+import org.gradle.language.base.plugins.LifecycleBasePlugin;
 import org.gradle.plugins.fsm.tasks.bundling.FSM;
+import org.gradle.plugins.fsm.tasks.verification.IsolationCheck;
 
 import java.util.concurrent.Callable;
 
@@ -37,8 +41,9 @@ import java.util.concurrent.Callable;
  */
 public class FSMPlugin implements Plugin<Project> {
 
-    static final String NAME = "fsmgradleplugin";
-    static final String FSM_TASK_NAME = "fsm";
+    public static final String NAME = "fsmgradleplugin";
+    public static final String FSM_TASK_NAME = "fsm";
+    public static final String ISOLATION_CHECK_TASK_NAME = "isolationCheck";
 
     static final String PROVIDED_COMPILE_CONFIGURATION_NAME = "fsProvidedCompile";
     static final String PROVIDED_RUNTIME_CONFIGURATION_NAME = "fsProvidedRuntime";
@@ -54,8 +59,12 @@ public class FSMPlugin implements Plugin<Project> {
 
         project.getPlugins().apply(JavaPlugin.class);
 
-        FSM fsm = configureTask(project);
+        FSM fsm = configureFsmTask(project);
         fsmPluginExtension.setArchivePath(fsm.getArchivePath().getPath());
+
+        IsolationCheck isolationCheck = configureIsolationCheckTask(project, fsm);
+        Task checkTask = project.getTasksByName(JavaBasePlugin.CHECK_TASK_NAME, false).iterator().next();
+        checkTask.dependsOn(isolationCheck);
 
         configureConfigurations(project.getConfigurations());
         project.getPlugins().apply(JavaPlugin.class);
@@ -63,7 +72,7 @@ public class FSMPlugin implements Plugin<Project> {
         configureJarTask(project);
     }
 
-    private FSM configureTask(final Project project) {
+    private FSM configureFsmTask(final Project project) {
 
         FSM fsm = project.getTasks().create(FSM_TASK_NAME, FSM.class);
         fsm.setDescription("Assembles a fsm archive containing the FirstSpirit module.");
@@ -147,6 +156,18 @@ public class FSMPlugin implements Plugin<Project> {
                 .extendsFrom(fsServerCompileConfiguration)
                 .extendsFrom(fsModuleCompileConfiguration)
                 .extendsFrom(fsWebCompileConfiguration);
+    }
+
+    private IsolationCheck configureIsolationCheckTask(final Project project, final FSM fsmTask) {
+        IsolationCheck isolationCheck = project.getTasks().create(ISOLATION_CHECK_TASK_NAME, IsolationCheck.class);
+        isolationCheck.setDescription("Verifies the isolation of resources in the FSM.");
+        isolationCheck.setGroup(LifecycleBasePlugin.VERIFICATION_GROUP);
+        isolationCheck.getInputs().file(fsmTask.getOutputs().getFiles().getSingleFile());
+
+        Task checkTask = project.getTasksByName(JavaBasePlugin.CHECK_TASK_NAME, false).iterator().next();
+        checkTask.dependsOn(isolationCheck);
+
+        return isolationCheck;
     }
 
     private void configureJarTask(Project project) {

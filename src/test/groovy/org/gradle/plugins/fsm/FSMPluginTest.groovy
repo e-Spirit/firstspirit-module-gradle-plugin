@@ -15,6 +15,8 @@
  */
 package org.gradle.plugins.fsm
 
+import org.gradle.api.plugins.JavaBasePlugin
+
 import static org.gradle.plugins.fsm.util.Matchers.*
 import static org.gradle.plugins.fsm.util.TestUtil.getNames
 import static org.hamcrest.Matchers.*
@@ -27,10 +29,8 @@ import org.gradle.api.artifacts.Dependency
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.plugins.fsm.tasks.bundling.FSM
-import org.gradle.plugins.fsm.util.TestUtil
 import org.gradle.testfixtures.ProjectBuilder
 import org.gradle.util.WrapUtil
-import org.hamcrest.core.IsNot;
 import org.junit.Before
 import org.junit.Test
 
@@ -40,7 +40,7 @@ class FSMPluginTest {
 	FSMPlugin fsmPlugin
 
 	@Before
-	public void setUp() {
+	void setUp() {
 		project = ProjectBuilder.builder().build()
 		fsmPlugin = new FSMPlugin()
 	}
@@ -80,6 +80,25 @@ class FSMPluginTest {
 		Task assemble = project.tasks[BasePlugin.ASSEMBLE_TASK_NAME]
 		assertThat(assemble, dependsOn(FSMPlugin.FSM_TASK_NAME))
 	}
+
+	@Test
+	void checkTaskDependsOnIsolationCheckTask() {
+		project.apply plugin: FSMPlugin.NAME
+
+		Task check = project.tasks[JavaBasePlugin.CHECK_TASK_NAME]
+		assertThat(check, dependsOn(JavaPlugin.TEST_TASK_NAME, FSMPlugin.ISOLATION_CHECK_TASK_NAME))
+	}
+
+    @Test
+    void isolationCheckTaskUsesFsmOutputAsInput() {
+        project.apply plugin: FSMPlugin.NAME
+
+        Task fsm = project.tasks[FSMPlugin.FSM_TASK_NAME]
+        File jarFile = fsm.outputs.files.singleFile
+        Task isolationCheck = project.tasks[FSMPlugin.ISOLATION_CHECK_TASK_NAME]
+
+        assertThat(isolationCheck.inputs.files.singleFile, equalTo(jarFile))
+    }
 
 	@Test
 	void replacesJarAsPublication() {

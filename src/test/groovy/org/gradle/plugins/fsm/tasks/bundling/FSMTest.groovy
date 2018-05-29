@@ -51,8 +51,8 @@ class FSMTest {
 
 		project = ProjectBuilder.builder().withProjectDir(testDir).build()
 		project.apply plugin: FSMPlugin.NAME
-		
-		fsm = project.tasks[FSMPlugin.FSM_TASK_NAME]
+
+		fsm = project.tasks[FSMPlugin.FSM_TASK_NAME] as FSM
 		
 		fsm.baseName = 'testbasename'
 		fsm.appendix = 'testappendix'

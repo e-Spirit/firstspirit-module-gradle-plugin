@@ -16,6 +16,7 @@
 package org.gradle.plugins.fsm
 
 import de.espirit.firstspirit.server.module.ModuleInfo
+import org.gradle.plugins.fsm.tasks.verification.IsolationLevel
 
 class FSMPluginExtension {
 	/**
@@ -34,5 +35,21 @@ class FSMPluginExtension {
      * If set, this classloader isolation mode is used for all resources
      */
     ModuleInfo.Mode resourceMode
+
+    /**
+     * If set, this URL is used to connect to the FSM Dependency Detector
+     */
+    String isolationDetectorUrl
+
+    /**
+     * Isolation level to check for if {#link isolationDetectorUrl} is set.
+     * Defaults to {@link IsolationLevel#RUNTIME_USAGE}
+     */
+    IsolationLevel isolationLevel
+
+    /**
+     * The FirstSpirit version to check against with the isolation detector service.
+     */
+    String firstSpiritVersion
 
 }

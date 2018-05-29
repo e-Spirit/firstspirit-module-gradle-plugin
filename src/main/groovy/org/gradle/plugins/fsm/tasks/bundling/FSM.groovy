@@ -19,7 +19,6 @@ import com.espirit.moddev.components.annotations.PublicComponent
 import com.espirit.moddev.components.annotations.ScheduleTaskComponent
 import de.espirit.firstspirit.module.ProjectApp
 import de.espirit.firstspirit.module.WebApp
-import de.espirit.firstspirit.scheduling.ScheduleTaskForm
 import de.espirit.firstspirit.server.module.ModuleInfo
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
 import org.gradle.api.file.FileCollection
@@ -29,6 +28,7 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.classloader.JarClassLoader
+import org.gradle.plugins.fsm.tasks.verification.IsolationLevel
 import org.gradle.plugins.fsm.zip.UnzipUtility
 
 import java.nio.charset.StandardCharsets
@@ -231,5 +231,33 @@ class FSM extends Jar {
     void setResourceMode(ModuleInfo.Mode resourceMode) {
 		pluginExtension.resourceMode = resourceMode
     }
+
+	/**
+	 * Set the URL which is used to connect to the FSM Dependency Detector.
+     *
+     * @param the url to the detector service. If {@code null} or empty, no detection is performed.
+	 */
+	void setIsolationDetectorUrl(String isolationDetectorUrl) {
+		pluginExtension.isolationDetectorUrl = isolationDetectorUrl
+	}
+
+    /**
+     * Isolation level to check for if {#link isolationDetectorUrl} is set.
+     * Defaults to {@link IsolationLevel#RUNTIME_USAGE}
+     *
+     * @param the isolation level to check for, must not be {@code null},
+     */
+	void setIsolationLevel(IsolationLevel isolationLevel) {
+		pluginExtension.isolationLevel = isolationLevel
+	}
+
+    /**
+     * Sets the FirstSpirit version to check against with the isolation detector service.
+     *
+     * @param firstSpiritVersion The FirstSpirit version, e.g. "5.2.2109". Must not be {@code null}.
+     */
+	void setFirstSpiritVersion(String firstSpiritVersion) {
+		pluginExtension.firstSpiritVersion = firstSpiritVersion
+	}
 
 }

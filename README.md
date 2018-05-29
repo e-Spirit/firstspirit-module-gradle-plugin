@@ -25,7 +25,8 @@ The plugin defines the following tasks:
 
 Task | Depends on | Type | Description
 :---:|:----------:|:----:| -----------
-fsm  | jar        | FSM  | Assembles a fsm archive containing the FirstSpirit module.
+fsm            | jar    | FSM             | Assembles an fsm archive containing the FirstSpirit module.
+isolationCheck | fsm    | IsolationCheck  | Checks the FSM using an FSM Dependency Detector web service.
 
 ## Extension properties
 
@@ -33,7 +34,12 @@ The plugin defines the following extension properties in the `fsm` closure:
 
 Property | Type | Default | Description
 :-------:|:----:|:-------:| -----------
-moduleDirName  | String        | src/main/resources  |  The name of the directory containing the module.xml, relative to the project directory.
+displayName          | String        | *unset*             |  Human-readable name of the module
+moduleDirName        | String        | src/main/resources  |  The name of the directory containing the module.xml, relative to the project directory.
+resourceMode         | Mode          | *unset*             |  Resource mode (legacy, isolated) used for all resources
+isolationDetectorUrl | String        | *unset*             |  If set, this URL is used to connect to the FSM Dependency Detector
+isolationLevel       | String        | RUNTIME_USAGE       |  Isolation level to check for if isolationDetectorUrl is set
+firstSpiritVersion   | String        | *unset*             |  FirstSpirit version used in the isolation check
 
 ### Example
 
@@ -41,6 +47,9 @@ moduleDirName  | String        | src/main/resources  |  The name of the director
 fsm {
     // set a different directory containing the module.xml
     moduleDirName = 'src/main/module'
+    resourceMode = ISOLATED
+    isolationDetectorUrl = 'https://...'
+    firstSpiritVersion = '5.2.2109'
 }
 ```
 
@@ -165,6 +174,25 @@ dependencies {
 }
 ```
 
+## Working with isolated resources
+
+Resources declared as "isolated" have less classpath conflicts because they share a
+classpath with classes available in the isolated runtime (in contrast to all classes
+available in the access jar). Isolated resources are only available if the FirstSpirit
+server is started in "isolation mode".
+
+To declare all resource as legacy or isolated, use the `resourceMode` extension property.
+
+It is possible to check the resulting module file for isolation errors. This requires
+access to an *FSM Depedency Detector* web service and can be configured using the
+extension properties as explained above. Valid values for the isolation level are:
+
+name | Description
+-----|------------
+IMPL_USAGE | The build fails only if classes are used which are not part of the isolated runtime
+RUNTIME_USAGE | The build fails if classes are not part of the public API (also includes IMPL_USAGE). This is the default setting.
+DEPRECATED_API_USAGE | The build fails if deprecated API is used (also includes RUNTIME_USAGE and IMPL_USAGE)
+
 ## IDE support
 
 ### IntelliJ
@@ -202,8 +230,8 @@ You can use the following snippet as a starting point:
 ```groovy
 buildscript {
     dependencies {
-        classpath 'com.espirit.moddev:fsmgradleplugin:0.10.7'
-        classpath 'de.espirit.firstspirit:fs-isolated-runtime:5.2.1306'
+        classpath 'com.espirit.moddev:fsmgradleplugin:0.10.15'
+        classpath 'de.espirit.firstspirit:fs-isolated-runtime:5.2.2109'
     }
 }
 apply plugin: 'fsmgradleplugin'
@@ -220,7 +248,7 @@ dependencies {
 
 	fsProvidedCompile 'commons-logging:commons-logging:1.1.3'
 
-    fsProvidedCompile 'de.espirit.firstspirit:fs-access:5.2.1306'
+    fsProvidedCompile 'de.espirit.firstspirit:fs-access:5.2.2109'
 
 	testCompile 'junit:junit:4.12'
 
