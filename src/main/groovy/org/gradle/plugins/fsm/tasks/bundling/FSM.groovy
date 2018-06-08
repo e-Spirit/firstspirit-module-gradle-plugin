@@ -127,6 +127,7 @@ class FSM extends Jar {
 		filteredModuleXml = filteredModuleXml.replace('$displayName', pluginExtension.displayName?.toString() ?: project.name.toString())
 		filteredModuleXml = filteredModuleXml.replace('$version', project.version.toString())
 		filteredModuleXml = filteredModuleXml.replace('$description', project.description?.toString() ?: project.name.toString())
+        filteredModuleXml = filteredModuleXml.replace('$vendor', pluginExtension.vendor.toString())
 		filteredModuleXml = filteredModuleXml.replace('$artifact', project.jar.archiveName.toString())
 		filteredModuleXml = filteredModuleXml.replace('$resources', resourcesTags)
 		filteredModuleXml = filteredModuleXml.replace('$components', componentTags)
@@ -222,6 +223,15 @@ class FSM extends Jar {
     void setDisplayName(String displayName) {
         pluginExtension.displayName = displayName
     }
+
+	/**
+	 * Sets the vendor who is responsible for the module
+	 *
+	 * @param vendor the vendor of the module
+	 */
+	void setVendor(String vendor) {
+		pluginExtension.vendor = vendor
+	}
 
     /**
      * Sets the classloading mode for all resources which do not explicitly set another mode.

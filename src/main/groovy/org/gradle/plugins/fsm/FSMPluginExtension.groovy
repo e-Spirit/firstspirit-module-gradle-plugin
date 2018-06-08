@@ -31,6 +31,11 @@ class FSMPluginExtension {
 	 */
 	String displayName
 
+	/**
+	 * Responsible vendor of the module
+	 */
+	String vendor
+
     /**
      * If set, this classloader isolation mode is used for all resources
      */

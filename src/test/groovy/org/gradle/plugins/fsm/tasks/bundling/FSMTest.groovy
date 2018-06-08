@@ -87,6 +87,16 @@ class FSMTest {
 	}
 
     @Test
+    void vendor() {
+        String vendor = "ACME"
+        fsm.vendor = vendor
+
+        fsm.execute()
+
+        assertThat(moduleXml()).contains("""<vendor>${vendor}</vendor>""")
+    }
+
+    @Test
     void useGlobalClassloaderIsolationMode() {
         project.repositories.add(project.getRepositories().mavenCentral())
         project.dependencies.add("fsModuleCompile", "com.google.guava:guava:24.0-jre")

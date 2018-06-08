@@ -4,6 +4,7 @@
     <displayname>$displayName</displayname>
     <version>$version</version>
     <description>$description</description>
+    <vendor>$vendor</vendor>
     <components>
 
 $components
