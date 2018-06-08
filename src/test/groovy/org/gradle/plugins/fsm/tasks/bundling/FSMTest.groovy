@@ -104,7 +104,7 @@ class FSMTest {
 
         fsm.execute()
 
-        assertThat(moduleXml()).contains("""<resource name="com.google.guava.guava" scope="module" mode="isolated" version="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
+        assertThat(moduleXml()).contains("""<resource name="com.google.guava:guava" scope="module" mode="isolated" version="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
     }
 
     @Test
