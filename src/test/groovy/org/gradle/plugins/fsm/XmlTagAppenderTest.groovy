@@ -111,7 +111,7 @@ class XmlTagAppenderTest {
         <resource>lib/$NAME-${VERSION}.jar</resource>
         <resource>/test/web.xml</resource>
         <resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
-        <resource name="joda-time.joda-time" version="2.3">lib/joda-time-2.3.jar</resource>
+        <resource name="joda-time:joda-time" version="2.3">lib/joda-time-2.3.jar</resource>
     </web-resources>
 </web-app>
 """.toString(), result.toString())
@@ -146,7 +146,7 @@ class XmlTagAppenderTest {
         when(moduleVersionIdentifier.version).thenReturn("1.0.0")
 
         String result = XmlTagAppender.getResourceTagForDependency(moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED)
-        Assert.assertEquals("""<resource name="mygroup.myname" scope="server" mode="isolated" version="1.0.0">lib/myname-1.0.0.jar</resource>""", result)
+        Assert.assertEquals("""<resource name="mygroup:myname" scope="server" mode="isolated" version="1.0.0">lib/myname-1.0.0.jar</resource>""", result)
     }
 
     @Test
