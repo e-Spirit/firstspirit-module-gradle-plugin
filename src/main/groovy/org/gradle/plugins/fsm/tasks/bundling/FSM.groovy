@@ -18,7 +18,9 @@ package org.gradle.plugins.fsm.tasks.bundling
 import com.espirit.moddev.components.annotations.PublicComponent
 import com.espirit.moddev.components.annotations.ScheduleTaskComponent
 import de.espirit.firstspirit.module.ProjectApp
+import de.espirit.firstspirit.module.Service
 import de.espirit.firstspirit.module.WebApp
+import groovy.xml.XmlUtil
 import de.espirit.firstspirit.server.module.ModuleInfo
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
 import org.gradle.api.file.FileCollection
@@ -102,13 +104,15 @@ class FSM extends Jar {
 
                 String filteredModuleXml = filterModuleXml(unfilteredModuleXml, resourcesTags, componentTags)
 
-                Path nf = fs.getPath("/META-INF/module.xml")
-                Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE).withCloseable {
-                    it.write(filteredModuleXml)
-                }
-            }
-        }
-    }
+				filteredModuleXml = XmlUtil.serialize(filteredModuleXml)
+
+				Path nf = fs.getPath("/META-INF/module.xml")
+				Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE).withCloseable {
+					it.write(filteredModuleXml)
+				}
+			}
+		}
+	}
 
     String getUnfilteredModuleXml(ZipFile zipFile) {
         def unfilteredModuleXml
@@ -144,7 +148,9 @@ class FSM extends Jar {
             try {
                 def scan = new FastClasspathScanner().addClassLoader(classLoader).scan()
 
-                appendProjectAppTags(classLoader, scan.getNamesOfClassesImplementing(ProjectApp), result)
+				appendServiceTags(classLoader, scan.getNamesOfClassesImplementing(Service), result)
+
+				appendProjectAppTags(classLoader, scan.getNamesOfClassesImplementing(ProjectApp), result)
 
                 appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result, appendDefaultMinVersion)
 

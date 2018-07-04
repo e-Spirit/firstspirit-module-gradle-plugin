@@ -2,6 +2,8 @@ package org.gradle.plugins.fsm
 
 import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
+import com.espirit.moddev.components.annotations.Resource
+import com.espirit.moddev.components.annotations.ServiceComponent
 import com.espirit.moddev.components.annotations.ScheduleTaskComponent
 import com.espirit.moddev.components.annotations.WebAppComponent
 import de.espirit.firstspirit.module.Configuration
@@ -168,6 +170,31 @@ class XmlTagAppender {
     <configurable>${evaluateAnnotation(annotation, "configurable").getName().toString()}</configurable>
     ${resourcesTag}
 </project-app>
+""")
+            }
+        }
+    }
+
+    @CompileStatic
+    static void appendServiceTags(URLClassLoader cl, List<String> serviceClasses, StringBuilder result) {
+        def loadedClasses = serviceClasses.collect { cl.loadClass(it) }
+
+        appendServiceTagsOfClasses(loadedClasses, result)
+    }
+
+    static appendServiceTagsOfClasses(List<Class<?>> loadedClasses, result) {
+        loadedClasses.forEach { serviceClass ->
+            Arrays.asList(serviceClass.annotations)
+                    .findAll { it.annotationType() == ServiceComponent }
+                    .forEach { annotation ->
+                result.append("""
+<service>
+    <name>${evaluateAnnotation(annotation, "name")}</name>
+    <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
+    <description>${evaluateAnnotation(annotation, "description")}</description>
+    <class>${serviceClass.getName().toString()}</class>
+    <configurable>${evaluateAnnotation(annotation, "configurable").getName().toString()}</configurable>
+</service>
 """)
             }
         }

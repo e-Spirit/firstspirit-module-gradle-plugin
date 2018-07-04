@@ -2,6 +2,7 @@ package org.gradle.plugins.fsm
 
 import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
+import com.espirit.moddev.components.annotations.ServiceComponent
 import com.espirit.moddev.components.annotations.Resource
 import com.espirit.moddev.components.annotations.ScheduleTaskComponent
 import com.espirit.moddev.components.annotations.WebAppComponent
@@ -15,6 +16,10 @@ import de.espirit.firstspirit.server.module.ModuleInfo
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
+import org.gradle.plugins.fsm.util.BaseConfiguration
+import org.gradle.plugins.fsm.util.BaseProjectApp
+import org.gradle.plugins.fsm.util.BaseService
+import org.gradle.plugins.fsm.util.BaseWebApp
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Assert
 import org.junit.Before
@@ -28,9 +33,9 @@ import static org.mockito.Mockito.when
 
 class XmlTagAppenderTest {
 
-    List<String> componentImplementingClasses = [TestPublicComponent.getName(), TestWebAppComponent.getName(), TestProjectAppComponent.getName(),
+    final List<String> componentImplementingClasses = [TestPublicComponent.getName(), TestWebAppComponent.getName(), TestProjectAppComponent.getName(),
                                                  TestScheduleTaskComponentWithForm.getName(), TestScheduleTaskComponentWithoutForm.getName()]
-    List<String> validAndInvalidProjectAppClasses = [XmlTagAppender.PROJECT_APP_BLACKLIST, componentImplementingClasses].flatten()
+    final List<String> validAndInvalidProjectAppClasses = [XmlTagAppender.PROJECT_APP_BLACKLIST, componentImplementingClasses].flatten()
 
     Project project
 
@@ -137,13 +142,25 @@ class XmlTagAppenderTest {
     }
 
     @Test
+    void appendServiceTags() throws Exception {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendServiceTags( new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestServiceComponent.getName()], result)
+
+        Assert.assertEquals("""
+<service>
+    <name>TestServiceComponentName</name>
+    <displayname>TestDisplayName</displayname>
+    <description>TestDescription</description>
+    <class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestServiceComponent</class>
+    <configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestServiceComponent\$TestConfigurable</configurable>
+</service>
+""", result.toString())
+    }
+
+    @Test
     void getResourceTagForDependency() throws Exception {
-        def resolvedArtifact = mock(ResolvedArtifact)
-        when(resolvedArtifact.extension).thenReturn("jar")
-        def moduleVersionIdentifier = mock(ModuleVersionIdentifier)
-        when(moduleVersionIdentifier.group).thenReturn("mygroup")
-        when(moduleVersionIdentifier.name).thenReturn("myname")
-        when(moduleVersionIdentifier.version).thenReturn("1.0.0")
+        ResolvedArtifact resolvedArtifact = createArtifactMock()
+        ModuleVersionIdentifier moduleVersionIdentifier = createVersionIdentifierMock("mygroup", "myname", "1.0.0")
 
         String result = XmlTagAppender.getResourceTagForDependency(moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED, true)
         Assert.assertEquals("""<resource name="mygroup:myname" scope="server" mode="isolated" version="1.0.0" minVersion="1.0.0">lib/myname-1.0.0.jar</resource>""", result)
@@ -160,7 +177,8 @@ class XmlTagAppenderTest {
             description = "TestDescription",
             configurable = TestConfigurable,
             resources = [@Resource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0")])
-    static class TestProjectAppComponent {
+    static class TestProjectAppComponent extends BaseProjectApp {
+        static class TestConfigurable extends BaseConfiguration { }
     }
 
     @WebAppComponent(name = "TestWebAppComponentName",
@@ -170,7 +188,8 @@ class XmlTagAppenderTest {
             webXml = "/test/web.xml",
             webResources = [@Resource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0"),
                             @Resource(path = "lib/commons-lang-3.0.jar", name = "org.apache.commons:commons-lang3", version = "3.0", minVersion = "2.9", maxVersion = "3.1")])
-    static class TestWebAppComponent {
+    static class TestWebAppComponent extends BaseWebApp {
+        static class TestConfigurable extends BaseConfiguration { }
     }
 
     @PublicComponent(name = "TestPublicComponentName", displayName = "TestDisplayName")
@@ -238,4 +257,30 @@ class XmlTagAppenderTest {
         }
     }
 
+
+
+    @ServiceComponent(name = "TestServiceComponentName",
+            displayName = "TestDisplayName",
+            description = "TestDescription",
+            configurable = TestConfigurable)
+    static class TestServiceComponent extends BaseService {
+        static class TestConfigurable extends BaseConfiguration { }
+
+        static class ServiceResource {}
+    }
+
+
+    private static ResolvedArtifact createArtifactMock() {
+        def resolvedArtifact = mock(ResolvedArtifact)
+        when(resolvedArtifact.extension).thenReturn("jar")
+        resolvedArtifact
+    }
+
+    private static ModuleVersionIdentifier createVersionIdentifierMock(String group, String module, String version) {
+        def moduleVersionIdentifier = mock(ModuleVersionIdentifier)
+        when(moduleVersionIdentifier.group).thenReturn(group)
+        when(moduleVersionIdentifier.name).thenReturn(module)
+        when(moduleVersionIdentifier.version).thenReturn(version)
+        moduleVersionIdentifier
+    }
 }
