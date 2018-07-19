@@ -62,7 +62,7 @@ The following placeholders in the _module.xml_ will be replaced at build time:
 Placeholder | Value | Description
 -------|-------|------------
 $name | project.name | Name of the FSM
-$displayName | project.displayName | Human-readable display name of the FSM 
+$displayName | project.name | Human-readable display name of the FSM 
 $version | project.version | Version of the FSM
 $description | project.description | Description of the FSM
 $artifact | project.jar.archiveName | Artifact (jar) name of the FSM
