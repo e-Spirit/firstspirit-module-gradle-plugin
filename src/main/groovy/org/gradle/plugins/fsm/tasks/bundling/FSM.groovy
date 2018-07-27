@@ -123,7 +123,7 @@ class FSM extends Jar {
 	}
 
 	protected String filterModuleXml(String unfilteredModuleXml, String resourcesTags, String componentTags) {
-		String filteredModuleXml = unfilteredModuleXml.replace('$name', project.name.toString())
+		String filteredModuleXml = unfilteredModuleXml.replace('$name', pluginExtension.moduleName?:project.name)
 		filteredModuleXml = filteredModuleXml.replace('$displayName', pluginExtension.displayName?.toString() ?: project.name.toString())
 		filteredModuleXml = filteredModuleXml.replace('$version', project.version.toString())
 		filteredModuleXml = filteredModuleXml.replace('$description', project.description?.toString() ?: project.name.toString())
@@ -268,6 +268,15 @@ class FSM extends Jar {
      */
 	void setFirstSpiritVersion(String firstSpiritVersion) {
 		pluginExtension.firstSpiritVersion = firstSpiritVersion
+	}
+
+	/**
+	 * Sets the name of the module. If unset or {@code null}, this defaults to the project name.
+	 *
+	 * @param moduleName The name that should be used for the module.
+	 */
+	void setModuleName(String moduleName) {
+		pluginExtension.moduleName = moduleName
 	}
 
 }

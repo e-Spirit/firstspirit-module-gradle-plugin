@@ -34,12 +34,13 @@ The plugin defines the following extension properties in the `fsm` closure:
 
 Property | Type | Default | Description
 :-------:|:----:|:-------:| -----------
-displayName          | String        | *unset*             |  Human-readable name of the module
-moduleDirName        | String        | src/main/resources  |  The name of the directory containing the module.xml, relative to the project directory.
-resourceMode         | Mode          | *unset*             |  Resource mode (legacy, isolated) used for all resources
-isolationDetectorUrl | String        | *unset*             |  If set, this URL is used to connect to the FSM Dependency Detector
-isolationLevel       | String        | RUNTIME_USAGE       |  Isolation level to check for if isolationDetectorUrl is set
-firstSpiritVersion   | String        | *unset*             |  FirstSpirit version used in the isolation check
+moduleName			 | String        | *unset* (project name)	|  The name of the module. If not set the project name is used
+displayName          | String        | *unset*             		|  Human-readable name of the module
+moduleDirName        | String        | src/main/resources  		|  The name of the directory containing the module.xml, relative to the project directory.
+resourceMode         | Mode          | *unset*             		|  Resource mode (legacy, isolated) used for all resources
+isolationDetectorUrl | String        | *unset*             		|  If set, this URL is used to connect to the FSM Dependency Detector
+isolationLevel       | String        | RUNTIME_USAGE       		|  Isolation level to check for if isolationDetectorUrl is set
+firstSpiritVersion   | String        | *unset*             		|  FirstSpirit version used in the isolation check
 
 ### Example
 
@@ -61,7 +62,7 @@ The following placeholders in the _module.xml_ will be replaced at build time:
 
 Placeholder | Value | Description
 -------|-------|------------
-$name | project.name | Name of the FSM
+$name | project.name / moduleName | Name of the FSM
 $displayName | project.name | Human-readable display name of the FSM 
 $version | project.version | Version of the FSM
 $description | project.description | Description of the FSM

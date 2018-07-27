@@ -34,6 +34,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
 import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.Mockito.spy
 
 class FSMTest {
 
@@ -84,6 +85,36 @@ class FSMTest {
 		fsm.execute()
 
 		assertThat(moduleXml()).contains("""<displayname>${displayName}</displayname>""")
+	}
+
+	@Test
+	void module_name_should_be_equal_to_project_name_if_not_set() {
+		String projectName = "MyProjectName"
+		Project myProject = ProjectBuilder.builder().withProjectDir(testDir).withName(projectName).build()
+		myProject.apply plugin: FSMPlugin.NAME
+		FSM myFSM = myProject.tasks[FSMPlugin.FSM_TASK_NAME] as FSM
+		String xml = "<module><name>\$name</name></module>"
+		String expectedXML = "<module><name>${projectName}</name></module>"
+
+		String resultXML = myFSM.filterModuleXml(xml, "", "")
+
+		assertThat(resultXML).isEqualTo(expectedXML)
+	}
+
+	@Test
+	void module_name_should_be_equal_to_set_module_name() {
+		String projectName = "MyProjectName"
+		String moduleName = "MyModule"
+		Project myProjectSpy = spy(ProjectBuilder.builder().withProjectDir(testDir).withName(projectName).build())
+		myProjectSpy.apply plugin: FSMPlugin.NAME
+		FSM myFSM = myProjectSpy.tasks[FSMPlugin.FSM_TASK_NAME] as FSM
+		myFSM.moduleName = moduleName
+		String xml = "<module><name>\$name</name></module>"
+		String expectedXML = "<module><name>${moduleName}</name></module>"
+
+		String resultXML = myFSM.filterModuleXml(xml, "", "")
+
+		assertThat(resultXML).isEqualTo(expectedXML)
 	}
 
     @Test

@@ -19,6 +19,12 @@ import de.espirit.firstspirit.server.module.ModuleInfo
 import org.gradle.plugins.fsm.tasks.verification.IsolationLevel
 
 class FSMPluginExtension {
+
+	/**
+	 * The name of the module that should be used in the module.xml instead of the project name
+	 */
+	String moduleName
+
 	/**
 	 * The name of the directory containing the module.xml, relative to the project directory.
 	 */
