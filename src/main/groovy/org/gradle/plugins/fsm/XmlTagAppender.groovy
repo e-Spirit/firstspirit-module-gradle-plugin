@@ -110,7 +110,7 @@ class XmlTagAppender {
                         webResources.append("""<resource name="${project.group}:${project.name}-files" """ +
                                             """version="${project.version}">files/</resource>\n""")
                     }
-                    addResourceTagsForDependencies(webCompileDependencies, providedCompileDependencies, webResources, "", null)
+                    addResourceTagsForDependencies(webCompileDependencies, providedCompileDependencies, webResources, "", null, false)
 
                     final String scopes = scopes(annotation.scope())
                     final String configurable = annotation.configurable() == Configuration.class ? "" : "<configurable>${annotation.configurable().name}</configurable>"
@@ -155,16 +155,18 @@ class XmlTagAppender {
             Arrays.asList(projectAppClass.annotations)
                 .findAll { it.annotationType() == ProjectAppComponent }
                 .forEach { annotation ->
+                final String resources = evaluateResources(annotation)
+                final String resourcesTag = resources.isEmpty() ? "" : """
+<resources>
+    ${resources}
+</resources>"""
                     result.append("""
 <project-app>
     <name>${evaluateAnnotation(annotation, "name")}</name>
     <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
     <description>${evaluateAnnotation(annotation, "description")}</description>
     <class>${projectAppClass.getName().toString()}</class>
-    <configurable>${evaluateAnnotation(annotation, "configurable").getName().toString()}</configurable>
-    <resources>
-        ${evaluateResources(annotation)}
-    </resources>
+    <configurable>${evaluateAnnotation(annotation, "configurable").getName().toString()}</configurable>${resourcesTag}
 </project-app>
 """)
             }
@@ -197,23 +199,24 @@ class XmlTagAppender {
         sb.toString()
     }
 
-    private static void addResourceTagsForDependencies(Set<ResolvedArtifact> dependencies, Set<ResolvedArtifact> providedCompileDependencies, StringBuilder projectResources, String scope, ModuleInfo.Mode mode) {
+    private static void addResourceTagsForDependencies(Set<ResolvedArtifact> dependencies, Set<ResolvedArtifact> providedCompileDependencies, StringBuilder projectResources, String scope, ModuleInfo.Mode mode, boolean appendDefaultMinVersion) {
         dependencies.
             findAll{ !providedCompileDependencies.contains(it) }
             .forEach {
                 ModuleVersionIdentifier dependencyId = it.moduleVersion.id
-                projectResources.append(getResourceTagForDependency(dependencyId, it, scope, mode))
+                projectResources.append(getResourceTagForDependency(dependencyId, it, scope, mode, appendDefaultMinVersion))
             }
     }
 
-    static String getResourceTagForDependency(ModuleVersionIdentifier dependencyId, ResolvedArtifact artifact, String scope, ModuleInfo.Mode mode) {
+    static String getResourceTagForDependency(ModuleVersionIdentifier dependencyId, ResolvedArtifact artifact, String scope, ModuleInfo.Mode mode, boolean appendDefaultMinVersion) {
         def scopeAttribute = scope == null || scope.isEmpty() ? "" : """ scope="${scope}\""""
         def modeAttribute = mode == null ? "" : """ mode="${mode.name().toLowerCase(Locale.ROOT)}\""""
+        def minVersionAttribute = !appendDefaultMinVersion ? "" : """ minVersion="${dependencyId.version}\""""
         """<resource name="${dependencyId.group}:${dependencyId.name}"$scopeAttribute$modeAttribute """ +
-            """version="${dependencyId.version}">lib/${dependencyId.name}-${dependencyId.version}.${artifact.extension}</resource>"""
+            """version="${dependencyId.version}"$minVersionAttribute>lib/${dependencyId.name}-${dependencyId.version}.${artifact.extension}</resource>"""
     }
 
-    static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode) {
+    static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode, boolean appendDefaultMinVersion) {
 
         def projectResources = new StringBuilder()
         def modeAttribute = globalResourcesMode == null ? "" : """mode="${globalResourcesMode.name().toLowerCase(Locale.ROOT)}\""""
@@ -229,9 +232,9 @@ class XmlTagAppender {
         Set<ResolvedArtifact> compileDependenciesModuleScoped = configurations.fsModuleCompile.getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> providedCompileDependencies = configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()
 
-        addResourceTagsForDependencies(compileDependenciesServerScoped, providedCompileDependencies, projectResources, "server", globalResourcesMode)
+        addResourceTagsForDependencies(compileDependenciesServerScoped, providedCompileDependencies, projectResources, "server", globalResourcesMode, appendDefaultMinVersion)
         projectResources + "\n"
-        addResourceTagsForDependencies(compileDependenciesModuleScoped, providedCompileDependencies, projectResources, "module", globalResourcesMode)
+        addResourceTagsForDependencies(compileDependenciesModuleScoped, providedCompileDependencies, projectResources, "module", globalResourcesMode, appendDefaultMinVersion)
         return projectResources.toString()
     }
 }

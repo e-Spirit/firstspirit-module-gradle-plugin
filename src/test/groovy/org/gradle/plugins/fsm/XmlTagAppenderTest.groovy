@@ -145,13 +145,13 @@ class XmlTagAppenderTest {
         when(moduleVersionIdentifier.name).thenReturn("myname")
         when(moduleVersionIdentifier.version).thenReturn("1.0.0")
 
-        String result = XmlTagAppender.getResourceTagForDependency(moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED)
-        Assert.assertEquals("""<resource name="mygroup:myname" scope="server" mode="isolated" version="1.0.0">lib/myname-1.0.0.jar</resource>""", result)
+        String result = XmlTagAppender.getResourceTagForDependency(moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED, true)
+        Assert.assertEquals("""<resource name="mygroup:myname" scope="server" mode="isolated" version="1.0.0" minVersion="1.0.0">lib/myname-1.0.0.jar</resource>""", result)
     }
 
     @Test
     void getResourcesTags() {
-        String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED)
+        String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED, false)
         Assert.assertEquals("""<resource name="$GROUP:$NAME" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>""".toString(), result)
     }
 

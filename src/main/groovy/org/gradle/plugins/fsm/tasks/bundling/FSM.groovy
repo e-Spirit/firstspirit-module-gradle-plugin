@@ -90,7 +90,7 @@ class FSM extends Jar {
 		File archive = getArchivePath()
 		getLogger().info("Found archive ${archive.getPath()}")
 
-		def resourcesTags = getResourcesTags(project, pluginExtension.resourceMode)
+		def resourcesTags = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion)
 
 		(FileSystems.newFileSystem(archive.toPath(), getClass().getClassLoader())).withCloseable { fs ->
 			new ZipFile(archive).withCloseable { zipFile ->

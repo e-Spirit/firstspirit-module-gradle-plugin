@@ -63,4 +63,8 @@ class FSMPluginExtension {
      */
     String firstSpiritVersion
 
+	/**
+	 * Whether to append the artifact version as the minVersion property to resources.
+	 */
+	boolean appendDefaultMinVersion
 }
