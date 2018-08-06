@@ -155,8 +155,8 @@ class XmlTagAppender {
             Arrays.asList(projectAppClass.annotations)
                 .findAll { it.annotationType() == ProjectAppComponent }
                 .forEach { annotation ->
-                final String resources = evaluateResources(annotation)
-                final String resourcesTag = resources.isEmpty() ? "" : """<resources>
+                    final String resources = evaluateResources(annotation)
+                    final String resourcesTag = resources.isEmpty() ? "" : """<resources>
         ${resources}
     </resources>"""
                     result.append("""
