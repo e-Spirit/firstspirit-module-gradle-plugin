@@ -97,7 +97,7 @@ class XmlTagAppenderTest {
     @Test
     void appendWebAppTags() throws Exception {
         StringBuilder result = new StringBuilder()
-        XmlTagAppender.appendWebAppTags(project, new URLClassLoader(new URL[0], getClass().getClassLoader()), componentImplementingClasses, result)
+        XmlTagAppender.appendWebAppTags(project, new URLClassLoader(new URL[0], getClass().getClassLoader()), componentImplementingClasses, result, true)
 
         Assert.assertEquals("""
 <web-app scopes="project,global">
@@ -110,8 +110,8 @@ class XmlTagAppenderTest {
     <web-resources>
         <resource name="$GROUP:$NAME" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
         <resource>/test/web.xml</resource>
-        <resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
-        <resource name="joda-time:joda-time" version="2.3">lib/joda-time-2.3.jar</resource>
+        <resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource><resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1">lib/commons-lang-3.0.jar</resource>
+        <resource name="joda-time:joda-time" version="2.3" minVersion="2.3">lib/joda-time-2.3.jar</resource>
     </web-resources>
 </web-app>
 """.toString(), result.toString())
@@ -168,9 +168,11 @@ class XmlTagAppenderTest {
             description = "TestDescription",
             configurable = TestConfigurable,
             webXml = "/test/web.xml",
-            webResources = [@Resource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0")])
+            webResources = [@Resource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0"),
+                            @Resource(path = "lib/commons-lang-3.0.jar", name = "org.apache.commons:commons-lang3", version = "3.0", minVersion = "2.9", maxVersion = "3.1")])
     static class TestWebAppComponent {
     }
+
     @PublicComponent(name = "TestPublicComponentName", displayName = "TestDisplayName")
     static class TestPublicComponent {
     }

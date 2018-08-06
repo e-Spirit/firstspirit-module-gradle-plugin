@@ -89,14 +89,14 @@ class XmlTagAppender {
     }
 
     @CompileStatic
-    static void appendWebAppTags(Project project, URLClassLoader cl, List<String> webAppClasses, StringBuilder result) {
+    static void appendWebAppTags(Project project, URLClassLoader cl, List<String> webAppClasses, StringBuilder result, boolean appendDefaultMinVersion) {
         List<Class<?>> loadedClasses = webAppClasses
             .collect{ cl.loadClass(it) }
 
-        appendWebAppComponentTagsOfClasses(loadedClasses, project, result)
+        appendWebAppComponentTagsOfClasses(loadedClasses, project, result, appendDefaultMinVersion)
     }
 
-    private static appendWebAppComponentTagsOfClasses(List<Class<?>> loadedClasses, Project project, result) {
+    private static appendWebAppComponentTagsOfClasses(List<Class<?>> loadedClasses, Project project, result, boolean appendDefaultMinVersion) {
         Set<ResolvedArtifact> webCompileDependencies = project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> providedCompileDependencies = project.configurations.getByName(PROVIDED_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()
 
@@ -110,7 +110,7 @@ class XmlTagAppender {
                         webResources.append("""<resource name="${project.group}:${project.name}-files" """ +
                                             """version="${project.version}">files/</resource>\n""")
                     }
-                    addResourceTagsForDependencies(webCompileDependencies, providedCompileDependencies, webResources, "", null, false)
+                    addResourceTagsForDependencies(webCompileDependencies, providedCompileDependencies, webResources, "", null, appendDefaultMinVersion)
 
                     final String scopes = scopes(annotation.scope())
                     final String configurable = annotation.configurable() == Configuration.class ? "" : "<configurable>${annotation.configurable().name}</configurable>"
@@ -156,17 +156,17 @@ class XmlTagAppender {
                 .findAll { it.annotationType() == ProjectAppComponent }
                 .forEach { annotation ->
                 final String resources = evaluateResources(annotation)
-                final String resourcesTag = resources.isEmpty() ? "" : """
-<resources>
-    ${resources}
-</resources>"""
+                final String resourcesTag = resources.isEmpty() ? "" : """<resources>
+        ${resources}
+    </resources>"""
                     result.append("""
 <project-app>
     <name>${evaluateAnnotation(annotation, "name")}</name>
     <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
     <description>${evaluateAnnotation(annotation, "description")}</description>
     <class>${projectAppClass.getName().toString()}</class>
-    <configurable>${evaluateAnnotation(annotation, "configurable").getName().toString()}</configurable>${resourcesTag}
+    <configurable>${evaluateAnnotation(annotation, "configurable").getName().toString()}</configurable>
+    ${resourcesTag}
 </project-app>
 """)
             }
@@ -182,15 +182,15 @@ class XmlTagAppender {
 
         if (annotation instanceof ProjectAppComponent) {
             annotation.resources().each {
-                final String minVersion = it.minVersion().isEmpty() ? "" : " ${it.minVersion()}"
-                final String maxVersion = it.maxVersion().isEmpty() ? "" : " ${it.maxVersion()}"
+                final String minVersion = it.minVersion().isEmpty() ? "" : """ minVersion="${it.minVersion()}\""""
+                final String maxVersion = it.maxVersion().isEmpty() ? "" : """ maxVersion="${it.maxVersion()}\""""
 
                 sb.append("""<resource name="${it.name()}" version="${it.version()}"${minVersion}${maxVersion} scope="${it.scope()}" mode="${it.mode()}">${it.path()}</resource>""")
             }
         } else if (annotation instanceof WebAppComponent) {
             annotation.webResources().each {
-                final String minVersion = it.minVersion().isEmpty() ? "" : " ${it.minVersion()}"
-                final String maxVersion = it.maxVersion().isEmpty() ? "" : " ${it.maxVersion()}"
+                final String minVersion = it.minVersion().isEmpty() ? "" : """ minVersion="${it.minVersion()}\""""
+                final String maxVersion = it.maxVersion().isEmpty() ? "" : """ maxVersion="${it.maxVersion()}\""""
 
                 sb.append("""<resource name="${it.name()}" version="${it.version()}"${minVersion}${maxVersion}>${it.path()}</resource>""")
             }

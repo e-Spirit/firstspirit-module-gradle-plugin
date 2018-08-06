@@ -98,7 +98,7 @@ class FSM extends Jar {
 
 				unfilteredModuleXml = getUnfilteredModuleXml(zipFile)
 
-				def componentTags = getComponentTags(archive)
+				def componentTags = getComponentTags(archive, pluginExtension.appendDefaultMinVersion)
 
 				String filteredModuleXml = filterModuleXml(unfilteredModuleXml, resourcesTags, componentTags)
 
@@ -135,7 +135,7 @@ class FSM extends Jar {
 		filteredModuleXml
 	}
 
-	String getComponentTags(File archive) {
+	String getComponentTags(File archive, boolean appendDefaultMinVersion) {
 		StringBuilder result = new StringBuilder()
 		File tempDir = unzipFsmToNewTempDir(archive)
 
@@ -146,7 +146,7 @@ class FSM extends Jar {
 
 				appendProjectAppTags(classLoader, scan.getNamesOfClassesImplementing(ProjectApp), result)
 
-				appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result)
+				appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result, appendDefaultMinVersion)
 
 				appendPublicComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(PublicComponent), result)
 
