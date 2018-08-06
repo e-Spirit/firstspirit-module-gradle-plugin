@@ -41,6 +41,7 @@ resourceMode         | Mode          | *unset*             		|  Resource mode (l
 isolationDetectorUrl | String        | *unset*             		|  If set, this URL is used to connect to the FSM Dependency Detector
 isolationLevel       | String        | RUNTIME_USAGE       		|  Isolation level to check for if isolationDetectorUrl is set
 firstSpiritVersion   | String        | *unset*             		|  FirstSpirit version used in the isolation check
+appendDefaultMinVersion | boolean    | false                    |  If set to true, appends the artifact version as the minVersion attribute to all resource tags (except resources which were explicitly set within FS component annotations)
 
 ### Example
 
