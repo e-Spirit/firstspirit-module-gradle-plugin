@@ -219,12 +219,12 @@ class XmlTagAppender {
     static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode, boolean appendDefaultMinVersion) {
 
         def projectResources = new StringBuilder()
-        def modeAttribute = globalResourcesMode == null ? "" : """mode="${globalResourcesMode.name().toLowerCase(Locale.ROOT)}\""""
-        projectResources.append("""<resource name="${project.group}:${project.name}" version="${project.version}" scope="module" """ +
+        def modeAttribute = globalResourcesMode == null ? "" : """ mode="${globalResourcesMode.name().toLowerCase(Locale.ROOT)}\""""
+        projectResources.append("""<resource name="${project.group}:${project.name}" version="${project.version}" scope="module\"""" +
                                 """${modeAttribute}>lib/${project.name}-${project.version}.jar</resource>"""
         )
         if (project.file('src/main/files').exists()) {
-            projectResources.append("""<resource name="${project.group}:${project.name}-files" version="${project.version}" scope="module" """ +
+            projectResources.append("""<resource name="${project.group}:${project.name}-files" version="${project.version}" scope="module\"""" +
                                     """${modeAttribute}>files/</resource>\n""")
         }
         ConfigurationContainer configurations = project.configurations

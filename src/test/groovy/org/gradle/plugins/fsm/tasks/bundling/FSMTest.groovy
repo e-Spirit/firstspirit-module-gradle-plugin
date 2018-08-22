@@ -146,7 +146,7 @@ class FSMTest {
 
         fsm.execute()
 
-        assertThat(moduleXml()).contains("""<resource name=":test-files" version="unspecified">files/</resource>""")
+        assertThat(moduleXml()).contains("""<resource name=":test-files" version="unspecified" scope="module">files/</resource>""")
     }
 
 	@Test
