@@ -224,8 +224,8 @@ class XmlTagAppender {
                                 """${modeAttribute}>lib/${project.name}-${project.version}.jar</resource>"""
         )
         if (project.file('src/main/files').exists()) {
-            projectResources.append("""<resource name="${project.group}:${project.name}-files" """ +
-                                    """version="${project.version}">files/</resource>\n""")
+            projectResources.append("""<resource name="${project.group}:${project.name}-files" version="${project.version}" scope="module" """ +
+                                    """${modeAttribute}>files/</resource>\n""")
         }
         ConfigurationContainer configurations = project.configurations
         Set<ResolvedArtifact> compileDependenciesServerScoped = configurations.fsServerCompile.getResolvedConfiguration().getResolvedArtifacts()

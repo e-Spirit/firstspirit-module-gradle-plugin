@@ -149,6 +149,18 @@ class FSMTest {
         assertThat(moduleXml()).contains("""<resource name=":test-files" version="unspecified">files/</resource>""")
     }
 
+	@Test
+	void staticIsolatedFilesResource() {
+		Path filesDir = fsm.project.file('src/main/files').toPath()
+		Files.createDirectories(filesDir)
+		Files.write(filesDir.resolve("testFile"), "Test".getBytes(StandardCharsets.UTF_8))
+		fsm.resourceMode = ModuleInfo.Mode.ISOLATED
+
+		fsm.execute()
+
+		assertThat(moduleXml()).contains("""<resource name=":test-files" version="unspecified" scope="module" mode="isolated">files/</resource>""")
+	}
+
     @Test
     void noStaticFilesResource() {
         fsm.execute()
