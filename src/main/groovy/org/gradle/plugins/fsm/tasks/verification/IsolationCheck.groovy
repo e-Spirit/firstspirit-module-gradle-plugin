@@ -1,22 +1,39 @@
 package org.gradle.plugins.fsm.tasks.verification
 
+import de.espirit.common.tools.Strings
+import de.espirit.mavenplugins.fsmchecker.ComplianceCheckUseCase
+import de.espirit.mavenplugins.fsmchecker.ComplianceLevel
+import de.espirit.mavenplugins.fsmchecker.WebServiceConnector
+import de.espirit.mavenplugins.fsmchecker.check.DefaultComplianceCheck
+import de.espirit.mavenplugins.fsmchecker.check.HighestComplianceCheck
+import de.espirit.mavenplugins.fsmchecker.check.MinimalComplianceCheck
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.TaskAction
 import org.gradle.plugins.fsm.FSMPluginExtension
 
+
+/**
+ * Checks the degree of compliance in terms of isolation a module has towards a given version of firstspirit. Depends
+ * on the Java-Implementation within the corresponding Maven-Plugin 'fsm-dependency-checker-maven-plugin'. The
+ * IsolationCheck-Task is very similar to the Mojo-Implementation 'FsmVerifier' in the above project.
+ */
 class IsolationCheck extends DefaultTask {
 
     public FSMPluginExtension pluginExtension
 
     IsolationCheck() {
         pluginExtension = project.getExtensions().getByType(FSMPluginExtension)
-        pluginExtension.isolationLevel = IsolationLevel.RUNTIME_USAGE
+        pluginExtension.complianceLevel = ComplianceLevel.DEFAULT
     }
 
     @TaskAction
     void check() {
-        if (pluginExtension.isolationDetectorUrl == null || pluginExtension.isolationDetectorUrl== "") {
+
+        def pathList = getInputs().files.files.collect { it.toPath() }
+
+        //TODO: Maybe using AbstractTask#isEnabled would be a cleaner approach.
+        if (Strings.isEmpty(pluginExtension.isolationDetectorUrl) || pathList.isEmpty()) {
             return
         }
 
@@ -25,11 +42,15 @@ class IsolationCheck extends DefaultTask {
         }
 
         final URI uri = new URI(pluginExtension.isolationDetectorUrl)
-        WebServiceConnector webServiceConnector = new WebServiceConnector(uri, pluginExtension.firstSpiritVersion, pluginExtension.isolationLevel)
-        webServiceConnector.checkFiles(new ArrayList<File>(getInputs().files.files))
 
-        if (!webServiceConnector.isResultValid()) {
-            throw new GradleException("Isolation check failed: " + webServiceConnector.resultMessage())
+        def connector = new WebServiceConnector(uri, pluginExtension.firstSpiritVersion)
+        def useCase = complianceCheckFor(getComplianceLevel(), connector)
+        def checkResult = useCase.check(pathList)
+
+        if (!checkResult.isValid()) {
+            throw new GradleException(checkResult.getMessage())
+        } else {
+            getLogger().lifecycle(checkResult.getMessage())
         }
     }
 
@@ -41,12 +62,12 @@ class IsolationCheck extends DefaultTask {
         pluginExtension.isolationDetectorUrl = detectorUrl
     }
 
-    IsolationLevel getIsolationLevel() {
-        return pluginExtension.isolationLevel
+    ComplianceLevel getComplianceLevel() {
+        return pluginExtension.complianceLevel
     }
 
-    void setIsolationLevel(IsolationLevel isolationLevel) {
-        pluginExtension.isolationLevel = isolationLevel
+    void setComplianceLevel(ComplianceLevel complianceLevel) {
+        pluginExtension.complianceLevel = complianceLevel
     }
 
     String getFirstSpiritVersion() {
@@ -55,5 +76,19 @@ class IsolationCheck extends DefaultTask {
 
     void setFirstSpiritVersion(String firstSpiritVersion) {
         pluginExtension.firstSpiritVersion = firstSpiritVersion
+    }
+
+    private static ComplianceCheckUseCase complianceCheckFor(ComplianceLevel complianceLevel, WebServiceConnector webserviceConnector) {
+        switch (complianceLevel) {
+            case ComplianceLevel.MINIMAL:
+                return new MinimalComplianceCheck(webserviceConnector)
+            case ComplianceLevel.DEFAULT:
+                return new DefaultComplianceCheck(webserviceConnector)
+            case ComplianceLevel.HIGHEST:
+                return new HighestComplianceCheck(webserviceConnector)
+            default:
+                throw new IllegalStateException("Unknown ComplianceLevel '" + complianceLevel + "'!")
+        }
+
     }
 }

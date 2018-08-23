@@ -16,7 +16,7 @@
 package org.gradle.plugins.fsm
 
 import de.espirit.firstspirit.server.module.ModuleInfo
-import org.gradle.plugins.fsm.tasks.verification.IsolationLevel
+import de.espirit.mavenplugins.fsmchecker.ComplianceLevel
 
 class FSMPluginExtension {
 
@@ -52,11 +52,11 @@ class FSMPluginExtension {
      */
     String isolationDetectorUrl
 
-    /**
-     * Isolation level to check for if {#link isolationDetectorUrl} is set.
-     * Defaults to {@link IsolationLevel#RUNTIME_USAGE}
-     */
-    IsolationLevel isolationLevel
+	/**
+	 * The compliance level to check for if {#link isolationDetectorUrl} is set. Defaults to
+	 * {@link ComplianceLevel#DEFAULT}
+	 */
+	ComplianceLevel complianceLevel
 
     /**
      * The FirstSpirit version to check against with the isolation detector service.

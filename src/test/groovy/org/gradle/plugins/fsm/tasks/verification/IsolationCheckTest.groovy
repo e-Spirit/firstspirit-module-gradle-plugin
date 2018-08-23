@@ -1,5 +1,6 @@
 package org.gradle.plugins.fsm.tasks.verification
 
+
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -18,9 +19,9 @@ import java.util.jar.JarOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
+import static de.espirit.mavenplugins.fsmchecker.ComplianceLevel.*
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown
-import static org.gradle.plugins.fsm.tasks.verification.IsolationLevel.*
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC
 import static org.objectweb.asm.Opcodes.V1_8
 
@@ -50,154 +51,158 @@ class IsolationCheckTest {
     }
 
     @Test
-    void defaultIsolationLevel() {
-        assertThat(isolationCheck.getIsolationLevel()).isSameAs(RUNTIME_USAGE)
+    void defaultComplianceLevel() {
+        assertThat(isolationCheck.getComplianceLevel()).isSameAs(DEFAULT)
     }
 
-    @Test
-    void emptyFsmDeprecationLevel() {
+    @Test(expected = GradleException.class)
+    void emptyFsmWithHighestCompliance() {
         Task fsmTask = project.tasks[FSMPlugin.FSM_TASK_NAME]
         fsmTask.execute()
 
-        isolationCheck.setIsolationLevel(DEPRECATED_API_USAGE)
+        isolationCheck.setComplianceLevel(HIGHEST)
         isolationCheck.execute()
     }
 
-    @Test
-    void emptyFsmRuntimeLevel() {
+    @Test(expected = GradleException.class)
+    void emptyFsmWithDefaultCompliance() {
         Task fsmTask = project.tasks[FSMPlugin.FSM_TASK_NAME]
         fsmTask.execute()
 
-        isolationCheck.setIsolationLevel(RUNTIME_USAGE)
+        isolationCheck.setComplianceLevel(DEFAULT)
         isolationCheck.execute()
     }
 
-    @Test
-    void emptyFsmImplLevel() {
+    @Test(expected = GradleException.class)
+    void emptyFsmWithMinimalCompliance() {
         Task fsmTask = project.tasks[FSMPlugin.FSM_TASK_NAME]
         fsmTask.execute()
 
-        isolationCheck.setIsolationLevel(IMPL_USAGE)
+        isolationCheck.setComplianceLevel(MINIMAL)
         isolationCheck.execute()
     }
 
     @Test
-    void fsmWithoutDependenciesDeprecationLevel() {
+    void fsmWithoutDependenciesWithHighestCompliance() {
         writeSingleClassToFsmFile(JDK_CLASS)
 
-        isolationCheck.setIsolationLevel(DEPRECATED_API_USAGE)
+        isolationCheck.setComplianceLevel(HIGHEST)
         isolationCheck.execute()
     }
 
     @Test
-    void fsmWithoutDependenciesRuntimeLevel() {
+    void fsmWithoutDependenciesWithDefaultCompliance() {
         writeSingleClassToFsmFile(JDK_CLASS)
 
-        isolationCheck.setIsolationLevel(RUNTIME_USAGE)
+        isolationCheck.setComplianceLevel(DEFAULT)
         isolationCheck.execute()
     }
 
     @Test
-    void fsmWithoutDependenciesImplLevel() {
+    void fsmWithoutDependenciesWithMinimalCompliance() {
         writeSingleClassToFsmFile(JDK_CLASS)
 
-        isolationCheck.setIsolationLevel(IMPL_USAGE)
+        isolationCheck.setComplianceLevel(MINIMAL)
         isolationCheck.execute()
     }
 
     @Test
-    void fsmWithDeprecatedApiUsageDeprecationLevel() {
+    void fsmWithDeprecatedApiWithHighestCompliance() {
         writeSingleClassToFsmFile(DEPRECATED_API_CLASS)
 
-        isolationCheck.setIsolationLevel(DEPRECATED_API_USAGE)
+        isolationCheck.setComplianceLevel(HIGHEST)
 
         try {
             isolationCheck.execute()
             failBecauseExceptionWasNotThrown(GradleException.class)
         } catch (final GradleException e) {
-            assertThat(e).hasCause(new GradleException("Isolation check failed: Usage of deprecated API detected"))
+            assertThat(e).hasCauseInstanceOf(GradleException.class)
+            assertThat(e.getCause()).hasMessageContaining(asQualified(DEPRECATED_API_CLASS) + " (1 usages)")
+
         }
     }
 
     @Test
-    void fsmWithDeprecatedApiUsageRuntimeLevel() {
+    void fsmWithDeprecatedApiWithDefaultCompliance() {
         writeSingleClassToFsmFile(DEPRECATED_API_CLASS)
 
-        isolationCheck.setIsolationLevel(RUNTIME_USAGE)
+        isolationCheck.setComplianceLevel(DEFAULT)
         isolationCheck.execute()
     }
 
     @Test
-    void fsmWithDeprecatedApiUsageImplLevel() {
+    void fsmWithDeprecatedApiWithMinimalCompliance() {
         writeSingleClassToFsmFile(DEPRECATED_API_CLASS)
 
-        isolationCheck.setIsolationLevel(IMPL_USAGE)
+        isolationCheck.setComplianceLevel(MINIMAL)
         isolationCheck.execute()
     }
 
     @Test
-    void fsmWithApiDependencyDeprecationLevel() {
+    void fsmWithApiDependencyWithHighestCompliance() {
         writeSingleClassToFsmFile(API_CLASS)
 
-        isolationCheck.setIsolationLevel(DEPRECATED_API_USAGE)
+        isolationCheck.setComplianceLevel(HIGHEST)
         isolationCheck.execute()
     }
 
     @Test
-    void fsmWithApiDependencyRuntimeLevel() {
+    void fsmWithApiDependencyWithDefaultCompliance() {
         writeSingleClassToFsmFile(API_CLASS)
 
-        isolationCheck.setIsolationLevel(RUNTIME_USAGE)
+        isolationCheck.setComplianceLevel(DEFAULT)
         isolationCheck.execute()
     }
 
     @Test
-    void fsmWithApiDependencyImplLevel() {
+    void fsmWithApiDependencyWithMinimalCompliance() {
         writeSingleClassToFsmFile(API_CLASS)
 
-        isolationCheck.setIsolationLevel(IMPL_USAGE)
+        isolationCheck.setComplianceLevel(MINIMAL)
         isolationCheck.execute()
     }
 
     @Test
-    void fsmWithRuntimeDependencyDeprecationLevel() {
+    void fsmWithRuntimeDependencyWithHighestCompliance() {
         writeSingleClassToFsmFile(RUNTIME_CLASS)
 
-        isolationCheck.setIsolationLevel(DEPRECATED_API_USAGE)
+        isolationCheck.setComplianceLevel(HIGHEST)
 
         try {
             isolationCheck.execute()
             failBecauseExceptionWasNotThrown(GradleException.class)
         } catch (GradleException e) {
-            assertThat(e).hasCause(new GradleException("Isolation check failed: Usage of classes detected which are not part of the public API"))
+            assertThat(e).hasCauseInstanceOf(GradleException.class)
+            assertThat(e.getCause()).hasMessageContaining(asQualified(RUNTIME_CLASS) + " (1 usages)")
         }
     }
 
     @Test
-    void fsmWithRuntimeDependencyRuntimeLevel() {
+    void fsmWithRuntimeDependencyWithDefaultCompliance() {
         writeSingleClassToFsmFile(RUNTIME_CLASS)
 
-        isolationCheck.setIsolationLevel(RUNTIME_USAGE)
+        isolationCheck.setComplianceLevel(DEFAULT)
 
         try {
             isolationCheck.execute()
             failBecauseExceptionWasNotThrown(GradleException.class)
         } catch (GradleException e) {
-            assertThat(e).hasCause(new GradleException("Isolation check failed: Usage of classes detected which are not part of the public API"))
+            assertThat(e).hasCauseInstanceOf(GradleException.class)
+            assertThat(e.getCause()).hasMessageContaining(asQualified(RUNTIME_CLASS) + " (1 usages)")
         }
     }
 
     @Test
-    void fsmWithRuntimeDependencyImplLevel() {
+    void fsmWithRuntimeDependencyWithMinimalCompliance() {
         writeSingleClassToFsmFile(RUNTIME_CLASS)
 
-        isolationCheck.setIsolationLevel(IMPL_USAGE)
+        isolationCheck.setComplianceLevel(MINIMAL)
         isolationCheck.execute()
     }
 
 
     @Test
-    void fsmWithImplDependencyDisabled() {
+    void fsmWithImplDependencyButNoUrlSet() {
         writeSingleClassToFsmFile(IMPL_CLASS)
 
         isolationCheck.setDetectorUrl("")
@@ -206,41 +211,49 @@ class IsolationCheckTest {
 
 
     @Test
-    void fsmWithImplDependencyDeprecationLevel() {
+    void fsmWithImplDependencyWithHighestCompliance() {
         writeSingleClassToFsmFile(IMPL_CLASS)
 
-        isolationCheck.setIsolationLevel(DEPRECATED_API_USAGE)
+        isolationCheck.setComplianceLevel(HIGHEST)
         try {
             isolationCheck.execute()
             failBecauseExceptionWasNotThrown(GradleException.class)
         } catch (final GradleException e) {
-            assertThat(e).hasCause(new GradleException("Isolation check failed: Usage of classes detected which are not part of the isolated runtime"))
+            assertThat(e).hasCauseInstanceOf(GradleException.class)
+            assertThat(e.getCause()).hasMessageContaining(asQualified(IMPL_CLASS) + " (1 usages)")
         }
     }
 
     @Test
-    void fsmWithImplDependencyRuntimeLevel() {
+    void fsmWithImplDependencyWithDefaultCompliance() {
         writeSingleClassToFsmFile(IMPL_CLASS)
 
-        isolationCheck.setIsolationLevel(RUNTIME_USAGE)
+        isolationCheck.setComplianceLevel(DEFAULT)
         try {
             isolationCheck.execute()
             failBecauseExceptionWasNotThrown(GradleException.class)
         } catch (final GradleException e) {
-            assertThat(e).hasCause(new GradleException("Isolation check failed: Usage of classes detected which are not part of the isolated runtime"))
+            assertThat(e).hasCauseInstanceOf(GradleException.class)
+            assertThat(e.getCause()).hasMessageContaining(asQualified(IMPL_CLASS) + " (1 usages)")
         }
     }
 
+    private static String asQualified(String classAsFS) {
+        classAsFS.replace("/", ".")
+    }
+
     @Test
-    void fsmWithImplDependencyImplLevel() {
+    void fsmWithImplDependencyWithMinimalCompliance() {
         writeSingleClassToFsmFile(IMPL_CLASS)
 
-        isolationCheck.setIsolationLevel(IMPL_USAGE)
+        isolationCheck.setComplianceLevel(MINIMAL)
         try {
             isolationCheck.execute()
             failBecauseExceptionWasNotThrown(GradleException.class)
         } catch (final GradleException e) {
-            assertThat(e).hasCause(new GradleException("Isolation check failed: Usage of classes detected which are not part of the isolated runtime"))
+            assertThat(e).hasCauseInstanceOf(GradleException.class)
+            assertThat(e.getCause()).hasMessageContaining(asQualified(IMPL_CLASS) + " (1 usages)")
+
         }
     }
 
@@ -272,5 +285,6 @@ class IsolationCheckTest {
         zipOutputStream.write(Files.readAllBytes(jarFile))
         zipOutputStream.close()
     }
+
 
 }

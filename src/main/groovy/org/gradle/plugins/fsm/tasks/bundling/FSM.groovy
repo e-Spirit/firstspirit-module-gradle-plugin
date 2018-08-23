@@ -28,7 +28,6 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.classloader.JarClassLoader
-import org.gradle.plugins.fsm.tasks.verification.IsolationLevel
 import org.gradle.plugins.fsm.zip.UnzipUtility
 
 import java.nio.charset.StandardCharsets
@@ -43,177 +42,179 @@ import static org.gradle.plugins.fsm.XmlTagAppender.*
  *
  */
 class FSM extends Jar {
-	static final String FSM_EXTENSION = 'fsm'
 
-	/**
-	 * The fsm runtime classpath. All libraries in this
-	 * classpath will be copied to 'fsm/lib' folder
-	 */
-	private FileCollection classpath
+    static final String FSM_EXTENSION = 'fsm'
 
-	public FSMPluginExtension pluginExtension
+    /**
+     * The fsm runtime classpath. All libraries in this
+     * classpath will be copied to 'fsm/lib' folder
+     */
+    private FileCollection classpath
 
-	FSM() {
-		extension = FSM_EXTENSION
-		destinationDir = project.file('build/fsm')
-		pluginExtension = project.getExtensions().getByType(FSMPluginExtension)
-		archiveName = pluginExtension.archiveName
+    public FSMPluginExtension pluginExtension
 
-		into('lib') {
-			from {
-				def classpath = getClasspath()
-				classpath ? classpath.filter { File file -> file.isFile() } : []
-			}
-		}
+    FSM() {
+        extension = FSM_EXTENSION
+        destinationDir = project.file('build/fsm')
+        pluginExtension = project.getExtensions().getByType(FSMPluginExtension)
+        archiveName = pluginExtension.archiveName
 
-		into('/') {
-			from("src/main/resources") {
-				include("**/*")
-			}
-		}
+        into('lib') {
+            from {
+                def classpath = getClasspath()
+                classpath ? classpath.filter { File file -> file.isFile() } : []
+            }
+        }
+
+        into('/') {
+            from("src/main/resources") {
+                include("**/*")
+            }
+        }
 
         into('/files') {
             from('src/main/files')
         }
 
-		configure {
-			metaInf {
-				from project.file(pluginExtension.moduleDirName)
-				include 'module.xml'
-			}
-		}
-	}
+        configure {
+            metaInf {
+                from project.file(pluginExtension.moduleDirName)
+                include 'module.xml'
+            }
+        }
+    }
 
-	@TaskAction
-	protected void generateModuleXml() {
-		getLogger().info("Generating module.xml")
-		File archive = getArchivePath()
-		getLogger().info("Found archive ${archive.getPath()}")
+    @TaskAction
+    protected void generateModuleXml() {
+        getLogger().info("Generating module.xml")
+        File archive = getArchivePath()
+        getLogger().info("Found archive ${archive.getPath()}")
 
-		def resourcesTags = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion)
+        def resourcesTags = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion)
 
-		(FileSystems.newFileSystem(archive.toPath(), getClass().getClassLoader())).withCloseable { fs ->
-			new ZipFile(archive).withCloseable { zipFile ->
-				def unfilteredModuleXml
+        (FileSystems.newFileSystem(archive.toPath(), getClass().getClassLoader())).withCloseable { fs ->
+            new ZipFile(archive).withCloseable { zipFile ->
+                def unfilteredModuleXml
 
-				unfilteredModuleXml = getUnfilteredModuleXml(zipFile)
+                unfilteredModuleXml = getUnfilteredModuleXml(zipFile)
 
-				def componentTags = getComponentTags(archive, pluginExtension.appendDefaultMinVersion)
+                def componentTags = getComponentTags(archive, pluginExtension.appendDefaultMinVersion)
 
-				String filteredModuleXml = filterModuleXml(unfilteredModuleXml, resourcesTags, componentTags)
+                String filteredModuleXml = filterModuleXml(unfilteredModuleXml, resourcesTags, componentTags)
 
-				Path nf = fs.getPath("/META-INF/module.xml")
-				Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE).withCloseable {
-					it.write(filteredModuleXml)
-				}
-			}
-		}
-	}
+                Path nf = fs.getPath("/META-INF/module.xml")
+                Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE).withCloseable {
+                    it.write(filteredModuleXml)
+                }
+            }
+        }
+    }
 
-	String getUnfilteredModuleXml(ZipFile zipFile) {
-		def unfilteredModuleXml
-		def moduleXmlFile = zipFile.getEntry("META-INF/module.xml")
-		if (moduleXmlFile == null) {
-			getLogger().info("module.xml not found in ZipArchive ${zipFile.getName()}, using an empty one")
-			unfilteredModuleXml = getClass().getResource("/template-module.xml").getText("utf-8")
-		} else {
-			unfilteredModuleXml = zipFile.getInputStream(moduleXmlFile).getText("utf-8")
-		}
-		unfilteredModuleXml
-	}
+    String getUnfilteredModuleXml(ZipFile zipFile) {
+        def unfilteredModuleXml
+        def moduleXmlFile = zipFile.getEntry("META-INF/module.xml")
+        if (moduleXmlFile == null) {
+            getLogger().info("module.xml not found in ZipArchive ${zipFile.getName()}, using an empty one")
+            unfilteredModuleXml = getClass().getResource("/template-module.xml").getText("utf-8")
+        } else {
+            unfilteredModuleXml = zipFile.getInputStream(moduleXmlFile).getText("utf-8")
+        }
+        unfilteredModuleXml
+    }
 
-	protected String filterModuleXml(String unfilteredModuleXml, String resourcesTags, String componentTags) {
-		String filteredModuleXml = unfilteredModuleXml.replace('$name', pluginExtension.moduleName?:project.name)
-		filteredModuleXml = filteredModuleXml.replace('$displayName', pluginExtension.displayName?.toString() ?: project.name.toString())
-		filteredModuleXml = filteredModuleXml.replace('$version', project.version.toString())
-		filteredModuleXml = filteredModuleXml.replace('$description', project.description?.toString() ?: project.name.toString())
+    protected String filterModuleXml(String unfilteredModuleXml, String resourcesTags, String componentTags) {
+        String filteredModuleXml = unfilteredModuleXml.replace('$name', pluginExtension.moduleName ?: project.name)
+        filteredModuleXml = filteredModuleXml.replace('$displayName', pluginExtension.displayName?.toString() ?: project.name.toString())
+        filteredModuleXml = filteredModuleXml.replace('$version', project.version.toString())
+        filteredModuleXml = filteredModuleXml.replace('$description', project.description?.toString() ?: project.name.toString())
         filteredModuleXml = filteredModuleXml.replace('$vendor', pluginExtension.vendor.toString())
-		filteredModuleXml = filteredModuleXml.replace('$artifact', project.jar.archiveName.toString())
-		filteredModuleXml = filteredModuleXml.replace('$resources', resourcesTags)
-		filteredModuleXml = filteredModuleXml.replace('$components', componentTags)
-		getLogger().info("Generated module.xml: \n$filteredModuleXml")
-		filteredModuleXml
-	}
+        filteredModuleXml = filteredModuleXml.replace('$artifact', project.jar.archiveName.toString())
+        filteredModuleXml = filteredModuleXml.replace('$resources', resourcesTags)
+        filteredModuleXml = filteredModuleXml.replace('$components', componentTags)
+        getLogger().info("Generated module.xml: \n$filteredModuleXml")
+        filteredModuleXml
+    }
 
-	String getComponentTags(File archive, boolean appendDefaultMinVersion) {
-		StringBuilder result = new StringBuilder()
-		File tempDir = unzipFsmToNewTempDir(archive)
+    String getComponentTags(File archive, boolean appendDefaultMinVersion) {
+        StringBuilder result = new StringBuilder()
+        File tempDir = unzipFsmToNewTempDir(archive)
 
-		def libDir = new File(Paths.get(tempDir.getPath(), "lib").toString())
-		new JarClassLoader(libDir, getClass().getClassLoader()).withCloseable { classLoader ->
-			try {
-				def scan = new FastClasspathScanner().addClassLoader(classLoader).scan()
+        def libDir = new File(Paths.get(tempDir.getPath(), "lib").toString())
+        new JarClassLoader(libDir, getClass().getClassLoader()).withCloseable { classLoader ->
+            try {
+                def scan = new FastClasspathScanner().addClassLoader(classLoader).scan()
 
-				appendProjectAppTags(classLoader, scan.getNamesOfClassesImplementing(ProjectApp), result)
+                appendProjectAppTags(classLoader, scan.getNamesOfClassesImplementing(ProjectApp), result)
 
-				appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result, appendDefaultMinVersion)
+                appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result, appendDefaultMinVersion)
 
-				appendPublicComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(PublicComponent), result)
+                appendPublicComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(PublicComponent), result)
 
-				appendScheduleTaskComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(ScheduleTaskComponent), result)
+                appendScheduleTaskComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(ScheduleTaskComponent), result)
 
-			} catch (MalformedURLException e) {
-				getLogger().error("Passed URL is malformed", e)
-			} catch (ClassNotFoundException e) {
-				getLogger().error("Cannot find class", e)
-			}
-		}
+            } catch (MalformedURLException e) {
+                getLogger().error("Passed URL is malformed", e)
+            } catch (ClassNotFoundException e) {
+                getLogger().error("Cannot find class", e)
+            }
+        }
 
-		return result.toString()
-	}
+        return result.toString()
+    }
 
 
-	private File unzipFsmToNewTempDir(File archive) {
-		def tempDir = getTemporaryDirFactory().create()
-		getLogger().info("Extracting archive to $tempDir")
+    private File unzipFsmToNewTempDir(File archive) {
+        def tempDir = getTemporaryDirFactory().create()
+        getLogger().info("Extracting archive to $tempDir")
 
-		try {
-			new UnzipUtility().unzip(archive.getPath(), tempDir.getPath())
-		} catch (IOException ex) {
-			getLogger().error("Problem with fsm unzipping", ex)
-		}
-		tempDir
-	}
+        try {
+            new UnzipUtility().unzip(archive.getPath(), tempDir.getPath())
+        } catch (IOException ex) {
+            getLogger().error("Problem with fsm unzipping", ex)
+        }
+        tempDir
+    }
 
-	void list(List<URL> urlsList, File file) {
-		if(file.isFile()) {
-			urlsList.add(file.toURI().toURL())
-		}
-		File[] children = file.listFiles()
-		for (File child : children) {
-			list(urlsList, child)
-		}
-	}
+    void list(List<URL> urlsList, File file) {
+        if (file.isFile()) {
+            urlsList.add(file.toURI().toURL())
+        }
+        File[] children = file.listFiles()
+        for (File child : children) {
+            list(urlsList, child)
+        }
+    }
 
-	/**
-	 * Returns the classpath to include in the FSM archive. Any JAR or ZIP files in this classpath are included in the
-	 * {@code lib} directory.
-	 *
-	 * @return The classpath. Returns an empty collection when there is no classpath to include in the FSM.
-	 */
-	@InputFiles @Optional
-	FileCollection getClasspath() {
-		return classpath
-	}
+    /**
+     * Returns the classpath to include in the FSM archive. Any JAR or ZIP files in this classpath are included in the
+     * {@code lib} directory.
+     *
+     * @return The classpath. Returns an empty collection when there is no classpath to include in the FSM.
+     */
+    @InputFiles
+    @Optional
+    FileCollection getClasspath() {
+        return classpath
+    }
 
-	/**
-	 * Sets the classpath to include in the FSM archive.
-	 *
-	 * @param classpath The classpath. Must not be null.
-	 */
-	void setClasspath(Object classpath) {
-		this.classpath = project.files(classpath)
-	}
+    /**
+     * Sets the classpath to include in the FSM archive.
+     *
+     * @param classpath The classpath. Must not be null.
+     */
+    void setClasspath(Object classpath) {
+        this.classpath = project.files(classpath)
+    }
 
-	/**
-	 * Adds files to the classpath to include in the FSM archive.
-	 *
-	 * @param classpath The files to add. These are evaluated as for {@link org.gradle.api.Project#files(Object [])}
-	 */
-	void classpath(Object... classpath) {
-		FileCollection oldClasspath = getClasspath()
-		this.classpath = project.files(oldClasspath ?: [], classpath)
-	}
+    /**
+     * Adds files to the classpath to include in the FSM archive.
+     *
+     * @param classpath The files to add. These are evaluated as for {@link org.gradle.api.Project#files(Object [])}
+     */
+    void classpath(Object... classpath) {
+        FileCollection oldClasspath = getClasspath()
+        this.classpath = project.files(oldClasspath ?: [], classpath)
+    }
 
     /**
      * Sets the human-readable name of the module.
@@ -224,14 +225,14 @@ class FSM extends Jar {
         pluginExtension.displayName = displayName
     }
 
-	/**
-	 * Sets the vendor who is responsible for the module
-	 *
-	 * @param vendor the vendor of the module
-	 */
-	void setVendor(String vendor) {
-		pluginExtension.vendor = vendor
-	}
+    /**
+     * Sets the vendor who is responsible for the module
+     *
+     * @param vendor the vendor of the module
+     */
+    void setVendor(String vendor) {
+        pluginExtension.vendor = vendor
+    }
 
     /**
      * Sets the classloading mode for all resources which do not explicitly set another mode.
@@ -239,44 +240,25 @@ class FSM extends Jar {
      * @param mode the classloading mode
      */
     void setResourceMode(ModuleInfo.Mode resourceMode) {
-		pluginExtension.resourceMode = resourceMode
+        pluginExtension.resourceMode = resourceMode
     }
-
-	/**
-	 * Set the URL which is used to connect to the FSM Dependency Detector.
-     *
-     * @param the url to the detector service. If {@code null} or empty, no detection is performed.
-	 */
-	void setIsolationDetectorUrl(String isolationDetectorUrl) {
-		pluginExtension.isolationDetectorUrl = isolationDetectorUrl
-	}
-
-    /**
-     * Isolation level to check for if {#link isolationDetectorUrl} is set.
-     * Defaults to {@link IsolationLevel#RUNTIME_USAGE}
-     *
-     * @param the isolation level to check for, must not be {@code null},
-     */
-	void setIsolationLevel(IsolationLevel isolationLevel) {
-		pluginExtension.isolationLevel = isolationLevel
-	}
 
     /**
      * Sets the FirstSpirit version to check against with the isolation detector service.
      *
      * @param firstSpiritVersion The FirstSpirit version, e.g. "5.2.2109". Must not be {@code null}.
      */
-	void setFirstSpiritVersion(String firstSpiritVersion) {
-		pluginExtension.firstSpiritVersion = firstSpiritVersion
-	}
+    void setFirstSpiritVersion(String firstSpiritVersion) {
+        pluginExtension.firstSpiritVersion = firstSpiritVersion
+    }
 
-	/**
-	 * Sets the name of the module. If unset or {@code null}, this defaults to the project name.
-	 *
-	 * @param moduleName The name that should be used for the module.
-	 */
-	void setModuleName(String moduleName) {
-		pluginExtension.moduleName = moduleName
-	}
+    /**
+     * Sets the name of the module. If unset or {@code null}, this defaults to the project name.
+     *
+     * @param moduleName The name that should be used for the module.
+     */
+    void setModuleName(String moduleName) {
+        pluginExtension.moduleName = moduleName
+    }
 
 }
