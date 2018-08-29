@@ -53,11 +53,7 @@ dependencies {
     compile localGroovy()
     compile 'io.github.lukehutch:fast-classpath-scanner:2.6.2'
     compile 'com.espirit.moddev.components:annotations:1.8.3'
-    compile 'org.glassfish.jersey.core:jersey-client:2.27'
-    compile 'org.glassfish.jersey.media:jersey-media-multipart:2.27'
-    compile 'org.glassfish.jersey.inject:jersey-hk2:2.27'
-    compile 'org.json:json:20180130'
-    compile 'de.espirit.mavenplugins:fsmchecker:0.5'
+    compile 'de.espirit.mavenplugins:fsmchecker:0.6'
     compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.1806'
     testCompile (
         'de.espirit.firstspirit:fs-isolated-runtime:5.2.1806',

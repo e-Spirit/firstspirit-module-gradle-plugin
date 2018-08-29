@@ -14,7 +14,7 @@ import org.gradle.plugins.fsm.FSMPluginExtension
 
 
 /**
- * Checks the degree of compliance in terms of isolation a module has towards a given version of firstspirit. Depends
+ * Checks the degree of compliance in terms of isolation a module has towards a given version of FirstSpirit. Depends
  * on the Java-Implementation within the corresponding Maven-Plugin 'fsm-dependency-checker-maven-plugin'. The
  * IsolationCheck-Task is very similar to the Mojo-Implementation 'FsmVerifier' in the above project.
  */
@@ -32,7 +32,6 @@ class IsolationCheck extends DefaultTask {
 
         def pathList = getInputs().files.files.collect { it.toPath() }
 
-        //TODO: Maybe using AbstractTask#isEnabled would be a cleaner approach.
         if (Strings.isEmpty(pluginExtension.isolationDetectorUrl) || pathList.isEmpty()) {
             return
         }
@@ -43,12 +42,13 @@ class IsolationCheck extends DefaultTask {
 
         final URI uri = new URI(pluginExtension.isolationDetectorUrl)
 
+        getLogger().lifecycle("Running isolation check with ComplianceLevel '" + getComplianceLevel() + "' ..." )
         def connector = new WebServiceConnector(uri, pluginExtension.firstSpiritVersion)
         def useCase = complianceCheckFor(getComplianceLevel(), connector)
         def checkResult = useCase.check(pathList)
 
         if (!checkResult.isValid()) {
-            throw new GradleException(checkResult.getMessage())
+            throw new GradleException("Isolation check failed!" + System.lineSeparator() + "Violation details: " + checkResult.getMessage())
         } else {
             getLogger().lifecycle(checkResult.getMessage())
         }

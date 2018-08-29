@@ -73,13 +73,18 @@ class IsolationCheckTest {
         isolationCheck.execute()
     }
 
-    @Test(expected = GradleException.class)
+    @Test
     void emptyFsmWithMinimalCompliance() {
         Task fsmTask = project.tasks[FSMPlugin.FSM_TASK_NAME]
         fsmTask.execute()
 
-        isolationCheck.setComplianceLevel(MINIMAL)
-        isolationCheck.execute()
+        try {
+            isolationCheck.setComplianceLevel(MINIMAL)
+            isolationCheck.execute()
+            failBecauseExceptionWasNotThrown(GradleException.class)
+        } catch (final GradleException e) {
+            assertThat(e).hasCauseInstanceOf(GradleException.class)
+        }
     }
 
     @Test
