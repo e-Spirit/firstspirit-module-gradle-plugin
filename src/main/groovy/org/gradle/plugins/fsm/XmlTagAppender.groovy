@@ -1,5 +1,7 @@
 package org.gradle.plugins.fsm
 
+import com.espirit.moddev.components.annotations.*
+import de.espirit.firstspirit.generate.UrlFactory
 import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
 import com.espirit.moddev.components.annotations.Resource
@@ -200,6 +202,40 @@ class XmlTagAppender {
         }
     }
 
+    /*
+        This method is named appendUrlCreatorTags and not appendUrlFactoryTags because
+        the component that is defined for FirstSpirit is a UrlCreator that has a UrlFactory.
+        For the given classes, we need classes that implement the UrlFactory interface,
+        because this class is used as attribute for the urlFactory tag in the module.xml.
+     */
+    @CompileStatic
+    static void appendUrlCreatorTags(URLClassLoader cl, List<String> urlFactoryClasses, StringBuilder result) {
+        def loadedClasses = urlFactoryClasses.collect { cl.loadClass(it) }
+
+        appendUrlCreatorTagsOfClasses(loadedClasses, result)
+    }
+
+    static appendUrlCreatorTagsOfClasses(List<Class<? extends UrlFactory>> loadedClasses, result) {
+        loadedClasses.forEach { urlFactoryClass ->
+            Arrays.asList(urlFactoryClass.annotations)
+                    .findAll { it.annotationType() == UrlFactoryComponent }
+                    .forEach { annotation ->
+                result.append("""
+<public>
+    <name>${evaluateAnnotation(annotation, "name")}</name>
+    <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
+    <description>${evaluateAnnotation(annotation, "description")}</description>
+    <class>de.espirit.firstspirit.generate.UrlCreatorSpecification</class>
+    <configuration>
+        <UrlFactory>${urlFactoryClass.getName().toString()}</UrlFactory>
+        <UseRegistry>${evaluateAnnotation(annotation, "useRegistry")}</UseRegistry>
+    </configuration>
+</public>
+""")
+            }
+        }
+    }
+
     private static Object evaluateAnnotation(Annotation annotation, String methodName) {
         annotation.annotationType().getDeclaredMethod(methodName, null).invoke(annotation, null)
     }
@@ -237,10 +273,10 @@ class XmlTagAppender {
 
     static String getResourceTagForDependency(ModuleVersionIdentifier dependencyId, ResolvedArtifact artifact, String scope, ModuleInfo.Mode mode, boolean appendDefaultMinVersion) {
         def scopeAttribute = scope == null || scope.isEmpty() ? "" : """ scope="${scope}\""""
+        def classifier = artifact.classifier != null && !artifact.classifier.isEmpty() ? "-${artifact.classifier}" : ""
         def modeAttribute = mode == null ? "" : """ mode="${mode.name().toLowerCase(Locale.ROOT)}\""""
         def minVersionAttribute = !appendDefaultMinVersion ? "" : """ minVersion="${dependencyId.version}\""""
-        """<resource name="${dependencyId.group}:${dependencyId.name}"$scopeAttribute$modeAttribute """ +
-            """version="${dependencyId.version}"$minVersionAttribute>lib/${dependencyId.name}-${dependencyId.version}.${artifact.extension}</resource>"""
+        """<resource name="${dependencyId.group}:${dependencyId.name}"$scopeAttribute$modeAttribute version="${dependencyId.version}"$minVersionAttribute>lib/${dependencyId.name}-${dependencyId.version}$classifier.${artifact.extension}</resource>"""
     }
 
     static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode, boolean appendDefaultMinVersion) {

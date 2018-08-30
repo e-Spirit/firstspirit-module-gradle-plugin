@@ -1,5 +1,14 @@
 package org.gradle.plugins.fsm
 
+import com.espirit.moddev.components.annotations.*
+import de.espirit.firstspirit.access.Language
+import de.espirit.firstspirit.access.project.Resolution
+import de.espirit.firstspirit.access.project.TemplateSet
+import de.espirit.firstspirit.access.store.ContentProducer
+import de.espirit.firstspirit.access.store.PageParams
+import de.espirit.firstspirit.access.store.mediastore.Media
+import de.espirit.firstspirit.generate.PathLookup
+import de.espirit.firstspirit.generate.UrlFactory
 import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
 import com.espirit.moddev.components.annotations.ServiceComponent
@@ -158,6 +167,25 @@ class XmlTagAppenderTest {
     }
 
     @Test
+    void appendUrlCreatorTags() throws Exception {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendUrlCreatorTags( new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestUrlFactoryComponent.getName()], result)
+
+        Assert.assertEquals("""
+<public>
+    <name>TestUrlFactoryComponentName</name>
+    <displayname>TestDisplayName</displayname>
+    <description>TestDescription</description>
+    <class>de.espirit.firstspirit.generate.UrlCreatorSpecification</class>
+    <configuration>
+        <UrlFactory>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestUrlFactoryComponent</UrlFactory>
+        <UseRegistry>true</UseRegistry>
+    </configuration>
+</public>
+""", result.toString())
+    }
+
+    @Test
     void getResourceTagForDependency() throws Exception {
         ResolvedArtifact resolvedArtifact = createArtifactMock()
         ModuleVersionIdentifier moduleVersionIdentifier = createVersionIdentifierMock("mygroup", "myname", "1.0.0")
@@ -267,6 +295,27 @@ class XmlTagAppenderTest {
         static class TestConfigurable extends BaseConfiguration { }
 
         static class ServiceResource {}
+    }
+
+    @UrlFactoryComponent(name = "TestUrlFactoryComponentName",
+                          displayName = "TestDisplayName",
+                          description = "TestDescription",
+                          useRegistry = true)
+    static class TestUrlFactoryComponent implements UrlFactory {
+        @Override
+        void init(Map<String, String> map, PathLookup pathLookup) {
+
+        }
+
+        @Override
+        String getUrl(ContentProducer contentProducer, TemplateSet templateSet, Language language, PageParams pageParams) {
+            return null
+        }
+
+        @Override
+        String getUrl(Media media, Language language, Resolution resolution) {
+            return null
+        }
     }
 
 

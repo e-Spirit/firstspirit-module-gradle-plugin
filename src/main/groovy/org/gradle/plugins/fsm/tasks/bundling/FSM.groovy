@@ -16,6 +16,7 @@
 package org.gradle.plugins.fsm.tasks.bundling
 
 import com.espirit.moddev.components.annotations.PublicComponent
+import com.espirit.moddev.components.annotations.UrlFactoryComponent
 import com.espirit.moddev.components.annotations.ScheduleTaskComponent
 import de.espirit.firstspirit.module.ProjectApp
 import de.espirit.firstspirit.module.Service
@@ -155,6 +156,8 @@ class FSM extends Jar {
                 appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result, appendDefaultMinVersion)
 
                 appendPublicComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(PublicComponent), result)
+
+				appendUrlCreatorTags(classLoader, scan.getNamesOfClassesWithAnnotation(UrlFactoryComponent), result)
 
                 appendScheduleTaskComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(ScheduleTaskComponent), result)
 
