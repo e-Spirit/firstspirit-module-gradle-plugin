@@ -39,7 +39,7 @@ displayName          | String        | *unset*             		|  Human-readable n
 moduleDirName        | String        | src/main/resources  		|  The name of the directory containing the module.xml, relative to the project directory.
 resourceMode         | Mode          | *unset*             		|  Resource mode (legacy, isolated) used for all resources
 isolationDetectorUrl | String        | *unset*             		|  If set, this URL is used to connect to the FSM Dependency Detector
-isolationLevel       | String        | RUNTIME_USAGE       		|  Isolation level to check for if isolationDetectorUrl is set
+complianceLevel      | String        | DEFAULT                 |  Compliance level to check for if isolationDetectorUrl is set
 firstSpiritVersion   | String        | *unset*             		|  FirstSpirit version used in the isolation check
 appendDefaultMinVersion | boolean    | false                    |  If set to true, appends the artifact version as the minVersion attribute to all resource tags (except resources which were explicitly set within FS component annotations)
 
@@ -52,6 +52,7 @@ fsm {
     resourceMode = ISOLATED
     isolationDetectorUrl = 'https://...'
     firstSpiritVersion = '5.2.2109'
+    complianceLevel = 'HIGHEST'
 }
 ```
 
@@ -185,15 +186,22 @@ server is started in "isolation mode".
 
 To declare all resource as legacy or isolated, use the `resourceMode` extension property.
 
-It is possible to check the resulting module file for isolation errors. This requires
-access to an *FSM Depedency Detector* web service and can be configured using the
-extension properties as explained above. Valid values for the isolation level are:
+It is possible to perform and isolation check on the resulting module file to ensure a certain level of compliance to the isolated mode. This check requires access to an *FSM Depedency Detector* web service and can be configured using the extension properties as explained above. Valid values for the compliance level are:
 
 name | Description
 -----|------------
-IMPL_USAGE | The build fails only if classes are used which are not part of the isolated runtime
-RUNTIME_USAGE | The build fails if classes are not part of the public API (also includes IMPL_USAGE). This is the default setting.
-DEPRECATED_API_USAGE | The build fails if deprecated API is used (also includes RUNTIME_USAGE and IMPL_USAGE)
+MINIMAL | Asserts that there is no use of implementation classes that are not available in the isolated runtime. This ist the minimal requirement to run a module with a server in isolated mode (prevents IMPL_USAGE type dependencies).
+DEFAULT | In addition to MINIMAL, the default compliance level asserts that there is no use of internal FirstSpirit classes, that are not part of the public API. These classes are available in the isolated runtime of the current version and will work in isolated mode, but they are subject to change without prior notice and should therefore be removed for sake of longevity (prevents IMPL_USAGE and RUNTIME_USAGE type dependencies).
+HIGHEST | The highest setting further prohibits the usage of deprecated FirstSpirit API (prevents IMPL_USAGE, RUNTIME_USAGE and DEPRECATED API_USAGE type dependencies)
+
+Dependency types (Isolation level)
+
+name | Description
+-----|------------
+IMPL_USAGE | Usage of classes which are not part of the isolated runtime
+RUNTIME_USAGE | Usage of classes that are not part of the public API
+DEPRECATED_API_USAGE | Usage of FirstSpirit API that has been deprecated
+
 
 ## IDE support
 
