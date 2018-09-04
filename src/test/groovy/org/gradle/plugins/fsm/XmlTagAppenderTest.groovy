@@ -119,7 +119,7 @@ class XmlTagAppenderTest {
     <displayname>TestDisplayName</displayname>
     <description>TestDescription</description>
     <class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent</class>
-    <configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
+    <configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent\$TestConfigurable</configurable>
     <web-xml>/test/web.xml</web-xml>
     <web-resources>
         <resource name="$GROUP:$NAME" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
@@ -142,7 +142,7 @@ class XmlTagAppenderTest {
     <displayname>TestDisplayName</displayname>
     <description>TestDescription</description>
     <class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent</class>
-    <configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
+    <configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent\$TestConfigurable</configurable>
     <resources>
         <resource name="com.google.guava:guava" version="24.0" scope="MODULE" mode="LEGACY">lib/guava-24.0.jar</resource>
     </resources>
