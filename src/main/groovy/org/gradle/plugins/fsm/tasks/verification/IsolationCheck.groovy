@@ -1,12 +1,9 @@
 package org.gradle.plugins.fsm.tasks.verification
 
 import de.espirit.common.tools.Strings
-import de.espirit.mavenplugins.fsmchecker.ComplianceCheckUseCase
 import de.espirit.mavenplugins.fsmchecker.ComplianceLevel
 import de.espirit.mavenplugins.fsmchecker.WebServiceConnector
-import de.espirit.mavenplugins.fsmchecker.check.DefaultComplianceCheck
-import de.espirit.mavenplugins.fsmchecker.check.HighestComplianceCheck
-import de.espirit.mavenplugins.fsmchecker.check.MinimalComplianceCheck
+import de.espirit.mavenplugins.fsmchecker.check.ComplianceCheckImpl
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.TaskAction
@@ -24,7 +21,6 @@ class IsolationCheck extends DefaultTask {
 
     IsolationCheck() {
         pluginExtension = project.getExtensions().getByType(FSMPluginExtension)
-        pluginExtension.complianceLevel = ComplianceLevel.DEFAULT
     }
 
     @TaskAction
@@ -36,18 +32,31 @@ class IsolationCheck extends DefaultTask {
             return
         }
 
-        if (pluginExtension.firstSpiritVersion == null || pluginExtension.firstSpiritVersion == "") {
+        if (Strings.isEmpty(pluginExtension.firstSpiritVersion)) {
             throw new GradleException("Isolation check requires FirstSpirit version to check against. Please consult the README.")
         }
 
         final URI uri = new URI(pluginExtension.isolationDetectorUrl)
 
-        getLogger().lifecycle("Running isolation check with ComplianceLevel '" + getComplianceLevel() + "' ..." )
+        getLogger().lifecycle("Running isolation check ...")
+        getLogger().lifecycle("\tComplianceLevel: '" + getComplianceLevel() + "'")
+        getLogger().lifecycle("\tagainst detector: '" + pluginExtension.isolationDetectorUrl+ "'")
+        getLogger().lifecycle("\tusing FirstSpirit version: '" + pluginExtension.firstSpiritVersion + "'")
+        getLogger().lifecycle("\tfsms: '" + pathList + "'")
         def connector = new WebServiceConnector(uri, pluginExtension.firstSpiritVersion)
-        def useCase = complianceCheckFor(getComplianceLevel(), connector)
-        def checkResult = useCase.check(pathList)
+
+        def complianceCheck = new ComplianceCheckImpl(getComplianceLevel(), project.getBuildDir().toPath(), connector)
+        def checkResult = complianceCheck.check(pathList)
 
         if (!checkResult.isValid()) {
+            getLogger().error("Isolation check failed!" + System.lineSeparator() + "Violation details: " + checkResult.getMessage())
+            final List<String> moduleErrors = checkResult.getModuleErrors()
+            if (! moduleErrors.isEmpty()) {
+                getLogger().error(System.lineSeparator() + "module details:")
+                for (final String moduleError : moduleErrors) {
+                    getLogger().error("\t" + moduleError)
+                }
+            }
             throw new GradleException("Isolation check failed!" + System.lineSeparator() + "Violation details: " + checkResult.getMessage())
         } else {
             getLogger().lifecycle(checkResult.getMessage())
@@ -78,17 +87,4 @@ class IsolationCheck extends DefaultTask {
         pluginExtension.firstSpiritVersion = firstSpiritVersion
     }
 
-    private static ComplianceCheckUseCase complianceCheckFor(ComplianceLevel complianceLevel, WebServiceConnector webserviceConnector) {
-        switch (complianceLevel) {
-            case ComplianceLevel.MINIMAL:
-                return new MinimalComplianceCheck(webserviceConnector)
-            case ComplianceLevel.DEFAULT:
-                return new DefaultComplianceCheck(webserviceConnector)
-            case ComplianceLevel.HIGHEST:
-                return new HighestComplianceCheck(webserviceConnector)
-            default:
-                throw new IllegalStateException("Unknown ComplianceLevel '" + complianceLevel + "'!")
-        }
-
-    }
 }

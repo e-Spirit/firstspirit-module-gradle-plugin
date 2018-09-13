@@ -53,10 +53,10 @@ dependencies {
     compile localGroovy()
     compile 'io.github.lukehutch:fast-classpath-scanner:2.6.2'
     compile 'com.espirit.moddev.components:annotations:1.8.5'
-    compile 'de.espirit.mavenplugins:fsmchecker:0.6'
-    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.1806'
+    compile 'de.espirit.mavenplugins:fsmchecker:0.8'
+    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.180909'
     testCompile (
-        'de.espirit.firstspirit:fs-isolated-runtime:5.2.1806',
+        'de.espirit.firstspirit:fs-isolated-runtime:5.2.180909',
 		'junit:junit:4.12',
         'org.assertj:assertj-core:3.9.0',
 		'org.hamcrest:hamcrest-all:1.3',

@@ -51,7 +51,7 @@ fsm {
     moduleDirName = 'src/main/module'
     resourceMode = ISOLATED
     isolationDetectorUrl = 'https://...'
-    firstSpiritVersion = '5.2.2109'
+    firstSpiritVersion = '5.2.180909'
     complianceLevel = 'HIGHEST'
 }
 ```
@@ -240,8 +240,8 @@ You can use the following snippet as a starting point:
 ```groovy
 buildscript {
     dependencies {
-        classpath 'com.espirit.moddev:fsmgradleplugin:0.10.15'
-        classpath 'de.espirit.firstspirit:fs-isolated-runtime:5.2.2109'
+        classpath 'com.espirit.moddev:fsmgradleplugin:0.10.30'
+        classpath 'de.espirit.firstspirit:fs-isolated-runtime:5.2.180909'
     }
 }
 apply plugin: 'fsmgradleplugin'

@@ -56,7 +56,7 @@ class FSMPluginExtension {
 	 * The compliance level to check for if {#link isolationDetectorUrl} is set. Defaults to
 	 * {@link ComplianceLevel#DEFAULT}
 	 */
-	ComplianceLevel complianceLevel
+	ComplianceLevel complianceLevel = ComplianceLevel.DEFAULT
 
     /**
      * The FirstSpirit version to check against with the isolation detector service.
