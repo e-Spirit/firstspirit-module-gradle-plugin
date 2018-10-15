@@ -42,8 +42,9 @@ import static org.mockito.Mockito.when
 
 class XmlTagAppenderTest {
 
-    final List<String> componentImplementingClasses = [TestPublicComponent.getName(), TestWebAppComponent.getName(), TestProjectAppComponent.getName(),
-                                                 TestScheduleTaskComponentWithForm.getName(), TestScheduleTaskComponentWithoutForm.getName()]
+    final List<String> componentImplementingClasses = [TestPublicComponent.getName(), TestScheduleTaskComponentWithConfigurable.getName(), TestPublicComponentWithConfiguration.getName(),
+                                                       TestWebAppComponent.getName(), TestProjectAppComponent.getName(), TestScheduleTaskComponentWithForm.getName(),
+                                                       TestScheduleTaskComponentWithoutForm.getName()]
     final List<String> validAndInvalidProjectAppClasses = [XmlTagAppender.PROJECT_APP_BLACKLIST, componentImplementingClasses].flatten()
 
     Project project
@@ -65,14 +66,29 @@ class XmlTagAppenderTest {
     @Test
     void testPublicComponentTagAppending() throws Exception {
         StringBuilder result = new StringBuilder()
-        XmlTagAppender.appendPublicComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), componentImplementingClasses, result)
+        XmlTagAppender.appendPublicComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestPublicComponent.getName()], result)
 
         Assert.assertEquals("""
-<public>
-    <name>TestPublicComponentName</name>
-    <displayname>TestDisplayName</displayname>
-    <class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestPublicComponent</class>
-</public>""", result.toString())
+        <public>
+            <name>TestPublicComponentName</name>
+            <displayname>TestDisplayName</displayname>
+            <class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestPublicComponent</class>
+        </public>""", result.toString())
+    }
+
+
+     @Test
+    void testPublicComponentTagAppending_configurable() throws Exception {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendPublicComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestPublicComponentWithConfiguration.getName()], result)
+
+        Assert.assertEquals("""
+        <public>
+            <name>TestPublicComponentName</name>
+            <displayname>TestDisplayName</displayname>
+            <class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestPublicComponentWithConfiguration</class>
+            <configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
+        </public>""", result.toString())
     }
 
     @Test
@@ -81,15 +97,34 @@ class XmlTagAppenderTest {
         XmlTagAppender.appendScheduleTaskComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestScheduleTaskComponentWithForm.getName()], result)
 
         Assert.assertEquals("""
-<public>
-    <name>Test task</name>
-    <description>A task for test purpose</description>
-    <class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
-    <configuration>
-        <application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithForm</application>
-        <form>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskFormFactory</form>
-    </configuration>
-</public>""", result.toString())
+        <public>
+            <name>Test task</name>
+            <description>A task for test purpose</description>
+            <class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
+            <configuration>
+                <application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithForm</application>
+                <form>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskFormFactory</form>
+            </configuration>
+        </public>""", result.toString())
+    }
+
+
+
+    @Test
+    void testScheduleTaskComponentTagAppending_configurable() {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendScheduleTaskComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestScheduleTaskComponentWithConfigurable.getName()], result)
+
+        Assert.assertEquals("""
+        <public>
+            <name>Test task</name>
+            <description>A task for test purpose</description>
+            <class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
+            <configuration>
+                <application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithConfigurable</application>
+            </configuration>
+            <configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
+        </public>""", result.toString())
     }
 
     @Test
@@ -98,14 +133,14 @@ class XmlTagAppenderTest {
         XmlTagAppender.appendScheduleTaskComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()),[TestScheduleTaskComponentWithoutForm.getName()], result)
 
         Assert.assertEquals("""
-<public>
-    <name>Test task</name>
-    <description>A task for test purpose</description>
-    <class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
-    <configuration>
-        <application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithoutForm</application>
-    </configuration>
-</public>""", result.toString())
+        <public>
+            <name>Test task</name>
+            <description>A task for test purpose</description>
+            <class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
+            <configuration>
+                <application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithoutForm</application>
+            </configuration>
+        </public>""", result.toString())
     }
 
     @Test
@@ -224,9 +259,16 @@ class XmlTagAppenderTest {
     static class TestPublicComponent {
     }
 
+    @PublicComponent(name = "TestPublicComponentName", displayName = "TestDisplayName", configurable = TestConfigurable.class)
+    static class TestPublicComponentWithConfiguration {
+    }
+
     @ScheduleTaskComponent(taskName = "Test task", description = "A task for test purpose")
     static class TestScheduleTaskComponentWithoutForm {
+    }
 
+    @ScheduleTaskComponent(taskName = "Test task", description = "A task for test purpose", configurable = TestConfigurable.class)
+    static class TestScheduleTaskComponentWithConfigurable {
     }
 
     @ScheduleTaskComponent(taskName = "Test task", description = "A task for test purpose", formClass = TestScheduleTaskFormFactory.class )

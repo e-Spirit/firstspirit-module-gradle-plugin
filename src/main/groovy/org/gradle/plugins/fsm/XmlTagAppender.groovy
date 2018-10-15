@@ -41,13 +41,14 @@ class XmlTagAppender {
             Arrays.asList(publicComponentClass.annotations)
                 .findAll { it instanceof PublicComponent }
                 .forEach { annotation ->
+                    final String configurable = annotation.configurable() == Configuration.class ? "" : "\n            <configurable>${annotation.configurable().name}</configurable>"
 
                     result.append("""
-<public>
-    <name>${evaluateAnnotation(annotation, "name")}</name>
-    <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
-    <class>${publicComponentClass.getName().toString()}</class>
-</public>""")
+        <public>
+            <name>${evaluateAnnotation(annotation, "name")}</name>
+            <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
+            <class>${publicComponentClass.getName().toString()}</class>${configurable}
+        </public>""")
 
                 }
         }
@@ -66,27 +67,29 @@ class XmlTagAppender {
                 Arrays.asList(scheduleTaskComponentClass.annotations)
                 .findAll { it instanceof ScheduleTaskComponent }
                 .forEach { annotation ->
+                    def indent = "            "
+                    final String configurable = annotation.configurable() == Configuration.class ? "" : "\n" + indent + "<configurable>${annotation.configurable().name}</configurable>"
 
                     result.append("""
-<public>
-    <name>${evaluateAnnotation(annotation, "taskName")}</name>
-    <description>${evaluateAnnotation(annotation, "description")}</description>
-    <class>${ScheduleTaskSpecification.getName()}</class>
-    <configuration>
-        <application>${scheduleTaskComponentClass.getName()}</application>""")
+        <public>
+            <name>${evaluateAnnotation(annotation, "taskName")}</name>
+            <description>${evaluateAnnotation(annotation, "description")}</description>
+            <class>${ScheduleTaskSpecification.getName()}</class>
+            <configuration>
+                <application>${scheduleTaskComponentClass.getName()}</application>""")
 
-                    Object o = evaluateAnnotation(annotation, "formClass")
-                    /*
-                    * The default interface ScheduleTaskFormFactory should
-                    * not be written in the xml so it gets filtered.
-                    */
-                    if( o != ScheduleTaskFormFactory) {
-                        result.append("""
-        <form>${o.getName()}</form>""")
-                    }
-                    result.append("""
-    </configuration>
-</public>""")
+                            Object o = evaluateAnnotation(annotation, "formClass")
+                            /*
+                            * The default interface ScheduleTaskFormFactory should
+                            * not be written in the xml so it gets filtered.
+                            */
+                            if( o != ScheduleTaskFormFactory) {
+                                result.append("""
+                <form>${o.getName()}</form>""")
+                            }
+                            result.append("""
+            </configuration>$configurable
+        </public>""")
 
                 }
         }
