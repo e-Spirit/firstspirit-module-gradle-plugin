@@ -1,6 +1,5 @@
 package org.gradle.plugins.fsm
 
-import com.espirit.moddev.components.annotations.*
 import de.espirit.firstspirit.access.Language
 import de.espirit.firstspirit.access.project.Resolution
 import de.espirit.firstspirit.access.project.TemplateSet
@@ -14,10 +13,10 @@ import com.espirit.moddev.components.annotations.PublicComponent
 import com.espirit.moddev.components.annotations.ServiceComponent
 import com.espirit.moddev.components.annotations.Resource
 import com.espirit.moddev.components.annotations.ScheduleTaskComponent
+import com.espirit.moddev.components.annotations.UrlFactoryComponent
 import com.espirit.moddev.components.annotations.WebAppComponent
 import de.espirit.firstspirit.agency.SpecialistsBroker
 import de.espirit.firstspirit.module.Configuration
-import de.espirit.firstspirit.module.ScheduleTaskSpecification
 import de.espirit.firstspirit.module.ServerEnvironment
 import de.espirit.firstspirit.scheduling.ScheduleTaskForm
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
@@ -25,6 +24,7 @@ import de.espirit.firstspirit.server.module.ModuleInfo
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
+import org.gradle.plugins.fsm.tasks.bundling.FSM
 import org.gradle.plugins.fsm.util.BaseConfiguration
 import org.gradle.plugins.fsm.util.BaseProjectApp
 import org.gradle.plugins.fsm.util.BaseService
@@ -42,9 +42,13 @@ import static org.mockito.Mockito.when
 
 class XmlTagAppenderTest {
 
+    static final String INDENT_WS_8 = XmlTagAppender.INDENT_WS_8
+    static final String INDENT_WS_12___ = XmlTagAppender.INDENT_WS_12
+    static final String INDENT_WS_16_______ = XmlTagAppender.INDENT_WS_16
+
     final List<String> componentImplementingClasses = [TestPublicComponent.getName(), TestScheduleTaskComponentWithConfigurable.getName(), TestPublicComponentWithConfiguration.getName(),
                                                        TestWebAppComponent.getName(), TestProjectAppComponent.getName(), TestScheduleTaskComponentWithForm.getName(),
-                                                       TestScheduleTaskComponentWithoutForm.getName()]
+                                                       TestScheduleTaskComponentWithoutForm.getName(), TestServiceComponent.getName()]
     final List<String> validAndInvalidProjectAppClasses = [XmlTagAppender.PROJECT_APP_BLACKLIST, componentImplementingClasses].flatten()
 
     Project project
@@ -63,17 +67,124 @@ class XmlTagAppenderTest {
         project.dependencies.add(FSMPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, "joda-time:joda-time:2.3")
     }
 
+    /**
+     * Explicitly tests pretty printing of components tag creation
+     */
+    @Test
+    void testComponentsAppending_pretty_printing() throws Exception {
+        StringBuilder result = new StringBuilder()
+        def scannerResultProvider = new FSM.ClassScannerResultProvider() {
+            @Override
+            List<String> getNamesOfClassesImplementing(final Class<?> implementedInterface) {
+                println implementedInterface
+                return componentImplementingClasses
+            }
+
+            @Override
+            List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation) {
+                if (PublicComponent.isAssignableFrom(annotation)) {
+                    return [TestPublicComponent.getName(), TestPublicComponentWithConfiguration.getName()]
+                }
+                if (UrlFactoryComponent.isAssignableFrom(annotation)) {
+                    return [TestUrlFactoryComponent.getName()] as List<String>
+                }
+                if (ScheduleTaskComponent.isAssignableFrom(annotation)) {
+                    return [TestScheduleTaskComponentWithConfigurable.getName()]
+                }
+                println annotation
+                return []
+            }
+        }
+        XmlTagAppender.appendComponentsTag(project, new URLClassLoader(new URL[0]), scannerResultProvider, false, result)
+        /* explicitly test indent and pretty printing of components tag
+        * within module.xml
+        * <module>
+        *     <components>
+        *         <public/>
+        *         <project-app/>
+        */
+        Assert.assertEquals("""
+${INDENT_WS_8}<public>
+${INDENT_WS_12___}<name>TestPublicComponentName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestPublicComponent</class>
+${INDENT_WS_8}</public>
+${INDENT_WS_8}<public>
+${INDENT_WS_12___}<name>TestPublicComponentWithConfigName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestPublicComponentWithConfiguration</class>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
+${INDENT_WS_8}</public>
+${INDENT_WS_8}<public>
+${INDENT_WS_12___}<name>Test task</name>
+${INDENT_WS_12___}<description>A task for test purpose</description>
+${INDENT_WS_12___}<class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
+${INDENT_WS_12___}<configuration>
+${INDENT_WS_16_______}<application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithConfigurable</application>
+${INDENT_WS_12___}</configuration>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
+${INDENT_WS_8}</public>
+${INDENT_WS_8}<public>
+${INDENT_WS_12___}<name>TestUrlFactoryComponentName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>TestDescription</description>
+${INDENT_WS_12___}<class>de.espirit.firstspirit.generate.UrlCreatorSpecification</class>
+${INDENT_WS_12___}<configuration>
+${INDENT_WS_16_______}<UrlFactory>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestUrlFactoryComponent</UrlFactory>
+${INDENT_WS_16_______}<UseRegistry>true</UseRegistry>
+${INDENT_WS_12___}</configuration>
+${INDENT_WS_8}</public>
+
+${INDENT_WS_8}<service>
+${INDENT_WS_12___}<name>TestServiceComponentName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>TestDescription</description>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestServiceComponent</class>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestServiceComponent\$TestConfigurable</configurable>
+${INDENT_WS_8}</service>
+
+${INDENT_WS_8}<project-app>
+${INDENT_WS_12___}<name>TestProjectAppComponentName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>TestDescription</description>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent</class>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent\$TestConfigurable</configurable>
+${INDENT_WS_12___}<resources>
+${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0" scope="MODULE" mode="LEGACY">lib/guava-24.0.jar</resource>
+${INDENT_WS_12___}</resources>
+${INDENT_WS_8}</project-app>
+
+${INDENT_WS_8}<web-app scopes="project,global">
+${INDENT_WS_12___}<name>TestWebAppComponentName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>TestDescription</description>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent</class>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent\$TestConfigurable</configurable>
+${INDENT_WS_12___}<web-xml>/test/web.xml</web-xml>
+${INDENT_WS_12___}<web-resources>
+${INDENT_WS_16_______}<resource name="test:webapps-test-project" version="1.2">lib/webapps-test-project-1.2.jar</resource>
+${INDENT_WS_16_______}<resource>/test/web.xml</resource>
+${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
+${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1">lib/commons-lang-3.0.jar</resource>
+${INDENT_WS_16_______}<resource name="joda-time:joda-time" version="2.3">lib/joda-time-2.3.jar</resource>
+${INDENT_WS_12___}</web-resources>
+${INDENT_WS_8}</web-app>
+""".toString(), result.toString())
+    }
+
+
+
     @Test
     void testPublicComponentTagAppending() throws Exception {
         StringBuilder result = new StringBuilder()
         XmlTagAppender.appendPublicComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestPublicComponent.getName()], result)
 
         Assert.assertEquals("""
-        <public>
-            <name>TestPublicComponentName</name>
-            <displayname>TestDisplayName</displayname>
-            <class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestPublicComponent</class>
-        </public>""", result.toString())
+${INDENT_WS_8}<public>
+${INDENT_WS_12___}<name>TestPublicComponentName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestPublicComponent</class>
+${INDENT_WS_8}</public>""".toString(), result.toString())
     }
 
 
@@ -83,12 +194,12 @@ class XmlTagAppenderTest {
         XmlTagAppender.appendPublicComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestPublicComponentWithConfiguration.getName()], result)
 
         Assert.assertEquals("""
-        <public>
-            <name>TestPublicComponentName</name>
-            <displayname>TestDisplayName</displayname>
-            <class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestPublicComponentWithConfiguration</class>
-            <configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
-        </public>""", result.toString())
+${INDENT_WS_8}<public>
+${INDENT_WS_12___}<name>TestPublicComponentWithConfigName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestPublicComponentWithConfiguration</class>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
+${INDENT_WS_8}</public>""".toString(), result.toString())
     }
 
     @Test
@@ -97,15 +208,15 @@ class XmlTagAppenderTest {
         XmlTagAppender.appendScheduleTaskComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestScheduleTaskComponentWithForm.getName()], result)
 
         Assert.assertEquals("""
-        <public>
-            <name>Test task</name>
-            <description>A task for test purpose</description>
-            <class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
-            <configuration>
-                <application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithForm</application>
-                <form>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskFormFactory</form>
-            </configuration>
-        </public>""", result.toString())
+${INDENT_WS_8}<public>
+${INDENT_WS_12___}<name>Test task</name>
+${INDENT_WS_12___}<description>A task for test purpose</description>
+${INDENT_WS_12___}<class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
+${INDENT_WS_12___}<configuration>
+${INDENT_WS_16_______}<application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithForm</application>
+${INDENT_WS_16_______}<form>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskFormFactory</form>
+${INDENT_WS_12___}</configuration>
+${INDENT_WS_8}</public>""".toString(), result.toString())
     }
 
 
@@ -116,15 +227,15 @@ class XmlTagAppenderTest {
         XmlTagAppender.appendScheduleTaskComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestScheduleTaskComponentWithConfigurable.getName()], result)
 
         Assert.assertEquals("""
-        <public>
-            <name>Test task</name>
-            <description>A task for test purpose</description>
-            <class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
-            <configuration>
-                <application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithConfigurable</application>
-            </configuration>
-            <configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
-        </public>""", result.toString())
+${INDENT_WS_8}<public>
+${INDENT_WS_12___}<name>Test task</name>
+${INDENT_WS_12___}<description>A task for test purpose</description>
+${INDENT_WS_12___}<class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
+${INDENT_WS_12___}<configuration>
+${INDENT_WS_16_______}<application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithConfigurable</application>
+${INDENT_WS_12___}</configuration>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
+${INDENT_WS_8}</public>""".toString(), result.toString())
     }
 
     @Test
@@ -133,14 +244,14 @@ class XmlTagAppenderTest {
         XmlTagAppender.appendScheduleTaskComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()),[TestScheduleTaskComponentWithoutForm.getName()], result)
 
         Assert.assertEquals("""
-        <public>
-            <name>Test task</name>
-            <description>A task for test purpose</description>
-            <class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
-            <configuration>
-                <application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithoutForm</application>
-            </configuration>
-        </public>""", result.toString())
+${INDENT_WS_8}<public>
+${INDENT_WS_12___}<name>Test task</name>
+${INDENT_WS_12___}<description>A task for test purpose</description>
+${INDENT_WS_12___}<class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
+${INDENT_WS_12___}<configuration>
+${INDENT_WS_16_______}<application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithoutForm</application>
+${INDENT_WS_12___}</configuration>
+${INDENT_WS_8}</public>""".toString(), result.toString())
     }
 
     @Test
@@ -149,20 +260,44 @@ class XmlTagAppenderTest {
         XmlTagAppender.appendWebAppTags(project, new URLClassLoader(new URL[0], getClass().getClassLoader()), componentImplementingClasses, result, true)
 
         Assert.assertEquals("""
-<web-app scopes="project,global">
-    <name>TestWebAppComponentName</name>
-    <displayname>TestDisplayName</displayname>
-    <description>TestDescription</description>
-    <class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent</class>
-    <configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent\$TestConfigurable</configurable>
-    <web-xml>/test/web.xml</web-xml>
-    <web-resources>
-        <resource name="$GROUP:$NAME" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
-        <resource>/test/web.xml</resource>
-        <resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource><resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1">lib/commons-lang-3.0.jar</resource>
-        <resource name="joda-time:joda-time" version="2.3" minVersion="2.3">lib/joda-time-2.3.jar</resource>
-    </web-resources>
-</web-app>
+${INDENT_WS_8}<web-app scopes="project,global">
+${INDENT_WS_12___}<name>TestWebAppComponentName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>TestDescription</description>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent</class>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent\$TestConfigurable</configurable>
+${INDENT_WS_12___}<web-xml>/test/web.xml</web-xml>
+${INDENT_WS_12___}<web-resources>
+${INDENT_WS_16_______}<resource name="$GROUP:$NAME" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
+${INDENT_WS_16_______}<resource>/test/web.xml</resource>
+${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
+${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1">lib/commons-lang-3.0.jar</resource>
+${INDENT_WS_16_______}<resource name="joda-time:joda-time" version="2.3" minVersion="2.3">lib/joda-time-2.3.jar</resource>
+${INDENT_WS_12___}</web-resources>
+${INDENT_WS_8}</web-app>
+""".toString(), result.toString())
+    }
+
+    @Test
+    void appendWebAppTagsWithoutConfig() throws Exception {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendWebAppTags(project, new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestWebAppComponentWithoutConfiguration.getName()], result, true)
+
+        Assert.assertEquals("""
+${INDENT_WS_8}<web-app scopes="project,global">
+${INDENT_WS_12___}<name>TestWebAppComponentName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>TestDescription</description>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponentWithoutConfiguration</class>
+${INDENT_WS_12___}<web-xml>/test/web.xml</web-xml>
+${INDENT_WS_12___}<web-resources>
+${INDENT_WS_16_______}<resource name="$GROUP:$NAME" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
+${INDENT_WS_16_______}<resource>/test/web.xml</resource>
+${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
+${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1">lib/commons-lang-3.0.jar</resource>
+${INDENT_WS_16_______}<resource name="joda-time:joda-time" version="2.3" minVersion="2.3">lib/joda-time-2.3.jar</resource>
+${INDENT_WS_12___}</web-resources>
+${INDENT_WS_8}</web-app>
 """.toString(), result.toString())
     }
 
@@ -172,17 +307,17 @@ class XmlTagAppenderTest {
         XmlTagAppender.appendProjectAppTags( new URLClassLoader(new URL[0], getClass().getClassLoader()), validAndInvalidProjectAppClasses, result)
 
         Assert.assertEquals("""
-<project-app>
-    <name>TestProjectAppComponentName</name>
-    <displayname>TestDisplayName</displayname>
-    <description>TestDescription</description>
-    <class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent</class>
-    <configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent\$TestConfigurable</configurable>
-    <resources>
-        <resource name="com.google.guava:guava" version="24.0" scope="MODULE" mode="LEGACY">lib/guava-24.0.jar</resource>
-    </resources>
-</project-app>
-""", result.toString())
+${INDENT_WS_8}<project-app>
+${INDENT_WS_12___}<name>TestProjectAppComponentName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>TestDescription</description>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent</class>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent\$TestConfigurable</configurable>
+${INDENT_WS_12___}<resources>
+${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0" scope="MODULE" mode="LEGACY">lib/guava-24.0.jar</resource>
+${INDENT_WS_12___}</resources>
+${INDENT_WS_8}</project-app>
+""".toString(), result.toString())
     }
 
     @Test
@@ -191,14 +326,14 @@ class XmlTagAppenderTest {
         XmlTagAppender.appendServiceTags( new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestServiceComponent.getName()], result)
 
         Assert.assertEquals("""
-<service>
-    <name>TestServiceComponentName</name>
-    <displayname>TestDisplayName</displayname>
-    <description>TestDescription</description>
-    <class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestServiceComponent</class>
-    <configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestServiceComponent\$TestConfigurable</configurable>
-</service>
-""", result.toString())
+${INDENT_WS_8}<service>
+${INDENT_WS_12___}<name>TestServiceComponentName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>TestDescription</description>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestServiceComponent</class>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestServiceComponent\$TestConfigurable</configurable>
+${INDENT_WS_8}</service>
+""".toString(), result.toString())
     }
 
     @Test
@@ -207,17 +342,17 @@ class XmlTagAppenderTest {
         XmlTagAppender.appendUrlCreatorTags( new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestUrlFactoryComponent.getName()], result)
 
         Assert.assertEquals("""
-<public>
-    <name>TestUrlFactoryComponentName</name>
-    <displayname>TestDisplayName</displayname>
-    <description>TestDescription</description>
-    <class>de.espirit.firstspirit.generate.UrlCreatorSpecification</class>
-    <configuration>
-        <UrlFactory>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestUrlFactoryComponent</UrlFactory>
-        <UseRegistry>true</UseRegistry>
-    </configuration>
-</public>
-""", result.toString())
+${INDENT_WS_8}<public>
+${INDENT_WS_12___}<name>TestUrlFactoryComponentName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>TestDescription</description>
+${INDENT_WS_12___}<class>de.espirit.firstspirit.generate.UrlCreatorSpecification</class>
+${INDENT_WS_12___}<configuration>
+${INDENT_WS_16_______}<UrlFactory>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestUrlFactoryComponent</UrlFactory>
+${INDENT_WS_16_______}<UseRegistry>true</UseRegistry>
+${INDENT_WS_12___}</configuration>
+${INDENT_WS_8}</public>
+""".toString(), result.toString())
     }
 
     @Test
@@ -225,14 +360,15 @@ class XmlTagAppenderTest {
         ResolvedArtifact resolvedArtifact = createArtifactMock()
         ModuleVersionIdentifier moduleVersionIdentifier = createVersionIdentifierMock("mygroup", "myname", "1.0.0")
 
-        String result = XmlTagAppender.getResourceTagForDependency(moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED, true)
-        Assert.assertEquals("""<resource name="mygroup:myname" scope="server" mode="isolated" version="1.0.0" minVersion="1.0.0">lib/myname-1.0.0.jar</resource>""", result)
+        def indent = INDENT_WS_8
+        String result = XmlTagAppender.getResourceTagForDependency(indent, moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED, true)
+        Assert.assertEquals("""${indent}<resource name="mygroup:myname" scope="server" mode="isolated" version="1.0.0" minVersion="1.0.0">lib/myname-1.0.0.jar</resource>""".toString(), result)
     }
 
     @Test
     void getResourcesTags() {
         String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED, false)
-        Assert.assertEquals("""<resource name="$GROUP:$NAME" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>""".toString(), result)
+        Assert.assertEquals("""${INDENT_WS_8}<resource name="$GROUP:$NAME" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>""".toString(), result)
     }
 
     @ProjectAppComponent(name = "TestProjectAppComponentName",
@@ -255,11 +391,21 @@ class XmlTagAppenderTest {
         static class TestConfigurable extends BaseConfiguration { }
     }
 
+    @WebAppComponent(name = "TestWebAppComponentName",
+            displayName = "TestDisplayName",
+            description = "TestDescription",
+            webXml = "/test/web.xml",
+            webResources = [@Resource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0"),
+                            @Resource(path = "lib/commons-lang-3.0.jar", name = "org.apache.commons:commons-lang3", version = "3.0", minVersion = "2.9", maxVersion = "3.1")])
+    static class TestWebAppComponentWithoutConfiguration extends BaseWebApp {
+        static class TestConfigurable extends BaseConfiguration { }
+    }
+
     @PublicComponent(name = "TestPublicComponentName", displayName = "TestDisplayName")
     static class TestPublicComponent {
     }
 
-    @PublicComponent(name = "TestPublicComponentName", displayName = "TestDisplayName", configurable = TestConfigurable.class)
+    @PublicComponent(name = "TestPublicComponentWithConfigName", displayName = "TestDisplayName", configurable = TestConfigurable.class)
     static class TestPublicComponentWithConfiguration {
     }
 

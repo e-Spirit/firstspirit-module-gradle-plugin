@@ -1,6 +1,5 @@
 package org.gradle.plugins.fsm
 
-import com.espirit.moddev.components.annotations.*
 import de.espirit.firstspirit.generate.UrlFactory
 import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
@@ -8,8 +7,12 @@ import com.espirit.moddev.components.annotations.Resource
 import com.espirit.moddev.components.annotations.ServiceComponent
 import com.espirit.moddev.components.annotations.ScheduleTaskComponent
 import com.espirit.moddev.components.annotations.WebAppComponent
+import com.espirit.moddev.components.annotations.UrlFactoryComponent
 import de.espirit.firstspirit.module.Configuration
+import de.espirit.firstspirit.module.ProjectApp
 import de.espirit.firstspirit.module.ScheduleTaskSpecification
+import de.espirit.firstspirit.module.Service
+import de.espirit.firstspirit.module.WebApp
 import de.espirit.firstspirit.module.descriptor.WebAppDescriptor
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
 import de.espirit.firstspirit.server.module.ModuleInfo
@@ -18,6 +21,7 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
+import org.gradle.plugins.fsm.tasks.bundling.FSM
 
 import java.lang.annotation.Annotation
 
@@ -27,6 +31,30 @@ import static org.gradle.plugins.fsm.FSMPlugin.PROVIDED_COMPILE_CONFIGURATION_NA
 class XmlTagAppender {
 
     static final List<String> PROJECT_APP_BLACKLIST = ["de.espirit.firstspirit.feature.ContentTransportProjectApp"]
+
+    static final String INDENT_WS_8 = "        "
+    static final String INDENT_WS_12 = "            "
+    static final String INDENT_WS_16 = "                "
+
+    /*
+     * Append components tag to given result StringBuilder
+     */
+    @CompileStatic
+    static void appendComponentsTag(Project project, URLClassLoader classLoader, FSM.ClassScannerResultProvider scan, final boolean appendDefaultMinVersion, final StringBuilder result) {
+
+        appendPublicComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(PublicComponent), result)
+
+        appendScheduleTaskComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(ScheduleTaskComponent), result)
+
+        appendUrlCreatorTags(classLoader, scan.getNamesOfClassesWithAnnotation(UrlFactoryComponent), result)
+
+        appendServiceTags(classLoader, scan.getNamesOfClassesImplementing(Service), result)
+
+        appendProjectAppTags(classLoader, scan.getNamesOfClassesImplementing(ProjectApp), result)
+
+        appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result, appendDefaultMinVersion)
+    }
+
 
     @CompileStatic
     static void appendPublicComponentTags(URLClassLoader cl, List<String> publicComponentClasses, StringBuilder result) {
@@ -43,6 +71,7 @@ class XmlTagAppender {
                 .forEach { annotation ->
                     final String configurable = annotation.configurable() == Configuration.class ? "" : "\n            <configurable>${annotation.configurable().name}</configurable>"
 
+// keep indent (2 tabs / 8 whitespaces) --> 3. level <module><components><public>
                     result.append("""
         <public>
             <name>${evaluateAnnotation(annotation, "name")}</name>
@@ -67,9 +96,10 @@ class XmlTagAppender {
                 Arrays.asList(scheduleTaskComponentClass.annotations)
                 .findAll { it instanceof ScheduleTaskComponent }
                 .forEach { annotation ->
-                    def indent = "            "
+                    def indent = INDENT_WS_12
                     final String configurable = annotation.configurable() == Configuration.class ? "" : "\n" + indent + "<configurable>${annotation.configurable().name}</configurable>"
 
+// keep indent (2 tabs / 8 whitespaces) --> 3. level <module><components><public>
                     result.append("""
         <public>
             <name>${evaluateAnnotation(annotation, "taskName")}</name>
@@ -106,6 +136,7 @@ class XmlTagAppender {
     private static appendWebAppComponentTagsOfClasses(List<Class<?>> loadedClasses, Project project, result, boolean appendDefaultMinVersion) {
         Set<ResolvedArtifact> webCompileDependencies = project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> providedCompileDependencies = project.configurations.getByName(PROVIDED_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()
+        def webResourceIndent = INDENT_WS_16
 
         loadedClasses.forEach { webAppClass ->
             (Arrays.asList(webAppClass.annotations)
@@ -114,29 +145,28 @@ class XmlTagAppender {
 
                     StringBuilder webResources = new StringBuilder()
                     if (project.file('src/main/files').exists()) {
-                        webResources.append("""<resource name="${project.group}:${project.name}-files" """ +
+                        webResources.append("""${webResourceIndent}<resource name="${project.group}:${project.name}-files" """ +
                                             """version="${project.version}">files/</resource>\n""")
                     }
-                    addResourceTagsForDependencies(webCompileDependencies, providedCompileDependencies, webResources, "", null, appendDefaultMinVersion)
+                    addResourceTagsForDependencies(webResourceIndent, webCompileDependencies, providedCompileDependencies, webResources, "", null, appendDefaultMinVersion)
 
                     final String scopes = scopes(annotation.scope())
-                    final String configurable = annotation.configurable() == Configuration.class ? "" : "<configurable>${annotation.configurable().name}</configurable>"
+                    def indent = INDENT_WS_12
+                    final String configurable = annotation.configurable() == Configuration.class ? "" : "\n" + indent + "<configurable>${annotation.configurable().name}</configurable>"
 
+// keep indent (2 tabs / 8 whitespaces) --> 3. level <module><components><web-app>
                     result.append("""
-<web-app${scopes}>
-    <name>${evaluateAnnotation(annotation, "name")}</name>
-    <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
-    <description>${evaluateAnnotation(annotation, "description")}</description>
-    <class>${webAppClass.getName().toString()}</class>
-    ${configurable}
-    <web-xml>${evaluateAnnotation(annotation, "webXml").toString()}</web-xml>
-    <web-resources>
-        <resource name="${project.group}:${project.name}" version="${project.version}">lib/${project.jar.archiveName.toString()}</resource>
-        <resource>${evaluateAnnotation(annotation, "webXml").toString()}</resource>
-        ${evaluateResources(annotation)}
-        ${webResources.toString()}
-    </web-resources>
-</web-app>
+        <web-app${scopes}>
+            <name>${evaluateAnnotation(annotation, "name")}</name>
+            <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
+            <description>${evaluateAnnotation(annotation, "description")}</description>
+            <class>${webAppClass.getName().toString()}</class>${configurable}
+            <web-xml>${evaluateAnnotation(annotation, "webXml").toString()}</web-xml>
+            <web-resources>
+                <resource name="${project.group}:${project.name}" version="${project.version}">lib/${project.jar.archiveName.toString()}</resource>
+                <resource>${evaluateAnnotation(annotation, "webXml").toString()}</resource>${evaluateResources(annotation, webResourceIndent)}${webResources.toString()}
+            </web-resources>
+        </web-app>
 """)
                 }
         }
@@ -158,23 +188,24 @@ class XmlTagAppender {
     }
 
     static appendProjectAppTagsOfClasses(List<Class<?>> loadedClasses, result) {
+        def resourceIndent = INDENT_WS_16
         loadedClasses.forEach { projectAppClass ->
             Arrays.asList(projectAppClass.annotations)
                 .findAll { it.annotationType() == ProjectAppComponent }
                 .forEach { annotation ->
-                    final String resources = evaluateResources(annotation)
+                    final String resources = evaluateResources(annotation, resourceIndent)
                     final String resourcesTag = resources.isEmpty() ? "" : """<resources>
-        ${resources}
-    </resources>"""
+${resources}
+            </resources>"""
                     result.append("""
-<project-app>
-    <name>${evaluateAnnotation(annotation, "name")}</name>
-    <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
-    <description>${evaluateAnnotation(annotation, "description")}</description>
-    <class>${projectAppClass.getName().toString()}</class>
-    <configurable>${evaluateAnnotation(annotation, "configurable").getName().toString()}</configurable>
-    ${resourcesTag}
-</project-app>
+        <project-app>
+            <name>${evaluateAnnotation(annotation, "name")}</name>
+            <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
+            <description>${evaluateAnnotation(annotation, "description")}</description>
+            <class>${projectAppClass.getName().toString()}</class>
+            <configurable>${evaluateAnnotation(annotation, "configurable").getName().toString()}</configurable>
+            ${resourcesTag}
+        </project-app>
 """)
             }
         }
@@ -193,13 +224,13 @@ class XmlTagAppender {
                     .findAll { it.annotationType() == ServiceComponent }
                     .forEach { annotation ->
                 result.append("""
-<service>
-    <name>${evaluateAnnotation(annotation, "name")}</name>
-    <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
-    <description>${evaluateAnnotation(annotation, "description")}</description>
-    <class>${serviceClass.getName().toString()}</class>
-    <configurable>${evaluateAnnotation(annotation, "configurable").getName().toString()}</configurable>
-</service>
+        <service>
+            <name>${evaluateAnnotation(annotation, "name")}</name>
+            <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
+            <description>${evaluateAnnotation(annotation, "description")}</description>
+            <class>${serviceClass.getName().toString()}</class>
+            <configurable>${evaluateAnnotation(annotation, "configurable").getName().toString()}</configurable>
+        </service>
 """)
             }
         }
@@ -224,16 +255,16 @@ class XmlTagAppender {
                     .findAll { it.annotationType() == UrlFactoryComponent }
                     .forEach { annotation ->
                 result.append("""
-<public>
-    <name>${evaluateAnnotation(annotation, "name")}</name>
-    <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
-    <description>${evaluateAnnotation(annotation, "description")}</description>
-    <class>de.espirit.firstspirit.generate.UrlCreatorSpecification</class>
-    <configuration>
-        <UrlFactory>${urlFactoryClass.getName().toString()}</UrlFactory>
-        <UseRegistry>${evaluateAnnotation(annotation, "useRegistry")}</UseRegistry>
-    </configuration>
-</public>
+        <public>
+            <name>${evaluateAnnotation(annotation, "name")}</name>
+            <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
+            <description>${evaluateAnnotation(annotation, "description")}</description>
+            <class>de.espirit.firstspirit.generate.UrlCreatorSpecification</class>
+            <configuration>
+                <UrlFactory>${urlFactoryClass.getName().toString()}</UrlFactory>
+                <UseRegistry>${evaluateAnnotation(annotation, "useRegistry")}</UseRegistry>
+            </configuration>
+        </public>
 """)
             }
         }
@@ -243,7 +274,7 @@ class XmlTagAppender {
         annotation.annotationType().getDeclaredMethod(methodName, null).invoke(annotation, null)
     }
 
-    private static String evaluateResources(final Annotation annotation) {
+    private static String evaluateResources(final Annotation annotation, final String indent) {
         final StringBuilder sb = new StringBuilder()
 
         if (annotation instanceof ProjectAppComponent) {
@@ -251,46 +282,50 @@ class XmlTagAppender {
                 final String minVersion = it.minVersion().isEmpty() ? "" : """ minVersion="${it.minVersion()}\""""
                 final String maxVersion = it.maxVersion().isEmpty() ? "" : """ maxVersion="${it.maxVersion()}\""""
 
-                sb.append("""<resource name="${it.name()}" version="${it.version()}"${minVersion}${maxVersion} scope="${it.scope()}" mode="${it.mode()}">${it.path()}</resource>""")
+                sb.append("""${indent}<resource name="${it.name()}" version="${it.version()}"${minVersion}${maxVersion} scope="${it.scope()}" mode="${it.mode()}">${it.path()}</resource>""")
             }
         } else if (annotation instanceof WebAppComponent) {
-            annotation.webResources().each {
+            def resources = annotation.webResources()
+            def count = resources.length
+            resources.eachWithIndex { Resource it, int index ->
+                final String start = (index == 0) ? "\n" : ""
                 final String minVersion = it.minVersion().isEmpty() ? "" : """ minVersion="${it.minVersion()}\""""
                 final String maxVersion = it.maxVersion().isEmpty() ? "" : """ maxVersion="${it.maxVersion()}\""""
-
-                sb.append("""<resource name="${it.name()}" version="${it.version()}"${minVersion}${maxVersion}>${it.path()}</resource>""")
+                final String end = (index == count-1) ? "" : "\n"
+                sb.append("""${start}${indent}<resource name="${it.name()}" version="${it.version()}"${minVersion}${maxVersion}>${it.path()}</resource>${end}""")
             }
         }
 
         sb.toString()
     }
 
-    private static void addResourceTagsForDependencies(Set<ResolvedArtifact> dependencies, Set<ResolvedArtifact> providedCompileDependencies, StringBuilder projectResources, String scope, ModuleInfo.Mode mode, boolean appendDefaultMinVersion) {
+    private static void addResourceTagsForDependencies(String indent, Set<ResolvedArtifact> dependencies, Set<ResolvedArtifact> providedCompileDependencies, StringBuilder projectResources, String scope, ModuleInfo.Mode mode, boolean appendDefaultMinVersion) {
         dependencies.
             findAll{ !providedCompileDependencies.contains(it) }
             .forEach {
                 ModuleVersionIdentifier dependencyId = it.moduleVersion.id
-                projectResources.append(getResourceTagForDependency(dependencyId, it, scope, mode, appendDefaultMinVersion))
+                projectResources.append("\n" + getResourceTagForDependency(indent, dependencyId, it, scope, mode, appendDefaultMinVersion))
             }
     }
 
-    static String getResourceTagForDependency(ModuleVersionIdentifier dependencyId, ResolvedArtifact artifact, String scope, ModuleInfo.Mode mode, boolean appendDefaultMinVersion) {
+    static String getResourceTagForDependency(String indent, ModuleVersionIdentifier dependencyId, ResolvedArtifact artifact, String scope, ModuleInfo.Mode mode, boolean appendDefaultMinVersion) {
         def scopeAttribute = scope == null || scope.isEmpty() ? "" : """ scope="${scope}\""""
         def classifier = artifact.classifier != null && !artifact.classifier.isEmpty() ? "-${artifact.classifier}" : ""
         def modeAttribute = mode == null ? "" : """ mode="${mode.name().toLowerCase(Locale.ROOT)}\""""
         def minVersionAttribute = !appendDefaultMinVersion ? "" : """ minVersion="${dependencyId.version}\""""
-        """<resource name="${dependencyId.group}:${dependencyId.name}"$scopeAttribute$modeAttribute version="${dependencyId.version}"$minVersionAttribute>lib/${dependencyId.name}-${dependencyId.version}$classifier.${artifact.extension}</resource>"""
+        """${indent}<resource name="${dependencyId.group}:${dependencyId.name}"$scopeAttribute$modeAttribute version="${dependencyId.version}"$minVersionAttribute>lib/${dependencyId.name}-${dependencyId.version}$classifier.${artifact.extension}</resource>"""
     }
 
     static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode, boolean appendDefaultMinVersion) {
 
+        def indent = INDENT_WS_8;
         def projectResources = new StringBuilder()
         def modeAttribute = globalResourcesMode == null ? "" : """ mode="${globalResourcesMode.name().toLowerCase(Locale.ROOT)}\""""
-        projectResources.append("""<resource name="${project.group}:${project.name}" version="${project.version}" scope="module\"""" +
+        projectResources.append("""${indent}<resource name="${project.group}:${project.name}" version="${project.version}" scope="module\"""" +
                                 """${modeAttribute}>lib/${project.name}-${project.version}.jar</resource>"""
         )
         if (project.file('src/main/files').exists()) {
-            projectResources.append("""<resource name="${project.group}:${project.name}-files" version="${project.version}" scope="module\"""" +
+            projectResources.append("""${indent}<resource name="${project.group}:${project.name}-files" version="${project.version}" scope="module\"""" +
                                     """${modeAttribute}>files/</resource>\n""")
         }
         ConfigurationContainer configurations = project.configurations
@@ -298,9 +333,9 @@ class XmlTagAppender {
         Set<ResolvedArtifact> compileDependenciesModuleScoped = configurations.fsModuleCompile.getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> providedCompileDependencies = configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()
 
-        addResourceTagsForDependencies(compileDependenciesServerScoped, providedCompileDependencies, projectResources, "server", globalResourcesMode, appendDefaultMinVersion)
+        addResourceTagsForDependencies(indent, compileDependenciesServerScoped, providedCompileDependencies, projectResources, "server", globalResourcesMode, appendDefaultMinVersion)
         projectResources + "\n"
-        addResourceTagsForDependencies(compileDependenciesModuleScoped, providedCompileDependencies, projectResources, "module", globalResourcesMode, appendDefaultMinVersion)
+        addResourceTagsForDependencies(indent, compileDependenciesModuleScoped, providedCompileDependencies, projectResources, "module", globalResourcesMode, appendDefaultMinVersion)
         return projectResources.toString()
     }
 }

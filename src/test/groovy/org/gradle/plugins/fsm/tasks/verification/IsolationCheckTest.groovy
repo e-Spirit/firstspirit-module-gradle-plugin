@@ -46,7 +46,7 @@ class IsolationCheckTest {
         project = ProjectBuilder.builder().withProjectDir(testDir).build()
         project.apply plugin: FSMPlugin.NAME
         isolationCheck = project.tasks[FSMPlugin.ISOLATION_CHECK_TASK_NAME] as IsolationCheck
-        isolationCheck.setFirstSpiritVersion("5.2.2109")
+        isolationCheck.setFirstSpiritVersion("5.2.181007")
         isolationCheck.setDetectorUrl("https://fsdev.e-spirit.de/FsmDependencyDetector/")
     }
 

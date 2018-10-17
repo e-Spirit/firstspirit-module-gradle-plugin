@@ -15,15 +15,11 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
-import com.espirit.moddev.components.annotations.PublicComponent
-import com.espirit.moddev.components.annotations.UrlFactoryComponent
-import com.espirit.moddev.components.annotations.ScheduleTaskComponent
-import de.espirit.firstspirit.module.ProjectApp
-import de.espirit.firstspirit.module.Service
-import de.espirit.firstspirit.module.WebApp
+
 import groovy.xml.XmlUtil
 import de.espirit.firstspirit.server.module.ModuleInfo
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
+import io.github.lukehutch.fastclasspathscanner.scanner.ScanResult
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
@@ -149,17 +145,7 @@ class FSM extends Jar {
             try {
                 def scan = new FastClasspathScanner().addClassLoader(classLoader).scan()
 
-				appendServiceTags(classLoader, scan.getNamesOfClassesImplementing(Service), result)
-
-				appendProjectAppTags(classLoader, scan.getNamesOfClassesImplementing(ProjectApp), result)
-
-                appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result, appendDefaultMinVersion)
-
-                appendPublicComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(PublicComponent), result)
-
-				appendUrlCreatorTags(classLoader, scan.getNamesOfClassesWithAnnotation(UrlFactoryComponent), result)
-
-                appendScheduleTaskComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(ScheduleTaskComponent), result)
+                appendComponentsTag(project, classLoader, new ClassScannerResultDelegate(scan), appendDefaultMinVersion, result)
 
             } catch (MalformedURLException e) {
                 getLogger().error("Passed URL is malformed", e)
@@ -171,6 +157,37 @@ class FSM extends Jar {
         return result.toString()
     }
 
+    /**
+     * Simple class scanner interface facade to improve testability
+     */
+    interface ClassScannerResultProvider {
+
+        List<String> getNamesOfClassesImplementing(final Class<?> implementedInterface)
+
+        List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation)
+    }
+
+    /**
+     * Delegates to given io.github.lukehutch.fastclasspathscanner.scanner.ScanResult instance
+     */
+    private final class ClassScannerResultDelegate implements ClassScannerResultProvider {
+
+        private final ScanResult scan
+
+        ClassScannerResultDelegate(ScanResult scan) {
+            this.scan = scan
+        }
+
+        @Override
+        List<String> getNamesOfClassesImplementing(final Class<?> implementedInterface) {
+            return scan.getNamesOfClassesImplementing(implementedInterface)
+        }
+
+        @Override
+        List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation) {
+            return scan.getNamesOfClassesWithAnnotation(annotation)
+        }
+    }
 
     private File unzipFsmToNewTempDir(File archive) {
         def tempDir = getTemporaryDirFactory().create()
