@@ -1,5 +1,6 @@
 package org.gradle.plugins.fsm
 
+import com.espirit.moddev.components.annotations.WebResource
 import de.espirit.firstspirit.generate.UrlFactory
 import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
@@ -287,12 +288,13 @@ ${resources}
         } else if (annotation instanceof WebAppComponent) {
             def resources = annotation.webResources()
             def count = resources.length
-            resources.eachWithIndex { Resource it, int index ->
+            resources.eachWithIndex { WebResource it, int index ->
                 final String start = (index == 0) ? "\n" : ""
                 final String minVersion = it.minVersion().isEmpty() ? "" : """ minVersion="${it.minVersion()}\""""
                 final String maxVersion = it.maxVersion().isEmpty() ? "" : """ maxVersion="${it.maxVersion()}\""""
                 final String end = (index == count-1) ? "" : "\n"
-                sb.append("""${start}${indent}<resource name="${it.name()}" version="${it.version()}"${minVersion}${maxVersion}>${it.path()}</resource>${end}""")
+                final String target = it.targetPath().isEmpty() ? "" : """ target="${it.targetPath()}\""""
+                sb.append("""${start}${indent}<resource name="${it.name()}" version="${it.version()}"${minVersion}${maxVersion}${target}>${it.path()}</resource>${end}""")
             }
         }
 

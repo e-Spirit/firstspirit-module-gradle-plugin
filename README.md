@@ -239,9 +239,12 @@ You can use the following snippet as a starting point:
 
 ```groovy
 buildscript {
+	ext {
+		fsRuntimeVersion = '5.2.181007'
+	}
     dependencies {
-        classpath 'com.espirit.moddev:fsmgradleplugin:0.10.30'
-        classpath 'de.espirit.firstspirit:fs-isolated-runtime:5.2.180909'
+        classpath 'com.espirit.moddev:fsmgradleplugin:0.11.0'
+        classpath "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}"
     }
 }
 apply plugin: 'fsmgradleplugin'
@@ -256,13 +259,11 @@ dependencies {
     fsModuleCompile 'org.apache.activemq:activemq-all:5.14.2'
     fsWebCompile 'org.apache.activemq:activemq-all:5.14.2'
 
-	fsProvidedCompile 'commons-logging:commons-logging:1.1.3'
-
-    fsProvidedCompile 'de.espirit.firstspirit:fs-access:5.2.2109'
+	fsProvidedCompile "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}"
 
 	testCompile 'junit:junit:4.12'
 
-    compile 'com.espirit.moddev.components:annotations:1.4.0'
+    compile 'com.espirit.moddev.components:annotations:1.9.0'
 }
 
 fsm {

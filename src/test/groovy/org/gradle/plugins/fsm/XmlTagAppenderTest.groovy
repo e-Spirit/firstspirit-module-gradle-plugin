@@ -12,6 +12,7 @@ import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
 import com.espirit.moddev.components.annotations.ServiceComponent
 import com.espirit.moddev.components.annotations.Resource
+import com.espirit.moddev.components.annotations.WebResource
 import com.espirit.moddev.components.annotations.ScheduleTaskComponent
 import com.espirit.moddev.components.annotations.UrlFactoryComponent
 import com.espirit.moddev.components.annotations.WebAppComponent
@@ -65,6 +66,7 @@ class XmlTagAppenderTest {
         project.repositories.add(project.repositories.mavenCentral())
         project.pluginManager.apply(FSMPlugin)
         project.dependencies.add(FSMPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, "joda-time:joda-time:2.3")
+        project.dependencies.add(FSMPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
     }
 
     /**
@@ -165,8 +167,9 @@ ${INDENT_WS_12___}<web-resources>
 ${INDENT_WS_16_______}<resource name="test:webapps-test-project" version="1.2">lib/webapps-test-project-1.2.jar</resource>
 ${INDENT_WS_16_______}<resource>/test/web.xml</resource>
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
-${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1">lib/commons-lang-3.0.jar</resource>
+${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1" target="targetPath">lib/commons-lang-3.0.jar</resource>
 ${INDENT_WS_16_______}<resource name="joda-time:joda-time" version="2.3">lib/joda-time-2.3.jar</resource>
+${INDENT_WS_16_______}<resource name="org.joda:joda-convert" version="2.1.1">lib/joda-convert-2.1.1.jar</resource>
 ${INDENT_WS_12___}</web-resources>
 ${INDENT_WS_8}</web-app>
 """.toString(), result.toString())
@@ -255,9 +258,12 @@ ${INDENT_WS_8}</public>""".toString(), result.toString())
     }
 
     @Test
-    void appendWebAppTags() throws Exception {
+    void appendWebAppTags_with_target_path() throws Exception {
         StringBuilder result = new StringBuilder()
         XmlTagAppender.appendWebAppTags(project, new URLClassLoader(new URL[0], getClass().getClassLoader()), componentImplementingClasses, result, true)
+
+        // targetPath defined in WebResource annotation at {@link TestWebAppComponent}
+        def targetPathValue = 'targetPath'
 
         Assert.assertEquals("""
 ${INDENT_WS_8}<web-app scopes="project,global">
@@ -271,8 +277,9 @@ ${INDENT_WS_12___}<web-resources>
 ${INDENT_WS_16_______}<resource name="$GROUP:$NAME" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
 ${INDENT_WS_16_______}<resource>/test/web.xml</resource>
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
-${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1">lib/commons-lang-3.0.jar</resource>
+${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1" target="${targetPathValue}">lib/commons-lang-3.0.jar</resource>
 ${INDENT_WS_16_______}<resource name="joda-time:joda-time" version="2.3" minVersion="2.3">lib/joda-time-2.3.jar</resource>
+${INDENT_WS_16_______}<resource name="org.joda:joda-convert" version="2.1.1" minVersion="2.1.1">lib/joda-convert-2.1.1.jar</resource>
 ${INDENT_WS_12___}</web-resources>
 ${INDENT_WS_8}</web-app>
 """.toString(), result.toString())
@@ -296,6 +303,7 @@ ${INDENT_WS_16_______}<resource>/test/web.xml</resource>
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
 ${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1">lib/commons-lang-3.0.jar</resource>
 ${INDENT_WS_16_______}<resource name="joda-time:joda-time" version="2.3" minVersion="2.3">lib/joda-time-2.3.jar</resource>
+${INDENT_WS_16_______}<resource name="org.joda:joda-convert" version="2.1.1" minVersion="2.1.1">lib/joda-convert-2.1.1.jar</resource>
 ${INDENT_WS_12___}</web-resources>
 ${INDENT_WS_8}</web-app>
 """.toString(), result.toString())
@@ -385,8 +393,8 @@ ${INDENT_WS_8}</public>
             description = "TestDescription",
             configurable = TestConfigurable,
             webXml = "/test/web.xml",
-            webResources = [@Resource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0"),
-                            @Resource(path = "lib/commons-lang-3.0.jar", name = "org.apache.commons:commons-lang3", version = "3.0", minVersion = "2.9", maxVersion = "3.1")])
+            webResources = [@WebResource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0"),
+                            @WebResource(targetPath = "targetPath", path = "lib/commons-lang-3.0.jar", name = "org.apache.commons:commons-lang3", version = "3.0", minVersion = "2.9", maxVersion = "3.1")])
     static class TestWebAppComponent extends BaseWebApp {
         static class TestConfigurable extends BaseConfiguration { }
     }
@@ -395,8 +403,8 @@ ${INDENT_WS_8}</public>
             displayName = "TestDisplayName",
             description = "TestDescription",
             webXml = "/test/web.xml",
-            webResources = [@Resource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0"),
-                            @Resource(path = "lib/commons-lang-3.0.jar", name = "org.apache.commons:commons-lang3", version = "3.0", minVersion = "2.9", maxVersion = "3.1")])
+            webResources = [@WebResource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0"),
+                            @WebResource(path = "lib/commons-lang-3.0.jar", name = "org.apache.commons:commons-lang3", version = "3.0", minVersion = "2.9", maxVersion = "3.1")])
     static class TestWebAppComponentWithoutConfiguration extends BaseWebApp {
         static class TestConfigurable extends BaseConfiguration { }
     }
