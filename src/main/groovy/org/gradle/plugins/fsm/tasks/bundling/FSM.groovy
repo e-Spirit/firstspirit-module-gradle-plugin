@@ -93,15 +93,14 @@ class FSM extends Jar {
 
         (FileSystems.newFileSystem(archive.toPath(), getClass().getClassLoader())).withCloseable { fs ->
             new ZipFile(archive).withCloseable { zipFile ->
-                def unfilteredModuleXml
-
-                unfilteredModuleXml = getUnfilteredModuleXml(zipFile)
+                def unfilteredModuleXml = getUnfilteredModuleXml(zipFile)
 
                 def componentTags = getComponentTags(archive, pluginExtension.appendDefaultMinVersion)
 
-                String filteredModuleXml = filterModuleXml(unfilteredModuleXml, resourcesTags, componentTags)
+                String filteredModuleXml = XmlUtil.serialize(filterModuleXml(unfilteredModuleXml, resourcesTags, componentTags))
 
-				filteredModuleXml = XmlUtil.serialize(filteredModuleXml)
+                def moduleXmlBuildDirLocation = Paths.get(destinationDir.toString(), "module.xml")
+                moduleXmlBuildDirLocation.toFile() << filteredModuleXml
 
 				Path nf = fs.getPath("/META-INF/module.xml")
 				Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE).withCloseable {
