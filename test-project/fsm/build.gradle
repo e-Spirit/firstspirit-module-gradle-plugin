@@ -1,0 +1,43 @@
+import java.nio.file.Paths
+import java.util.zip.ZipFile
+
+apply plugin: 'fsmgradleplugin'
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+
+dependencies {
+//    fsWebCompile 'org.apache.activemq:activemq-all:5.14.2'
+//	fsProvidedCompile 'commons-logging:commons-logging:1.1.3'
+
+    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.180909'
+    compile 'com.espirit.moddev.components:annotations:1.8.6'
+    compile 'commons-logging:commons-logging:1.2'
+
+    fsServerCompile project(':api')
+    fsModuleCompile 'joda-time:joda-time:2.10'
+
+    testCompile 'junit:junit:4.12'
+}
+
+
+def fsmArchivePath = Paths.get(project.buildDir.path, "fsm", "fsm-${project.version}.fsm")
+ZipFile fsmFile = new ZipFile(fsmArchivePath.toString())
+
+task testFsmIsProduced {
+    doLast {
+        logger.info("Searching for fsm file in $fsmArchivePath")
+        assert fsmArchivePath.toFile().exists()
+    }
+}
+
+task testZipFileContainsModuleXml {
+    doLast {
+        def moduleXml = fsmFile.entries().find { "META-INF/module.xml" == it.getName() }
+        assert moduleXml != null
+    }
+}
+
+test.dependsOn tasks.fsm, testFsmIsProduced, testZipFileContainsModuleXml

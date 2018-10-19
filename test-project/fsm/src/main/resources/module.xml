@@ -1,0 +1,20 @@
+<module>
+    <name>$name</name>
+    <version>$version</version>
+    <description>$description</description>
+    <components>
+
+$components
+
+
+    	<!-- example -->
+        <library>
+            <resources>
+            	<!-- production code  -->
+                <resource>lib/$artifact</resource>
+                
+$resources
+            </resources>
+        </library>
+    </components>
+</module>

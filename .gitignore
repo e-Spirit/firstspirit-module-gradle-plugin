@@ -12,7 +12,7 @@ classes
 .settings
 
 # Gradle Files #
-/build
+build/
 .gradle
 /.nb-gradle/
 
