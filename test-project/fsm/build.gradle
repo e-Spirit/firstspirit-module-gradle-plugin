@@ -17,7 +17,7 @@ dependencies {
     compile 'commons-logging:commons-logging:1.2'
 
     fsServerCompile project(':api')
-    fsModuleCompile 'joda-time:joda-time:2.10'
+    fsModuleCompile skipInLegacy('joda-time:joda-time:2.10')
 
     testCompile 'junit:junit:4.12'
 }

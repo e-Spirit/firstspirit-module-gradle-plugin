@@ -318,7 +318,7 @@ ${resources}
         """${indent}<resource name="${dependencyId.group}:${dependencyId.name}"$scopeAttribute$modeAttribute version="${dependencyId.version}"$minVersionAttribute>lib/${dependencyId.name}-${dependencyId.version}$classifier.${artifact.extension}</resource>"""
     }
 
-    static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode, boolean appendDefaultMinVersion) {
+    static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode, boolean appendDefaultMinVersion, boolean skipIsolationOnlyDependencies = false) {
 
         def indent = INDENT_WS_8;
         def projectResources = new StringBuilder()
@@ -331,9 +331,20 @@ ${resources}
                                     """${modeAttribute}>files/</resource>\n""")
         }
         ConfigurationContainer configurations = project.configurations
+
+        def fsServerCompileConfiguration = configurations.getByName("fsModuleCompile")
+        fsServerCompileConfiguration.attributes.keySet().forEach { println it.toString() }
+
         Set<ResolvedArtifact> compileDependenciesServerScoped = configurations.fsServerCompile.getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> compileDependenciesModuleScoped = configurations.fsModuleCompile.getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> providedCompileDependencies = configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()
+
+        if(skipIsolationOnlyDependencies) {
+            Set<ResolvedArtifact> skippedInLegacyDependencies = configurations.skippedInLegacy.getResolvedConfiguration().getResolvedArtifacts()
+            compileDependenciesServerScoped.removeAll(skippedInLegacyDependencies)
+            compileDependenciesModuleScoped.removeAll(skippedInLegacyDependencies)
+            providedCompileDependencies.removeAll(skippedInLegacyDependencies)
+        }
 
         addResourceTagsForDependencies(indent, compileDependenciesServerScoped, providedCompileDependencies, projectResources, "server", globalResourcesMode, appendDefaultMinVersion)
         projectResources + "\n"

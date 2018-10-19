@@ -90,16 +90,20 @@ class FSM extends Jar {
         File archive = getArchivePath()
         getLogger().info("Found archive ${archive.getPath()}")
 
-        def resourcesTags = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion)
-
         (FileSystems.newFileSystem(archive.toPath(), getClass().getClassLoader())).withCloseable { fs ->
             new ZipFile(archive).withCloseable { zipFile ->
                 def unfilteredModuleXml = getUnfilteredModuleXml(zipFile)
 
                 def componentTags = getModuleXmlComponentTags(archive, pluginExtension.appendDefaultMinVersion)
 
-                writeModuleDescriptorToBuildDirAndZipFile(fs, unfilteredModuleXml, componentTags, resourcesTags, "module.xml")
-                writeModuleDescriptorToBuildDirAndZipFile(fs, unfilteredModuleXml, componentTags, resourcesTags, "module-isolated.xml")
+                legacy: {
+                    def resourcesTagsLegacy = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion, true)
+                    writeModuleDescriptorToBuildDirAndZipFile(fs, unfilteredModuleXml, componentTags, resourcesTagsLegacy, "module.xml")
+                }
+                isolated: {
+                    def resourcesTagsIsolated = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion)
+                    writeModuleDescriptorToBuildDirAndZipFile(fs, unfilteredModuleXml, componentTags, resourcesTagsIsolated, "module-isolated.xml")
+                }
 			}
 		}
 	}

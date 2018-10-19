@@ -45,7 +45,7 @@ class FSMPluginExtension {
     /**
      * If set, this classloader isolation mode is used for all resources
      */
-    ModuleInfo.Mode resourceMode
+    ModuleInfo.Mode resourceMode = ModuleInfo.Mode.ISOLATED
 
     /**
      * If set, this URL is used to connect to the FSM Dependency Detector
@@ -66,5 +66,13 @@ class FSMPluginExtension {
 	/**
 	 * Whether to append the artifact version as the minVersion attribute to resources.
 	 */
-	boolean appendDefaultMinVersion
+	boolean appendDefaultMinVersion = true
+
+
+	private Set<String> dependenciesSkippedInLegacy = new HashSet<>()
+
+	public getDependenciesSkippedInLegacy() {
+		return dependenciesSkippedInLegacy
+	}
+
 }

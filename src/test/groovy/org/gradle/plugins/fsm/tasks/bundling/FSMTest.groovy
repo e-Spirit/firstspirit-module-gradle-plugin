@@ -17,6 +17,7 @@ package org.gradle.plugins.fsm.tasks.bundling
 
 import de.espirit.firstspirit.server.module.ModuleInfo
 import org.apache.commons.io.IOUtils
+import org.gradle.plugins.fsm.FSMPluginExtension
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 
@@ -34,6 +35,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
 import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.assertThatCode
 import static org.mockito.Mockito.spy
 
 class FSMTest {
@@ -65,6 +67,14 @@ class FSMTest {
 		fsm.execute()
 		assertThat(fsm.destinationDir).isDirectory()
 		assertThat(fsm.archivePath).isFile()
+	}
+
+	@Test
+	void pluginExposesMethodForExcludedDependencies() {
+		fsm.execute()
+		def resultingDependency = project.skipInLegacy("bla")
+		assertThat(resultingDependency).is("bla")
+		assertThat(project.configurations.getByName(FSMPlugin.FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME).getAll().collect { it.name }).contains("bla")
 	}
 	
 	@Test
@@ -127,16 +137,39 @@ class FSMTest {
         assertThat(moduleXml()).contains("""<vendor>${vendor}</vendor>""")
     }
 
-    @Test
-    void useGlobalClassloaderIsolationMode() {
-        project.repositories.add(project.getRepositories().mavenCentral())
-        project.dependencies.add("fsModuleCompile", "com.google.guava:guava:24.0-jre")
-        fsm.resourceMode = ModuleInfo.Mode.ISOLATED
+	@Test
+	void resourceIsConfiguredAsIsolatedByDefault() {
+		project.repositories.add(project.getRepositories().mavenCentral())
+		project.dependencies.add("fsModuleCompile", "com.google.guava:guava:24.0-jre")
 
-        fsm.execute()
+		fsm.execute()
 
-        assertThat(moduleXml()).contains("""<resource name="com.google.guava:guava" scope="module" mode="isolated" version="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
-    }
+		assertThat(moduleXml()).contains("""<resource name="com.google.guava:guava" scope="module" mode="isolated" version="24.0-jre" minVersion="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
+	}
+
+	@Test
+	void resourceIsConfiguredAsLegacyWhenConfigured() {
+		project.repositories.add(project.getRepositories().mavenCentral())
+		project.dependencies.add("fsModuleCompile", "com.google.guava:guava:24.0-jre")
+		fsm.resourceMode = ModuleInfo.Mode.LEGACY
+
+		fsm.execute()
+
+		assertThat(moduleXml()).contains("""<resource name="com.google.guava:guava" scope="module" mode="legacy" version="24.0-jre" minVersion="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
+	}
+
+	@Test
+	void resourceIsSkippedInLegacyWhenConfigured() {
+		project.repositories.add(project.getRepositories().mavenCentral())
+		project.dependencies.add("fsModuleCompile", 'junit:junit:4.12')
+		project.dependencies.add("fsModuleCompile", project.skipInLegacy('com.google.guava:guava:24.0-jre'))
+		fsm.resourceMode = ModuleInfo.Mode.LEGACY
+
+		fsm.execute()
+
+		assertThat(moduleXml()).contains("""<resource name="junit:junit" scope="module" mode="legacy" version="4.12" minVersion="4.12">lib/junit-4.12.jar</resource>""")
+		assertThat(moduleXml()).doesNotContain("""<resource name="com.google.guava:guava" scope="module" mode="legacy" version="24.0-jre" minVersion="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
+	}
 
     @Test
     void staticFilesResource() {
@@ -146,7 +179,7 @@ class FSMTest {
 
         fsm.execute()
 
-        assertThat(moduleXml()).contains("""<resource name=":test-files" version="unspecified" scope="module">files/</resource>""")
+        assertThat(moduleXml()).contains("""<resource name=":test-files" version="unspecified" scope="module" mode="isolated">files/</resource>""")
     }
 
 	@Test
