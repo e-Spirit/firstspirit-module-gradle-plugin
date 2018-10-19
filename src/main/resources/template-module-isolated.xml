@@ -1,0 +1,16 @@
+<module>
+    <name>$name</name>
+    <displayname>$displayName</displayname>
+    <version>$version</version>
+    <description>$description</description>
+    <vendor>$vendor</vendor>
+    <components>
+
+$components
+
+    </components>
+
+    <resources>
+$resources
+    </resources>
+</module>

@@ -79,13 +79,14 @@ class FSM extends Jar {
             metaInf {
                 from project.file(pluginExtension.moduleDirName)
                 include 'module.xml'
+                include 'module-isolated.xml'
             }
         }
     }
 
     @TaskAction
-    protected void generateModuleXml() {
-        getLogger().info("Generating module.xml")
+    protected void generateModuleXmls() {
+        getLogger().info("Generating module.xml files")
         File archive = getArchivePath()
         getLogger().info("Found archive ${archive.getPath()}")
 
@@ -95,20 +96,24 @@ class FSM extends Jar {
             new ZipFile(archive).withCloseable { zipFile ->
                 def unfilteredModuleXml = getUnfilteredModuleXml(zipFile)
 
-                def componentTags = getComponentTags(archive, pluginExtension.appendDefaultMinVersion)
+                def componentTags = getModuleXmlComponentTags(archive, pluginExtension.appendDefaultMinVersion)
 
-                String filteredModuleXml = XmlUtil.serialize(filterModuleXml(unfilteredModuleXml, resourcesTags, componentTags))
-
-                def moduleXmlBuildDirLocation = Paths.get(destinationDir.toString(), "module.xml")
-                moduleXmlBuildDirLocation.toFile() << filteredModuleXml
-
-				Path nf = fs.getPath("/META-INF/module.xml")
-				Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE).withCloseable {
-					it.write(filteredModuleXml)
-				}
+                writeModuleDescriptorToBuildDirAndZipFile(fs, unfilteredModuleXml, componentTags, resourcesTags, "module.xml")
+                writeModuleDescriptorToBuildDirAndZipFile(fs, unfilteredModuleXml, componentTags, resourcesTags, "module-isolated.xml")
 			}
 		}
 	}
+
+    void writeModuleDescriptorToBuildDirAndZipFile(FileSystem fs, String unfilteredModuleXml, String componentTags, String resourcesTags, String fileName) {
+        String filteredModuleXml = XmlUtil.serialize(filterModuleXml(unfilteredModuleXml, resourcesTags, componentTags))
+
+        Paths.get(destinationDir.toString(), fileName).toFile() << filteredModuleXml
+
+        Path nf = fs.getPath("/META-INF/" + fileName)
+        Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE).withCloseable {
+            it.write(filteredModuleXml)
+        }
+    }
 
     String getUnfilteredModuleXml(ZipFile zipFile) {
         def unfilteredModuleXml
@@ -135,7 +140,7 @@ class FSM extends Jar {
         filteredModuleXml
     }
 
-    String getComponentTags(File archive, boolean appendDefaultMinVersion) {
+    String getModuleXmlComponentTags(File archive, boolean appendDefaultMinVersion) {
         StringBuilder result = new StringBuilder()
         File tempDir = unzipFsmToNewTempDir(archive)
 
