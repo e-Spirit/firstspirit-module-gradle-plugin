@@ -123,7 +123,16 @@ class FSMTest {
 	void fsmExtensionUsed() {
 		assertThat(fsm.extension).isEqualTo(FSM.FSM_EXTENSION)
 	}
-	
+
+
+	@Test
+	void theTaskNameShouldBeComposedByAVerbAndAnObject(){
+		String verb = "assemble"
+		String object = "FSM"
+		assertThat(project.tasks[verb + object]).isNotNull();
+	}
+
+
 	@Test
 	void archivePathUsed() {
 		assertThat(fsm.archivePath.toPath()).isEqualTo(project.buildDir.toPath().resolve("fsm").resolve(fsm.archiveName))

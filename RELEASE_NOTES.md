@@ -1,3 +1,7 @@
+### Version 0.12.0 (October 24, 2018)
+
+* Fixed the 'fsm'-Extension and 'fsm'-Task name clash 
+
 ### Version 0.3.1 (July 26, 2014)
 
 * Fixed naming issues for task and plugin extension

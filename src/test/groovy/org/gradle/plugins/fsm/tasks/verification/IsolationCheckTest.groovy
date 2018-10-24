@@ -50,6 +50,15 @@ class IsolationCheckTest {
         isolationCheck.setDetectorUrl("https://fsdev.e-spirit.de/FsmDependencyDetector/")
     }
 
+
+    @Test
+    void theTaskNameShouldBeComposedByAVerbAndAnObject(){
+        String verb = "check"
+        String object = "Isolation"
+        assertThat(project.tasks[verb + object]).isNotNull();
+    }
+
+
     @Test
     void defaultComplianceLevel() {
         assertThat(isolationCheck.getComplianceLevel()).isSameAs(DEFAULT)

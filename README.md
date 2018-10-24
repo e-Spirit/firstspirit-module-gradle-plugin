@@ -25,8 +25,8 @@ The plugin defines the following tasks:
 
 Task | Depends on | Type | Description
 :---:|:----------:|:----:| -----------
-fsm            | jar    | FSM             | Assembles an fsm archive containing the FirstSpirit module.
-isolationCheck | fsm    | IsolationCheck  | Checks the FSM using an FSM Dependency Detector web service.
+assembleFSM            | jar    | FSM             | Assembles an fsm archive containing the FirstSpirit module.
+checkIsolation | fsm    | IsolationCheck  | Checks if the FSM is compliant to the isolated runtime (requires access to a configured FSM Dependency Detector web service).
 
 ## Extension properties
 
@@ -260,7 +260,7 @@ buildscript {
 		fsRuntimeVersion = '5.2.181007'
 	}
     dependencies {
-        classpath 'com.espirit.moddev:fsmgradleplugin:0.11.0'
+        classpath 'com.espirit.moddev:fsmgradleplugin:0.12.0'
         classpath "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}"
     }
 }
