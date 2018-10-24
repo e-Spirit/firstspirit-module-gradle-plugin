@@ -15,8 +15,8 @@ dependencies {
     compile "com.espirit.moddev.components:annotations:1.9.0"
 
     fsServerCompile project(':api')
-    fsModuleCompile skipInLegacy('joda-time:joda-time:2.10')
-    fsModuleCompile fsDependency('commons-logging:commons-logging:1.2', '1.0', '1.5', true)
+    fsModuleCompile fsDependency(dependency: 'joda-time:joda-time:2.10', skipInLegacy: true)
+    fsModuleCompile fsDependency('commons-logging:commons-logging:1.2', true, '1.0', '1.5')
 
     testCompile 'junit:junit:4.12'
 }

@@ -15,6 +15,7 @@
  */
 package org.gradle.plugins.fsm
 
+import groovy.transform.Immutable
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -24,6 +25,7 @@ import org.gradle.api.artifacts.Dependency
 import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.artifacts.publish.ArchivePublishArtifact
 import org.gradle.api.internal.plugins.DefaultArtifactPublicationSet
+import org.gradle.api.logging.Logging
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.plugins.JavaPlugin
@@ -53,6 +55,17 @@ class FSMPlugin implements Plugin<Project> {
 
     static final String FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME = "skippedInLegacy"
 
+    @Immutable
+    static class MinMaxVersion {
+        String dependency
+        String minVersion
+        String maxVersion
+    }
+    private Set<MinMaxVersion> minMaxVersions = new HashSet<>()
+    public Set<MinMaxVersion> getDependencyConfigurations() {
+        return minMaxVersions
+    }
+
 
     @Override
     public void apply(Project project) {
@@ -62,9 +75,59 @@ class FSMPlugin implements Plugin<Project> {
 
         FSMPluginExtension fsmPluginExtension = project.getExtensions().create("fsm", FSMPluginExtension.class)
 
-        project.ext.skipInLegacy = { String it ->
-            project.dependencies.add(FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME, it)
-            return it
+        project.ext.fsDependency = { Object... args ->
+            if(args.length < 1) {
+                throw new IllegalArgumentException("Please provide at least a dependency as String for fsDependency! You can also use named parameters.")
+            }
+
+            String dependency
+            boolean skipInLegacy
+            String minVersion
+            String maxVersion
+
+            if(args[0] instanceof Map) {
+                dependency = args[0].dependency
+                skipInLegacy = args[0].skipInLegacy
+                minVersion = args[0].minVersion
+                maxVersion = args[0].maxVersion
+            } else {
+
+                def secondArgIsNoBoolean = args.length > 1 && !(args[1] instanceof Boolean)
+                if(secondArgIsNoBoolean) {
+                    throw new IllegalArgumentException("Please provide the skipInLegacyParameter as a boolean.")
+                }
+
+                def thirdArgIsNoString = args.length > 2 && !(args[2] instanceof String)
+                if(thirdArgIsNoString) {
+                    throw new IllegalArgumentException("Please provide the minVersion as a String.")
+                }
+
+                def fourthArgIsNoString = args.length > 3 && !(args[3] instanceof String)
+                if(fourthArgIsNoString) {
+                    throw new IllegalArgumentException("Please provide the maxVersion as a String.")
+                }
+
+                dependency = args[0]
+                skipInLegacy = args.length > 1 ? args[1] : false
+                minVersion = args.length > 2 ? args[2] : null
+                maxVersion = args.length > 3 ? args[3] : null
+            }
+
+            if(skipInLegacy) {
+                project.dependencies.add(FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME, dependency)
+            }
+
+            if(minVersion != null || maxVersion != null) {
+                if(minMaxVersions.find { it.dependency == dependency } != null) {
+                   throw new IllegalStateException("You cannot specify minVersion or maxVersion twice for depdendency ${dependency}!")
+                } else {
+                    def minMaxVersionDefinition = new MinMaxVersion(dependency, minVersion, maxVersion)
+                    Logging.getLogger(this.getClass()).debug("Adding definition for minVersion and maxVersion to project: $minMaxVersionDefinition")
+                    minMaxVersions.add(minMaxVersionDefinition)
+                }
+            }
+
+            return dependency
         }
 
         project.getPlugins().apply(JavaPlugin.class)

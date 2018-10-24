@@ -53,7 +53,7 @@ class XmlTagAppender {
 
         appendProjectAppTags(classLoader, scan.getNamesOfClassesImplementing(ProjectApp), result)
 
-        appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result, appendDefaultMinVersion)
+        appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result, appendDefaultMinVersion, project.plugins.getPlugin(FSMPlugin.class).dependencyConfigurations)
     }
 
 
@@ -127,14 +127,14 @@ class XmlTagAppender {
     }
 
     @CompileStatic
-    static void appendWebAppTags(Project project, URLClassLoader cl, List<String> webAppClasses, StringBuilder result, boolean appendDefaultMinVersion) {
+    static void appendWebAppTags(Project project, URLClassLoader cl, List<String> webAppClasses, StringBuilder result, boolean appendDefaultMinVersion, Set<FSMPlugin.MinMaxVersion> minMaxVersionConfigurations = new HashSet<>()) {
         List<Class<?>> loadedClasses = webAppClasses
             .collect{ cl.loadClass(it) }
 
-        appendWebAppComponentTagsOfClasses(loadedClasses, project, result, appendDefaultMinVersion)
+        appendWebAppComponentTagsOfClasses(loadedClasses, project, result, appendDefaultMinVersion, minMaxVersionConfigurations)
     }
 
-    private static appendWebAppComponentTagsOfClasses(List<Class<?>> loadedClasses, Project project, result, boolean appendDefaultMinVersion) {
+    private static appendWebAppComponentTagsOfClasses(List<Class<?>> loadedClasses, Project project, result, boolean appendDefaultMinVersion, Set<FSMPlugin.MinMaxVersion> minMaxVersionConfigurations = new HashSet<>()) {
         Set<ResolvedArtifact> webCompileDependencies = project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> providedCompileDependencies = project.configurations.getByName(PROVIDED_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()
         def webResourceIndent = INDENT_WS_16
@@ -149,7 +149,7 @@ class XmlTagAppender {
                         webResources.append("""${webResourceIndent}<resource name="${project.group}:${project.name}-files" """ +
                                             """version="${project.version}">files/</resource>\n""")
                     }
-                    addResourceTagsForDependencies(webResourceIndent, webCompileDependencies, providedCompileDependencies, webResources, "", null, appendDefaultMinVersion)
+                    addResourceTagsForDependencies(webResourceIndent, webCompileDependencies, providedCompileDependencies, webResources, "", null, appendDefaultMinVersion, minMaxVersionConfigurations)
 
                     final String scopes = scopes(annotation.scope())
                     def indent = INDENT_WS_12
@@ -301,21 +301,29 @@ ${resources}
         sb.toString()
     }
 
-    private static void addResourceTagsForDependencies(String indent, Set<ResolvedArtifact> dependencies, Set<ResolvedArtifact> providedCompileDependencies, StringBuilder projectResources, String scope, ModuleInfo.Mode mode, boolean appendDefaultMinVersion) {
+    private static void addResourceTagsForDependencies(String indent, Set<ResolvedArtifact> dependencies, Set<ResolvedArtifact> providedCompileDependencies, StringBuilder projectResources, String scope, ModuleInfo.Mode mode, boolean appendDefaultMinVersion, Set<FSMPlugin.MinMaxVersion> minMaxVersionDefinitions = new HashSet<>()) {
         dependencies.
             findAll{ !providedCompileDependencies.contains(it) }
             .forEach {
                 ModuleVersionIdentifier dependencyId = it.moduleVersion.id
-                projectResources.append("\n" + getResourceTagForDependency(indent, dependencyId, it, scope, mode, appendDefaultMinVersion))
+                projectResources.append("\n" + getResourceTagForDependency(indent, dependencyId, it, scope, mode, appendDefaultMinVersion, minMaxVersionDefinitions))
             }
     }
 
-    static String getResourceTagForDependency(String indent, ModuleVersionIdentifier dependencyId, ResolvedArtifact artifact, String scope, ModuleInfo.Mode mode, boolean appendDefaultMinVersion) {
+    static String getResourceTagForDependency(String indent, ModuleVersionIdentifier dependencyId, ResolvedArtifact artifact, String scope, ModuleInfo.Mode mode, boolean appendDefaultMinVersion = true, Set<FSMPlugin.MinMaxVersion> minMaxVersionDefinitions = new HashSet<>()) {
         def scopeAttribute = scope == null || scope.isEmpty() ? "" : """ scope="${scope}\""""
         def classifier = artifact.classifier != null && !artifact.classifier.isEmpty() ? "-${artifact.classifier}" : ""
         def modeAttribute = mode == null ? "" : """ mode="${mode.name().toLowerCase(Locale.ROOT)}\""""
-        def minVersionAttribute = !appendDefaultMinVersion ? "" : """ minVersion="${dependencyId.version}\""""
-        """${indent}<resource name="${dependencyId.group}:${dependencyId.name}"$scopeAttribute$modeAttribute version="${dependencyId.version}"$minVersionAttribute>lib/${dependencyId.name}-${dependencyId.version}$classifier.${artifact.extension}</resource>"""
+
+        String dependencyAsString = "${dependencyId.group}:${dependencyId.name}"
+        FSMPlugin.MinMaxVersion optionalMinMaxVersion = minMaxVersionDefinitions.find { it.dependency.startsWith(dependencyAsString) }
+        def minVersionAttribute = appendDefaultMinVersion ? dependencyId.version : null
+        minVersionAttribute = optionalMinMaxVersion?.minVersion ? optionalMinMaxVersion.minVersion : minVersionAttribute
+
+        String minVersionString = minVersionAttribute ? """ minVersion="${minVersionAttribute}\"""" : ""
+        String maxVersionString = optionalMinMaxVersion ? """ maxVersion="${optionalMinMaxVersion.maxVersion}\"""" : ""
+
+        """${indent}<resource name="${dependencyId.group}:${dependencyId.name}"$scopeAttribute$modeAttribute version="${dependencyId.version}"${minVersionString}${maxVersionString}>lib/${dependencyId.name}-${dependencyId.version}$classifier.${artifact.extension}</resource>"""
     }
 
     static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode, boolean appendDefaultMinVersion, boolean skipIsolationOnlyDependencies = false) {
@@ -345,10 +353,11 @@ ${resources}
             compileDependenciesModuleScoped.removeAll(skippedInLegacyDependencies)
             providedCompileDependencies.removeAll(skippedInLegacyDependencies)
         }
+        def minMaxVersionConfigurations = project.getPlugins().getPlugin(FSMPlugin.class).getDependencyConfigurations()
 
-        addResourceTagsForDependencies(indent, compileDependenciesServerScoped, providedCompileDependencies, projectResources, "server", globalResourcesMode, appendDefaultMinVersion)
+        addResourceTagsForDependencies(indent, compileDependenciesServerScoped, providedCompileDependencies, projectResources, "server", globalResourcesMode, appendDefaultMinVersion, minMaxVersionConfigurations)
         projectResources + "\n"
-        addResourceTagsForDependencies(indent, compileDependenciesModuleScoped, providedCompileDependencies, projectResources, "module", globalResourcesMode, appendDefaultMinVersion)
+        addResourceTagsForDependencies(indent, compileDependenciesModuleScoped, providedCompileDependencies, projectResources, "module", globalResourcesMode, appendDefaultMinVersion, minMaxVersionConfigurations)
         return projectResources.toString()
     }
 }

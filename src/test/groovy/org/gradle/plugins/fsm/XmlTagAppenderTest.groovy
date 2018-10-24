@@ -1,5 +1,6 @@
 package org.gradle.plugins.fsm
 
+import com.espirit.moddev.components.annotations.WebResource
 import de.espirit.firstspirit.access.Language
 import de.espirit.firstspirit.access.project.Resolution
 import de.espirit.firstspirit.access.project.TemplateSet
@@ -371,6 +372,30 @@ ${INDENT_WS_8}</public>
         def indent = INDENT_WS_8
         String result = XmlTagAppender.getResourceTagForDependency(indent, moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED, true)
         Assert.assertEquals("""${indent}<resource name="mygroup:myname" scope="server" mode="isolated" version="1.0.0" minVersion="1.0.0">lib/myname-1.0.0.jar</resource>""".toString(), result)
+    }
+
+    @Test
+    void getResourceTagForDependencyWithMinMaxVersion() throws Exception {
+        ResolvedArtifact resolvedArtifact = createArtifactMock()
+        ModuleVersionIdentifier moduleVersionIdentifier = createVersionIdentifierMock("mygroup", "myname", "1.0.0")
+        def minMaxVersions = new HashSet<FSMPlugin.MinMaxVersion>()
+        minMaxVersions.add(new FSMPlugin.MinMaxVersion(dependency: "mygroup:myname:1.0.0", minVersion: "0.9", maxVersion: "1.1.0"))
+
+        def indent = INDENT_WS_8
+        String result = XmlTagAppender.getResourceTagForDependency(indent, moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED, true, minMaxVersions)
+        Assert.assertEquals("""${indent}<resource name="mygroup:myname" scope="server" mode="isolated" version="1.0.0" minVersion="0.9" maxVersion="1.1.0">lib/myname-1.0.0.jar</resource>""".toString(), result)
+    }
+
+    @Test
+    void getResourceTagForDependencyWithNullMinMaxVersions() throws Exception {
+        ResolvedArtifact resolvedArtifact = createArtifactMock()
+        ModuleVersionIdentifier moduleVersionIdentifier = createVersionIdentifierMock("mygroup", "myname", "1.0.0")
+        def minMaxVersions = new HashSet<FSMPlugin.MinMaxVersion>()
+        minMaxVersions.add(new FSMPlugin.MinMaxVersion(dependency: "mygroup:myname:1.0.0", maxVersion: "1.1.0"))
+
+        def indent = INDENT_WS_8
+        String result = XmlTagAppender.getResourceTagForDependency(indent, moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED, false, minMaxVersions)
+        Assert.assertEquals("""${indent}<resource name="mygroup:myname" scope="server" mode="isolated" version="1.0.0" maxVersion="1.1.0">lib/myname-1.0.0.jar</resource>""".toString(), result)
     }
 
     @Test
