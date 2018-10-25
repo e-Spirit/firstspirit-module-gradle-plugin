@@ -177,6 +177,23 @@ dependencies {
 }
 ```
 
+### More complex example
+If the standard configuration of a dependency is not sufficient, more complex definitions
+can be done with the _fsDependency_ helper function, that the plugin configures for a project instance.
+This can be useful for tagging dependencies with a special minVersion or maxVersion attribute,
+or if one has a resource that should be added in the isolation configuration of the FirstSpirit module,
+but not in the non-isolation case. For information about isolation in FirstSpirit scenarios, please
+take a look at the official FirstSpirit module development documentation.
+
+Configuration of the above mentioned aspects can be done in standard groovy style, for example:
+
+```
+dependencies {
+  fsModuleCompile fsDependency(dependency: 'joda-time:joda-time:2.10', skipInLegacy: true, minVersion: '1.0', maxVersion: '1.5')
+  fsModuleCompile fsDependency('commons-logging:commons-logging:1.2', true, '1.0', '1.5')
+}
+```
+
 ## Working with isolated resources
 
 Resources declared as "isolated" have less classpath conflicts because they share a
