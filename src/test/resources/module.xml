@@ -1,25 +1,18 @@
-<!DOCTYPE module PUBLIC "module.dtd" "platform:/resource/fs-module-support/src/main/resources/dtds/module.dtd">
 <module>
-	<name>$name</name>
-	<displayname>$displayName</displayname>
-	<version>$version</version>
-	<description>$description</description>
-	<vendor>$vendor</vendor>
-	<components>
-		<!-- 
-			add your components here 
-			
-			TODO: auto-generate entries
-		-->
-		
-	</components>
+    <name>$name</name>
+    <displayname>$displayName</displayname>
+    <version>$version</version>
+    <description>$description</description>
+    <vendor>$vendor</vendor>
+    <custom-tag>custom</custom-tag>
+    <components>
 
-	<resources>
-		<!-- production code  -->
-		<resource>lib/$artifact</resource>
+        $components
 
-		<!-- example of an included JAR (TODO: auto-generate) -->
-		<resource name="joda-time" version="2.3">lib/joda-time-2.3.jar</resource>
-	</resources>
+    </components>
 
+    <resources>
+        $resources
+    </resources>
 </module>
+

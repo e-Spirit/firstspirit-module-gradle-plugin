@@ -19,6 +19,7 @@ import de.espirit.firstspirit.server.module.ModuleInfo
 import org.apache.commons.io.IOUtils
 import org.gradle.api.Project
 import org.gradle.plugins.fsm.FSMPlugin
+import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Before
 import org.junit.Rule
@@ -131,12 +132,22 @@ class FSMTest {
 
 	@Test
 	void displayNameUsed() {
-        String displayName = 'Human-Readable Display Name'
-		fsm.displayName = displayName
+		String displayName = 'Human-Readable Display Name'
+		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
+		pluginExtension.displayName = displayName
 
 		fsm.execute()
 
 		assertThat(moduleXml()).contains("""<displayname>${displayName}</displayname>""")
+	}
+	@Test
+	void moduleDirNameUsed() {
+		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
+		pluginExtension.moduleDirName = getClass().getClassLoader().getResource("module.xml").path
+
+		fsm.execute()
+
+		assertThat(moduleXml()).contains("""<custom-tag>custom</custom-tag>""")
 	}
 
 	@Test
@@ -160,7 +171,9 @@ class FSMTest {
 		Project myProjectSpy = spy(ProjectBuilder.builder().withProjectDir(testDir).withName(projectName).build())
 		myProjectSpy.apply plugin: FSMPlugin.NAME
 		FSM myFSM = myProjectSpy.tasks[FSMPlugin.FSM_TASK_NAME] as FSM
-		myFSM.moduleName = moduleName
+		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
+		myFSM.pluginExtension = pluginExtension
+		pluginExtension.moduleName = moduleName
 		String xml = "<module><name>\$name</name></module>"
 		String expectedXML = "<module><name>${moduleName}</name></module>"
 
@@ -171,8 +184,9 @@ class FSMTest {
 
     @Test
     void vendor() {
+		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
         String vendor = "ACME"
-        fsm.vendor = vendor
+        pluginExtension.vendor = vendor
 
         fsm.execute()
 
@@ -193,7 +207,8 @@ class FSMTest {
 	void resourceIsConfiguredAsLegacyWhenConfigured() {
 		project.repositories.add(project.getRepositories().mavenCentral())
 		project.dependencies.add("fsModuleCompile", "com.google.guava:guava:24.0-jre")
-		fsm.resourceMode = ModuleInfo.Mode.LEGACY
+		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
+		pluginExtension.resourceMode = ModuleInfo.Mode.LEGACY
 
 		fsm.execute()
 
@@ -204,7 +219,8 @@ class FSMTest {
 	void resourceHasMinAndMaxVersionWhenConfigured() {
 		project.repositories.add(project.getRepositories().mavenCentral())
 		project.dependencies.add("fsModuleCompile", project.fsDependency("com.google.guava:guava:24.0-jre", false, "0.0.1", "99.0.0"))
-		fsm.resourceMode = ModuleInfo.Mode.LEGACY
+		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
+		pluginExtension.resourceMode = ModuleInfo.Mode.LEGACY
 
 		def dependencyConfigurations = project.plugins.getPlugin(FSMPlugin.class).getDependencyConfigurations()
 		assertThat(dependencyConfigurations).contains(new FSMPlugin.MinMaxVersion("com.google.guava:guava:24.0-jre", "0.0.1", "99.0.0"))
@@ -219,7 +235,8 @@ class FSMTest {
 		project.repositories.add(project.getRepositories().mavenCentral())
 		project.dependencies.add("fsModuleCompile", 'junit:junit:4.12')
 		project.dependencies.add("fsModuleCompile", project.fsDependency(dependency: 'com.google.guava:guava:24.0-jre', skipInLegacy: true))
-		fsm.resourceMode = ModuleInfo.Mode.LEGACY
+		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
+		pluginExtension.resourceMode = ModuleInfo.Mode.LEGACY
 
 		fsm.execute()
 
@@ -243,7 +260,8 @@ class FSMTest {
 		Path filesDir = fsm.project.file('src/main/files').toPath()
 		Files.createDirectories(filesDir)
 		Files.write(filesDir.resolve("testFile"), "Test".getBytes(StandardCharsets.UTF_8))
-		fsm.resourceMode = ModuleInfo.Mode.ISOLATED
+		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
+		pluginExtension.resourceMode = ModuleInfo.Mode.ISOLATED
 
 		fsm.execute()
 

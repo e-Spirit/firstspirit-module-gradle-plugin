@@ -133,7 +133,6 @@ class FSMPlugin implements Plugin<Project> {
         project.getPlugins().apply(JavaPlugin.class)
 
         FSM fsm = configureFsmTask(project)
-        fsmPluginExtension.setArchivePath(fsm.getArchivePath().getPath())
 
         IsolationCheck isolationCheck = configureIsolationCheckTask(project, fsm)
         Task checkTask = project.getTasksByName(JavaBasePlugin.CHECK_TASK_NAME, false).iterator().next()
@@ -176,6 +175,16 @@ class FSMPlugin implements Plugin<Project> {
                     PROVIDED_RUNTIME_CONFIGURATION_NAME)
             return runtimeClasspath.minus(providedRuntime).plus(outputs)
         })
+
+        project.gradle.taskGraph.beforeTask { task ->
+            if (task.hasProperty('lazyConfiguration')) {
+                if (task.lazyConfiguration instanceof List) {
+                    task.lazyConfiguration.each { task.configure it }
+                } else {
+                    task.configure task.lazyConfiguration
+                }
+            }
+        }
 
         return fsm
     }

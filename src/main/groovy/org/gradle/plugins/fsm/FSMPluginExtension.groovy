@@ -29,8 +29,6 @@ class FSMPluginExtension {
 	 * The name of the directory containing the module.xml, relative to the project directory.
 	 */
 	String moduleDirName = 'src/main/resources'
-	String archivePath
-	String archiveName
 
 	/**
 	 * Human-readable display name of the module
@@ -69,10 +67,7 @@ class FSMPluginExtension {
 	boolean appendDefaultMinVersion = true
 
 
-	private Set<String> dependenciesSkippedInLegacy = new HashSet<>()
+	Set<String> dependenciesSkippedInLegacy = new HashSet<>()
 
-	public getDependenciesSkippedInLegacy() {
-		return dependenciesSkippedInLegacy
-	}
 
 }

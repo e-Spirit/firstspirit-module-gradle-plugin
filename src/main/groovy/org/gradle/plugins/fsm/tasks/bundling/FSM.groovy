@@ -58,30 +58,39 @@ class FSM extends Jar {
         pluginExtension = project.getExtensions().getByType(FSMPluginExtension)
         archiveName = pluginExtension.archiveName
 
-        into('lib') {
-            from {
-                def classpath = getClasspath()
-                classpath ? classpath.filter { File file -> file.isFile() } : []
+//        We're creating the fsm task and its config in the fsm plugin constructor, so the user's
+//        configuration from the build script is not yet applied. The configuration should be deferred
+//        to the time right before the task is executed (see project.gradle.taskGraph.beforeTask in FSMPlugin)
+//        https://discuss.gradle.org/t/allow-tasks-to-be-configured-just-before-execution/537/2
+        ext.lazyConfiguration = {
+
+            into('lib') {
+                from {
+                    def classpath = getClasspath()
+                    classpath ? classpath.filter { File file -> file.isFile() } : []
+                }
+            }
+
+            into('/') {
+                from("src/main/resources") {
+                    include("**/*")
+                }
+            }
+
+            into('/files') {
+                from('src/main/files')
+            }
+
+
+            configure {
+                metaInf {
+                    from project.file(pluginExtension.moduleDirName)
+                    include 'module.xml'
+                    include 'module-isolated.xml'
+                }
             }
         }
 
-        into('/') {
-            from("src/main/resources") {
-                include("**/*")
-            }
-        }
-
-        into('/files') {
-            from('src/main/files')
-        }
-
-        configure {
-            metaInf {
-                from project.file(pluginExtension.moduleDirName)
-                include 'module.xml'
-                include 'module-isolated.xml'
-            }
-        }
     }
 
     @TaskAction
@@ -136,7 +145,7 @@ class FSM extends Jar {
         filteredModuleXml = filteredModuleXml.replace('$displayName', pluginExtension.displayName?.toString() ?: project.name.toString())
         filteredModuleXml = filteredModuleXml.replace('$version', project.version.toString())
         filteredModuleXml = filteredModuleXml.replace('$description', project.description?.toString() ?: project.name.toString())
-        filteredModuleXml = filteredModuleXml.replace('$vendor', pluginExtension.vendor.toString())
+        filteredModuleXml = filteredModuleXml.replace('$vendor', pluginExtension.vendor?.toString() ?: "")
         filteredModuleXml = filteredModuleXml.replace('$artifact', project.jar.archiveName.toString())
         filteredModuleXml = filteredModuleXml.replace('$resources', resourcesTags)
         filteredModuleXml = filteredModuleXml.replace('$components', componentTags)
@@ -249,50 +258,4 @@ class FSM extends Jar {
         FileCollection oldClasspath = getClasspath()
         this.classpath = project.files(oldClasspath ?: [], classpath)
     }
-
-    /**
-     * Sets the human-readable name of the module.
-     *
-     * @param displayName the human-readable name of the module
-     */
-    void setDisplayName(String displayName) {
-        pluginExtension.displayName = displayName
-    }
-
-    /**
-     * Sets the vendor who is responsible for the module
-     *
-     * @param vendor the vendor of the module
-     */
-    void setVendor(String vendor) {
-        pluginExtension.vendor = vendor
-    }
-
-    /**
-     * Sets the classloading mode for all resources which do not explicitly set another mode.
-     *
-     * @param mode the classloading mode
-     */
-    void setResourceMode(ModuleInfo.Mode resourceMode) {
-        pluginExtension.resourceMode = resourceMode
-    }
-
-    /**
-     * Sets the FirstSpirit version to check against with the isolation detector service.
-     *
-     * @param firstSpiritVersion The FirstSpirit version, e.g. "5.2.2109". Must not be {@code null}.
-     */
-    void setFirstSpiritVersion(String firstSpiritVersion) {
-        pluginExtension.firstSpiritVersion = firstSpiritVersion
-    }
-
-    /**
-     * Sets the name of the module. If unset or {@code null}, this defaults to the project name.
-     *
-     * @param moduleName The name that should be used for the module.
-     */
-    void setModuleName(String moduleName) {
-        pluginExtension.moduleName = moduleName
-    }
-
 }
