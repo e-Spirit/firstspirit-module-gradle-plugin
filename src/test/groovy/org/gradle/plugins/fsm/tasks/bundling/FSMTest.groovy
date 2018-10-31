@@ -150,14 +150,12 @@ class FSMTest {
 
 		assertThat(moduleXml()).contains("""<custom-tag>custom</custom-tag>""")
 	}
-	@Test
+	@Test(expected = IllegalArgumentException)
 	void moduleDirContainsNoModuleXML() {
 		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
 		pluginExtension.moduleDirName = "some/empty/dir"
 
 		fsm.execute()
-
-		assertThatIllegalArgumentException()
 	}
 
 	@Test

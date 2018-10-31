@@ -17,7 +17,6 @@ package org.gradle.plugins.fsm.tasks.bundling
 
 
 import groovy.xml.XmlUtil
-import de.espirit.firstspirit.server.module.ModuleInfo
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
 import io.github.lukehutch.fastclasspathscanner.scanner.ScanResult
 import org.gradle.api.file.FileCollection
@@ -83,23 +82,43 @@ class FSM extends Jar {
 
             configure {
                 metaInf {
-                    from project.file(pluginExtension.moduleDirName)
+                    from project.file(trimPathToDirectory(pluginExtension.moduleDirName))
                     if(checkModuleDir()) {
                         include 'module.xml'
                         include 'module-isolated.xml'
                     }
                     else{
-                        throw new IllegalArgumentException("No module.xml found in moduleDir " + pluginExtension.moduleDirName)
+                        throw new IllegalArgumentException("No module.xml or module-isolated.xml found in moduleDir " + pluginExtension.moduleDirName)
                     }
                 }
             }
         }
 
     }
+
+    //checks if a path contains a filename and removes the filename
+    String trimPathToDirectory(String path){
+
+        if(path.lastIndexOf("/") < path.lastIndexOf(".")){
+            return path.substring(0,path.lastIndexOf("/"))
+        }
+        return path
+    }
     boolean checkModuleDir(){
-        if(pluginExtension.moduleDirName != "src/main/resources") {
-            if(!project.file(pluginExtension.moduleDirName + "/module.xml").exists()){
+        String moduleDirName = trimPathToDirectory(pluginExtension.moduleDirName)
+        if(moduleDirName != "src/main/resources") {
+            File moduleXml = project.file(moduleDirName + "/module.xml")
+            File moduleIsolatedXml = project.file(moduleDirName + "/module-isolated.xml")
+            if(!moduleXml.exists() && !moduleIsolatedXml.exists()){
                 return false
+            }
+            if(moduleXml.exists() && !moduleIsolatedXml.exists()){
+                getLogger().warn("Found only a module.xml in moduleDir " + moduleDirName +
+                                 ". Using a standard template instead.")
+            }
+            if(!moduleXml.exists() && moduleIsolatedXml.exists()){
+                getLogger().warn("Found only a module-isolated.xml in moduleDir " + moduleDirName +
+                                 ". Using a standard template instead.")
             }
         }
         return true
