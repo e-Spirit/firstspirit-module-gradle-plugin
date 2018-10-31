@@ -56,7 +56,6 @@ class FSM extends Jar {
         extension = FSM_EXTENSION
         destinationDir = project.file('build/fsm')
         pluginExtension = project.getExtensions().getByType(FSMPluginExtension)
-        archiveName = pluginExtension.archiveName
 
 //        We're creating the fsm task and its config in the fsm plugin constructor, so the user's
 //        configuration from the build script is not yet applied. The configuration should be deferred
