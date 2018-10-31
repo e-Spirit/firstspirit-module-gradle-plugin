@@ -84,12 +84,25 @@ class FSM extends Jar {
             configure {
                 metaInf {
                     from project.file(pluginExtension.moduleDirName)
-                    include 'module.xml'
-                    include 'module-isolated.xml'
+                    if(checkModuleDir()) {
+                        include 'module.xml'
+                        include 'module-isolated.xml'
+                    }
+                    else{
+                        throw new IllegalArgumentException("No module.xml found in moduleDir " + pluginExtension.moduleDirName)
+                    }
                 }
             }
         }
 
+    }
+    boolean checkModuleDir(){
+        if(pluginExtension.moduleDirName != "src/main/resources") {
+            if(!project.file(pluginExtension.moduleDirName + "/module.xml").exists()){
+                return false
+            }
+        }
+        return true
     }
 
     @TaskAction

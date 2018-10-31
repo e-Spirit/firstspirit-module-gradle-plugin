@@ -33,6 +33,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
 import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import static org.mockito.Mockito.spy
 
 class FSMTest {
@@ -148,6 +149,15 @@ class FSMTest {
 		fsm.execute()
 
 		assertThat(moduleXml()).contains("""<custom-tag>custom</custom-tag>""")
+	}
+	@Test
+	void moduleDirContainsNoModuleXML() {
+		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
+		pluginExtension.moduleDirName = "some/empty/dir"
+
+		fsm.execute()
+
+		assertThatIllegalArgumentException()
 	}
 
 	@Test
