@@ -27,7 +27,6 @@ fsm {
 
 
 def fsmArchivePath = Paths.get(project.buildDir.path, "fsm", "fsm-${project.version}.fsm")
-ZipFile fsmFile = new ZipFile(fsmArchivePath.toString())
 
 task testFsmIsProduced {
     doLast {
@@ -38,6 +37,7 @@ task testFsmIsProduced {
 
 task testZipFileContainsModuleXml {
     doLast {
+        ZipFile fsmFile = new ZipFile(fsmArchivePath.toString())
         def moduleXml = fsmFile.entries().find { "META-INF/module.xml" == it.getName() }
         assert moduleXml != null
     }
