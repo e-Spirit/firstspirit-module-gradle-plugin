@@ -110,7 +110,6 @@ Additionally, files in `src/main/files` will be placed in the `/files` directory
 
 #### module.xml example
 ```xml
-<!DOCTYPE module PUBLIC "module.dtd" "platform:/resource/fs-module-support/src/main/resources/dtds/module.dtd">
 <module>
     <name>$name</name>
     <displayname>$displayName</displayname>
