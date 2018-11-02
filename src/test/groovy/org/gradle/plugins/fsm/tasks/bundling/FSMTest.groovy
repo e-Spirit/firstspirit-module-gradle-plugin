@@ -97,7 +97,7 @@ class FSMTest {
 				new FSMPlugin.MinMaxVersion("com.google.guava:guava:24.0-jre", null, "31.0"))
 	}
 
-	@Test(expected = IllegalStateException.class)
+	@Test(expected = IllegalArgumentException.class)
 	void fsDependencyMethodFailsForDuplicatedExcludedDependencies() {
 		project.repositories.add(project.getRepositories().mavenCentral())
 		project.fsDependency(dependency: "com.google.guava:guava:24.0-jre", skipInLegacy:  true, maxVersion: "31.0")

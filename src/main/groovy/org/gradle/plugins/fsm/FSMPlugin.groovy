@@ -63,69 +63,63 @@ class FSMPlugin implements Plugin<Project> {
         String maxVersion
     }
     private Set<MinMaxVersion> minMaxVersions = new HashSet<>()
-    public Set<MinMaxVersion> getDependencyConfigurations() {
+    Set<MinMaxVersion> getDependencyConfigurations() {
         return minMaxVersions
     }
 
+    private Project project
+
+    String fsDependency(Map<String, Object> map) {
+        return fsDependency(map.dependency, map.skipInLegacy, map.minVersion, map.maxVersion)
+    }
+
+    String fsDependency(String dependency, boolean skipInLegacy = false, String minVersion = null, String maxVersion = null) {
+        if(dependency == null || dependency.allWhitespace) {
+            throw new IllegalStateException('You have to specify a non-empty depdendency!')
+        }
+
+        if(skipInLegacy) {
+            project.dependencies.add(FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME, dependency)
+        }
+
+        if(minVersion != null || maxVersion != null) {
+            if(minMaxVersions.find { it.dependency == dependency } != null) {
+                throw new IllegalStateException("You cannot specify minVersion or maxVersion twice for depdendency ${dependency}!")
+            } else {
+                def minMaxVersionDefinition = new MinMaxVersion(dependency, minVersion, maxVersion)
+                Logging.getLogger(this.getClass()).debug("Adding definition for minVersion and maxVersion to project: $minMaxVersionDefinition")
+                minMaxVersions.add(minMaxVersionDefinition)
+            }
+        }
+
+        return dependency
+    }
 
     @Override
-    public void apply(Project project) {
+    void apply(Project project) {
+        this.project = project
 
         project.getPlugins().apply(JavaPlugin.class)
         configureConfigurations(project.getConfigurations())
 
-        FSMPluginExtension fsmPluginExtension = project.getExtensions().create(FSM_EXTENSION_NAME, FSMPluginExtension.class)
+        def fsmPluginExtension = project.getExtensions().create("fsm", FSMPluginExtension.class)
 
         project.ext.fsDependency = { Object... args ->
             if(args.length < 1) {
                 throw new IllegalArgumentException("Please provide at least a dependency as String for fsDependency! You can also use named parameters.")
             }
 
-            String dependency
-            boolean skipInLegacy
-            String minVersion
-            String maxVersion
+            def dependency
+            def isCalledWithNamedParams = args[0] instanceof Map
 
-            if(args[0] instanceof Map) {
-                dependency = args[0].dependency
-                skipInLegacy = args[0].skipInLegacy
-                minVersion = args[0].minVersion
-                maxVersion = args[0].maxVersion
-            } else {
-
-                def secondArgIsNoBoolean = args.length > 1 && !(args[1] instanceof Boolean)
-                if(secondArgIsNoBoolean) {
-                    throw new IllegalArgumentException("Please provide the skipInLegacyParameter as a boolean.")
-                }
-
-                def thirdArgIsNoString = args.length > 2 && !(args[2] instanceof String)
-                if(thirdArgIsNoString) {
-                    throw new IllegalArgumentException("Please provide the minVersion as a String.")
-                }
-
-                def fourthArgIsNoString = args.length > 3 && !(args[3] instanceof String)
-                if(fourthArgIsNoString) {
-                    throw new IllegalArgumentException("Please provide the maxVersion as a String.")
-                }
-
-                dependency = args[0]
-                skipInLegacy = args.length > 1 ? args[1] : false
-                minVersion = args.length > 2 ? args[2] : null
-                maxVersion = args.length > 3 ? args[3] : null
-            }
-
-            if(skipInLegacy) {
-                project.dependencies.add(FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME, dependency)
-            }
-
-            if(minVersion != null || maxVersion != null) {
-                if(minMaxVersions.find { it.dependency == dependency } != null) {
-                   throw new IllegalStateException("You cannot specify minVersion or maxVersion twice for depdendency ${dependency}!")
+            try {
+                if(isCalledWithNamedParams) {
+                    dependency = fsDependency(args[0] as Map<String, Object>)
                 } else {
-                    def minMaxVersionDefinition = new MinMaxVersion(dependency, minVersion, maxVersion)
-                    Logging.getLogger(this.getClass()).debug("Adding definition for minVersion and maxVersion to project: $minMaxVersionDefinition")
-                    minMaxVersions.add(minMaxVersionDefinition)
+                    dependency = fsDependency(*args)
                 }
+            } catch (MissingMethodException mme) {
+                throw new IllegalArgumentException("The given argument types are not supported!", mme)
             }
 
             return dependency
