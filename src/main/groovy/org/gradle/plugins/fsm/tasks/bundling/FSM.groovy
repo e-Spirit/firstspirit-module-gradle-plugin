@@ -114,11 +114,11 @@ class FSM extends Jar {
             }
             if(moduleXml.exists() && !moduleIsolatedXml.exists()){
                 getLogger().warn("Found only a module.xml in moduleDir " + moduleDirName +
-                                 ". Using a standard template instead.")
+                                 ". Using the standard template-module-isolated.xml instead.")
             }
             if(!moduleXml.exists() && moduleIsolatedXml.exists()){
                 getLogger().warn("Found only a module-isolated.xml in moduleDir " + moduleDirName +
-                                 ". Using a standard template instead.")
+                                 ". Using the standard template-module.xml instead.")
             }
         }
         return true

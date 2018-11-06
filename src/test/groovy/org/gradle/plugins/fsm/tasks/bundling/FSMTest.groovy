@@ -159,6 +159,23 @@ class FSMTest {
 	}
 
 	@Test
+	void trimRemovesFileNameFromPath() {
+		String testPath = "some/directory/containing/a.file"
+		String trimmedPath = fsm.trimPathToDirectory(testPath)
+
+		assertThat(trimmedPath).is("some/directory/containing")
+
+	}
+
+	@Test
+	void trimIgnoresDotsInDirectoryNames() {
+		String testPath = "a/directory/containing/a.dot/in/a/folder/name"
+		String trimmedPath = fsm.trimPathToDirectory(testPath)
+
+		assertThat(trimmedPath).is("a/directory/containing/a.dot/in/a/folder/name")
+	}
+
+	@Test
 	void module_name_should_be_equal_to_project_name_if_not_set() {
 		String projectName = "MyProjectName"
 		Project myProject = ProjectBuilder.builder().withProjectDir(testDir).withName(projectName).build()
