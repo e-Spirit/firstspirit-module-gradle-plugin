@@ -1,15 +1,23 @@
 package org.gradle.plugins.fsm
 
-import com.espirit.moddev.components.annotations.*
+import com.espirit.moddev.components.annotations.WebResource
 import de.espirit.firstspirit.access.Language
 import de.espirit.firstspirit.access.project.Resolution
 import de.espirit.firstspirit.access.project.TemplateSet
 import de.espirit.firstspirit.access.store.ContentProducer
 import de.espirit.firstspirit.access.store.PageParams
 import de.espirit.firstspirit.access.store.mediastore.Media
-import de.espirit.firstspirit.agency.SpecialistsBroker
 import de.espirit.firstspirit.generate.PathLookup
 import de.espirit.firstspirit.generate.UrlFactory
+import com.espirit.moddev.components.annotations.ProjectAppComponent
+import com.espirit.moddev.components.annotations.PublicComponent
+import com.espirit.moddev.components.annotations.ServiceComponent
+import com.espirit.moddev.components.annotations.Resource
+import com.espirit.moddev.components.annotations.WebResource
+import com.espirit.moddev.components.annotations.ScheduleTaskComponent
+import com.espirit.moddev.components.annotations.UrlFactoryComponent
+import com.espirit.moddev.components.annotations.WebAppComponent
+import de.espirit.firstspirit.agency.SpecialistsBroker
 import de.espirit.firstspirit.module.Configuration
 import de.espirit.firstspirit.module.ServerEnvironment
 import de.espirit.firstspirit.scheduling.ScheduleTaskForm
@@ -28,9 +36,8 @@ import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 
-import javax.swing.*
-import java.awt.*
-import java.util.List
+import javax.swing.JComponent
+import java.awt.Frame
 
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when
