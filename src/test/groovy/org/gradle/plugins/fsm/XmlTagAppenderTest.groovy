@@ -1,23 +1,15 @@
 package org.gradle.plugins.fsm
 
-import com.espirit.moddev.components.annotations.WebResource
+import com.espirit.moddev.components.annotations.*
 import de.espirit.firstspirit.access.Language
 import de.espirit.firstspirit.access.project.Resolution
 import de.espirit.firstspirit.access.project.TemplateSet
 import de.espirit.firstspirit.access.store.ContentProducer
 import de.espirit.firstspirit.access.store.PageParams
 import de.espirit.firstspirit.access.store.mediastore.Media
+import de.espirit.firstspirit.agency.SpecialistsBroker
 import de.espirit.firstspirit.generate.PathLookup
 import de.espirit.firstspirit.generate.UrlFactory
-import com.espirit.moddev.components.annotations.ProjectAppComponent
-import com.espirit.moddev.components.annotations.PublicComponent
-import com.espirit.moddev.components.annotations.ServiceComponent
-import com.espirit.moddev.components.annotations.Resource
-import com.espirit.moddev.components.annotations.WebResource
-import com.espirit.moddev.components.annotations.ScheduleTaskComponent
-import com.espirit.moddev.components.annotations.UrlFactoryComponent
-import com.espirit.moddev.components.annotations.WebAppComponent
-import de.espirit.firstspirit.agency.SpecialistsBroker
 import de.espirit.firstspirit.module.Configuration
 import de.espirit.firstspirit.module.ServerEnvironment
 import de.espirit.firstspirit.scheduling.ScheduleTaskForm
@@ -36,8 +28,9 @@ import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 
-import javax.swing.JComponent
-import java.awt.Frame
+import javax.swing.*
+import java.awt.*
+import java.util.List
 
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when
@@ -402,6 +395,18 @@ ${INDENT_WS_8}</public>
     void getResourcesTags() {
         String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED, false)
         Assert.assertEquals("""${INDENT_WS_8}<resource name="$GROUP:$NAME" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>""".toString(), result)
+    }
+
+    @Test
+    void resolveScopeResourceConflict() {
+        project.dependencies.add(FSMPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
+        project.dependencies.add(FSMPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
+        project.dependencies.add(FSMPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
+        project.dependencies.add(FSMPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
+        String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED, false)
+        Assert.assertEquals("""${INDENT_WS_8}<resource name="$GROUP:$NAME" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>
+${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="server" mode="isolated" version="2.1.1">lib/joda-convert-2.1.1.jar</resource>
+${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated" version="1.7.25">lib/slf4j-api-1.7.25.jar</resource>""".toString(), result)
     }
 
     @ProjectAppComponent(name = "TestProjectAppComponentName",

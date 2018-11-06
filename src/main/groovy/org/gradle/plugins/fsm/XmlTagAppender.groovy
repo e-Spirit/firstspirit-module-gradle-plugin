@@ -1,19 +1,8 @@
 package org.gradle.plugins.fsm
 
-import com.espirit.moddev.components.annotations.WebResource
+import com.espirit.moddev.components.annotations.*
 import de.espirit.firstspirit.generate.UrlFactory
-import com.espirit.moddev.components.annotations.ProjectAppComponent
-import com.espirit.moddev.components.annotations.PublicComponent
-import com.espirit.moddev.components.annotations.Resource
-import com.espirit.moddev.components.annotations.ServiceComponent
-import com.espirit.moddev.components.annotations.ScheduleTaskComponent
-import com.espirit.moddev.components.annotations.WebAppComponent
-import com.espirit.moddev.components.annotations.UrlFactoryComponent
-import de.espirit.firstspirit.module.Configuration
-import de.espirit.firstspirit.module.ProjectApp
-import de.espirit.firstspirit.module.ScheduleTaskSpecification
-import de.espirit.firstspirit.module.Service
-import de.espirit.firstspirit.module.WebApp
+import de.espirit.firstspirit.module.*
 import de.espirit.firstspirit.module.descriptor.WebAppDescriptor
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
 import de.espirit.firstspirit.server.module.ModuleInfo
@@ -344,7 +333,7 @@ ${resources}
         fsServerCompileConfiguration.attributes.keySet().forEach { println it.toString() }
 
         Set<ResolvedArtifact> compileDependenciesServerScoped = configurations.fsServerCompile.getResolvedConfiguration().getResolvedArtifacts()
-        Set<ResolvedArtifact> compileDependenciesModuleScoped = configurations.fsModuleCompile.getResolvedConfiguration().getResolvedArtifacts()
+        Set<ResolvedArtifact> compileDependenciesModuleScoped = configurations.fsModuleCompile.getResolvedConfiguration().getResolvedArtifacts().minus(compileDependenciesServerScoped)
         Set<ResolvedArtifact> providedCompileDependencies = configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()
 
         if(skipIsolationOnlyDependencies) {
