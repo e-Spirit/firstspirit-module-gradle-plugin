@@ -43,4 +43,4 @@ task testZipFileContainsModuleXml {
     }
 }
 
-test.dependsOn tasks.fsm, testFsmIsProduced, testZipFileContainsModuleXml
+test.dependsOn tasks.assembleFSM, testFsmIsProduced, testZipFileContainsModuleXml

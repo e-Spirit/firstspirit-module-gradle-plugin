@@ -1,6 +1,5 @@
 package org.gradle.plugins.fsm
 
-import com.espirit.moddev.components.annotations.WebResource
 import de.espirit.firstspirit.access.Language
 import de.espirit.firstspirit.access.project.Resolution
 import de.espirit.firstspirit.access.project.TemplateSet
@@ -402,6 +401,18 @@ ${INDENT_WS_8}</public>
     void getResourcesTags() {
         String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED, false)
         Assert.assertEquals("""${INDENT_WS_8}<resource name="$GROUP:$NAME" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>""".toString(), result)
+    }
+
+    @Test
+    void resolveScopeResourceConflict() {
+        project.dependencies.add(FSMPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
+        project.dependencies.add(FSMPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
+        project.dependencies.add(FSMPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
+        project.dependencies.add(FSMPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
+        String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED, false)
+        Assert.assertEquals("""${INDENT_WS_8}<resource name="$GROUP:$NAME" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>
+${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="server" mode="isolated" version="2.1.1">lib/joda-convert-2.1.1.jar</resource>
+${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated" version="1.7.25">lib/slf4j-api-1.7.25.jar</resource>""".toString(), result)
     }
 
     @ProjectAppComponent(name = "TestProjectAppComponentName",

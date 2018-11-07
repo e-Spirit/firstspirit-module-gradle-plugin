@@ -42,8 +42,9 @@ import org.gradle.plugins.fsm.tasks.verification.IsolationCheck
 class FSMPlugin implements Plugin<Project> {
 
     public static final String NAME = "fsmgradleplugin"
-    public static final String FSM_TASK_NAME = "fsm"
-    public static final String ISOLATION_CHECK_TASK_NAME = "isolationCheck"
+    public static final String FSM_EXTENSION_NAME = "fsm"
+    public static final String FSM_TASK_NAME = "assembleFSM"
+    public static final String ISOLATION_CHECK_TASK_NAME = "checkIsolation"
 
     static final String PROVIDED_COMPILE_CONFIGURATION_NAME = "fsProvidedCompile"
     static final String PROVIDED_RUNTIME_CONFIGURATION_NAME = "fsProvidedRuntime"
@@ -73,7 +74,7 @@ class FSMPlugin implements Plugin<Project> {
         project.getPlugins().apply(JavaPlugin.class)
         configureConfigurations(project.getConfigurations())
 
-        FSMPluginExtension fsmPluginExtension = project.getExtensions().create("fsm", FSMPluginExtension.class)
+        FSMPluginExtension fsmPluginExtension = project.getExtensions().create(FSM_EXTENSION_NAME, FSMPluginExtension.class)
 
         project.ext.fsDependency = { Object... args ->
             if(args.length < 1) {
