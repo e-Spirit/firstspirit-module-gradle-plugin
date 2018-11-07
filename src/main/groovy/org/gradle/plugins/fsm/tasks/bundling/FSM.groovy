@@ -82,17 +82,6 @@ class FSM extends Jar {
 
             configure {
                 metaInf {
-                    //case moduleDirName is set
-                        //check module dir
-                            //case module.xml and/or module-isolated.xml file exists
-                                //include either module.xml or module-isolated.xml or both
-                                //take standard template xmls to replace the missing ones
-                            //case dir contains no xml
-                                //throw exception
-
-                    //case moduleDirName is not set
-                        //take standard template xmls to replace the missing ones
-
                     if(pluginExtension.moduleDirName != null){
                         String moduleDirPath = trimPathToDirectory(pluginExtension.moduleDirName)
 
@@ -146,17 +135,15 @@ class FSM extends Jar {
 
         (FileSystems.newFileSystem(archive.toPath(), getClass().getClassLoader())).withCloseable { fs ->
             new ZipFile(archive).withCloseable { zipFile ->
-                def unfilteredModuleXml = getUnfilteredModuleXml(zipFile)
-
                 def componentTags = getModuleXmlComponentTags(archive, pluginExtension.appendDefaultMinVersion)
 
                 legacy: {
                     def resourcesTagsLegacy = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion, true)
-                    writeModuleDescriptorToBuildDirAndZipFile(fs, unfilteredModuleXml, componentTags, resourcesTagsLegacy, "module.xml")
+                    writeModuleDescriptorToBuildDirAndZipFile(fs, getUnfilteredModuleXml(zipFile, false), componentTags, resourcesTagsLegacy, "module.xml")
                 }
                 isolated: {
                     def resourcesTagsIsolated = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion)
-                    writeModuleDescriptorToBuildDirAndZipFile(fs, unfilteredModuleXml, componentTags, resourcesTagsIsolated, "module-isolated.xml")
+                    writeModuleDescriptorToBuildDirAndZipFile(fs, getUnfilteredModuleXml(zipFile, true), componentTags, resourcesTagsIsolated, "module-isolated.xml")
                 }
 			}
 		}
@@ -173,12 +160,13 @@ class FSM extends Jar {
         }
     }
 
-    String getUnfilteredModuleXml(ZipFile zipFile) {
+    String getUnfilteredModuleXml(ZipFile zipFile, boolean isolated) {
+        String isolationMode = isolated ? "-isolated" : ""
         def unfilteredModuleXml
-        def moduleXmlFile = zipFile.getEntry("META-INF/module.xml")
+        def moduleXmlFile = zipFile.getEntry("META-INF/module" + isolationMode + ".xml")
         if (moduleXmlFile == null) {
             getLogger().info("module.xml not found in ZipArchive ${zipFile.getName()}, using an empty one")
-            unfilteredModuleXml = getClass().getResource("/template-module.xml").getText("utf-8")
+            unfilteredModuleXml = getClass().getResource("/template-module" + isolationMode + ".xml").getText("utf-8")
         } else {
             unfilteredModuleXml = zipFile.getInputStream(moduleXmlFile).getText("utf-8")
         }

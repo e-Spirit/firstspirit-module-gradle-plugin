@@ -169,16 +169,6 @@ class FSMTest {
         assertThat(moduleXml()).contains("""<custom-tag>custom</custom-tag>""")
         assertThat(moduleXml(true)).doesNotContain("""<custom-tag>custom</custom-tag>""")
     }
-	@Test
-	void moduleDirContainsBothXML() {
-		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
-		pluginExtension.moduleDirName = getClass().getClassLoader().getResource("bothxml").path
-
-		fsm.execute()
-		String moduleIsolatedXml = moduleXml(true)
-		assertThat(moduleIsolatedXml).contains("""<custom-tag>custom-isolated</custom-tag>""")
-		assertThat(moduleXml()).("""<custom-tag>custom-legacy</custom-tag>""")
-	}
 
     @Test
     void moduleDirContainsOnlyModuleIsolatedXML() {
@@ -192,12 +182,22 @@ class FSMTest {
     }
 
 	@Test
+	void moduleDirContainsBothXML() {
+		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
+		pluginExtension.moduleDirName = getClass().getClassLoader().getResource("bothxml").path
+
+		fsm.execute()
+
+		assertThat(moduleXml(true)).contains("""<custom-tag>custom-isolated</custom-tag>""")
+		assertThat(moduleXml()).contains("""<custom-tag>custom-legacy</custom-tag>""")
+	}
+
+	@Test
 	void trimRemovesFileNameFromPath() {
 		String testPath = "some/directory/containing/a.file"
 		String trimmedPath = fsm.trimPathToDirectory(testPath)
 
 		assertThat(trimmedPath).is("some/directory/containing")
-
 	}
 
 	@Test
@@ -334,17 +334,12 @@ class FSMTest {
     }
 
     private String moduleXml(boolean isolated = false) {
+		String isolationMode = isolated ? "-isolated" : ""
         final Path fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.archiveName)
         assertThat(fsmFile).exists()
         final ZipFile zipFile = new ZipFile(fsmFile.toFile())
         zipFile.withCloseable {
-            String xmlFileName
-            if(isolated){
-                xmlFileName = "META-INF/module-isolated.xml"
-            }
-            else {
-                xmlFileName = "META-INF/module.xml"
-            }
+            String xmlFileName = "META-INF/module" + isolationMode + ".xml"
             ZipEntry moduleXmlEntry = zipFile.getEntry(xmlFileName)
             assertThat(moduleXmlEntry).isNotNull()
             zipFile.getInputStream(moduleXmlEntry).withCloseable {
