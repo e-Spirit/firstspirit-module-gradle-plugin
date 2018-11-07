@@ -150,13 +150,46 @@ class FSMTest {
 
 		assertThat(moduleXml()).contains("""<custom-tag>custom</custom-tag>""")
 	}
+
 	@Test(expected = IllegalArgumentException)
-	void moduleDirContainsNoModuleXML() {
+	void moduleDirContainsNoRelevantFiles() {
 		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
 		pluginExtension.moduleDirName = "some/empty/dir"
 
 		fsm.execute()
 	}
+
+    @Test
+    void moduleDirContainsOnlyModuleXML() {
+        FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
+        pluginExtension.moduleDirName = getClass().getClassLoader().getResource("legacyonly").path
+
+        fsm.execute()
+
+        assertThat(moduleXml()).contains("""<custom-tag>custom</custom-tag>""")
+        assertThat(moduleXml(true)).doesNotContain("""<custom-tag>custom</custom-tag>""")
+    }
+	@Test
+	void moduleDirContainsBothXML() {
+		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
+		pluginExtension.moduleDirName = getClass().getClassLoader().getResource("bothxml").path
+
+		fsm.execute()
+		String moduleIsolatedXml = moduleXml(true)
+		assertThat(moduleIsolatedXml).contains("""<custom-tag>custom-isolated</custom-tag>""")
+		assertThat(moduleXml()).("""<custom-tag>custom-legacy</custom-tag>""")
+	}
+
+    @Test
+    void moduleDirContainsOnlyModuleIsolatedXML() {
+        FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
+        pluginExtension.moduleDirName = getClass().getClassLoader().getResource("isolatedonly").path
+
+        fsm.execute()
+
+        assertThat(moduleXml(true)).contains("""<custom-tag>custom</custom-tag>""")
+        assertThat(moduleXml()).doesNotContain("""<custom-tag>custom</custom-tag>""")
+    }
 
 	@Test
 	void trimRemovesFileNameFromPath() {
@@ -300,12 +333,19 @@ class FSMTest {
         assertThat(moduleXml()).doesNotContain(":test-files")
     }
 
-    private String moduleXml() {
+    private String moduleXml(boolean isolated = false) {
         final Path fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.archiveName)
         assertThat(fsmFile).exists()
         final ZipFile zipFile = new ZipFile(fsmFile.toFile())
         zipFile.withCloseable {
-            ZipEntry moduleXmlEntry = zipFile.getEntry("META-INF/module.xml")
+            String xmlFileName
+            if(isolated){
+                xmlFileName = "META-INF/module-isolated.xml"
+            }
+            else {
+                xmlFileName = "META-INF/module.xml"
+            }
+            ZipEntry moduleXmlEntry = zipFile.getEntry(xmlFileName)
             assertThat(moduleXmlEntry).isNotNull()
             zipFile.getInputStream(moduleXmlEntry).withCloseable {
                 return IOUtils.toString(it, StandardCharsets.UTF_8)

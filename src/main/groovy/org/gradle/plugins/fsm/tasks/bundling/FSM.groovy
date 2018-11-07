@@ -82,14 +82,45 @@ class FSM extends Jar {
 
             configure {
                 metaInf {
-                    from project.file(trimPathToDirectory(pluginExtension.moduleDirName))
-                    if(checkModuleDir()) {
-                        include 'module.xml'
-                        include 'module-isolated.xml'
+                    //case moduleDirName is set
+                        //check module dir
+                            //case module.xml and/or module-isolated.xml file exists
+                                //include either module.xml or module-isolated.xml or both
+                                //take standard template xmls to replace the missing ones
+                            //case dir contains no xml
+                                //throw exception
+
+                    //case moduleDirName is not set
+                        //take standard template xmls to replace the missing ones
+
+                    if(pluginExtension.moduleDirName != null){
+                        String moduleDirPath = trimPathToDirectory(pluginExtension.moduleDirName)
+
+                        File moduleXml = project.file(moduleDirPath + "/module.xml")
+                        File moduleIsolatedXml = project.file(moduleDirPath + "/module-isolated.xml")
+
+                        from moduleDirPath
+
+                        if(!moduleXml.exists() && !moduleIsolatedXml.exists()){
+                            throw new IllegalArgumentException("No module.xml or module-isolated.xml found in moduleDir " + pluginExtension.moduleDirName)
+                        }
+                        if(moduleXml.exists() && moduleIsolatedXml.exists()){
+                            getLogger().info("Both xml files exist in moduleDir " + moduleDirPath)
+                            include "module.xml"
+                            include "module-isolated.xml"
+                        }
+                        else if(moduleXml.exists() && !moduleIsolatedXml.exists()){
+                            getLogger().warn("Found only a module.xml in moduleDir " + moduleDirPath +
+                                             ". Using the default template-module-isolated.xml to replace the missing module-isolated.xml")
+                            include "module.xml"
+                        }
+                        else if(!moduleXml.exists() && moduleIsolatedXml.exists()){
+                            getLogger().warn("Found only a module-isolated.xml in moduleDir " + moduleDirPath +
+                                             ". Using the default template-module.xml to replace the missing module.xml")
+                            include "module-isolated.xml"
+                        }
                     }
-                    else{
-                        throw new IllegalArgumentException("No module.xml or module-isolated.xml found in moduleDir " + pluginExtension.moduleDirName)
-                    }
+
                 }
             }
         }
@@ -98,30 +129,13 @@ class FSM extends Jar {
 
     //checks if a path contains a filename and removes the filename
     String trimPathToDirectory(String path){
-
-        if(path.lastIndexOf("/") < path.lastIndexOf(".")){
-            return path.substring(0,path.lastIndexOf("/"))
+        if(path != null){
+            if(path.lastIndexOf("/") < path.lastIndexOf(".")){
+                return path.substring(0,path.lastIndexOf("/"))
+            }
+            return path
         }
-        return path
-    }
-    boolean checkModuleDir(){
-        String moduleDirName = trimPathToDirectory(pluginExtension.moduleDirName)
-        if(moduleDirName != "src/main/resources") {
-            File moduleXml = project.file(moduleDirName + "/module.xml")
-            File moduleIsolatedXml = project.file(moduleDirName + "/module-isolated.xml")
-            if(!moduleXml.exists() && !moduleIsolatedXml.exists()){
-                return false
-            }
-            if(moduleXml.exists() && !moduleIsolatedXml.exists()){
-                getLogger().warn("Found only a module.xml in moduleDir " + moduleDirName +
-                                 ". Using the standard template-module-isolated.xml instead.")
-            }
-            if(!moduleXml.exists() && moduleIsolatedXml.exists()){
-                getLogger().warn("Found only a module-isolated.xml in moduleDir " + moduleDirName +
-                                 ". Using the standard template-module.xml instead.")
-            }
-        }
-        return true
+        return ""
     }
 
     @TaskAction
