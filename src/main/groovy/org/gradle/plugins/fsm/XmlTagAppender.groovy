@@ -4,7 +4,6 @@ import com.espirit.moddev.components.annotations.WebResource
 import de.espirit.firstspirit.generate.UrlFactory
 import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
-import com.espirit.moddev.components.annotations.Resource
 import com.espirit.moddev.components.annotations.ServiceComponent
 import com.espirit.moddev.components.annotations.ScheduleTaskComponent
 import com.espirit.moddev.components.annotations.WebAppComponent
@@ -22,6 +21,7 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
+import org.gradle.api.logging.Logger
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 
 import java.lang.annotation.Annotation
@@ -326,7 +326,7 @@ ${resources}
         """${indent}<resource name="${dependencyId.group}:${dependencyId.name}"$scopeAttribute$modeAttribute version="${dependencyId.version}"${minVersionString}${maxVersionString}>lib/${dependencyId.name}-${dependencyId.version}$classifier.${artifact.extension}</resource>"""
     }
 
-    static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode, boolean appendDefaultMinVersion, boolean skipIsolationOnlyDependencies = false) {
+    static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode, boolean appendDefaultMinVersion, boolean skipIsolationOnlyDependencies = false, Logger logger = null) {
 
         def indent = INDENT_WS_8;
         def projectResources = new StringBuilder()
@@ -344,20 +344,32 @@ ${resources}
         fsServerCompileConfiguration.attributes.keySet().forEach { println it.toString() }
 
         Set<ResolvedArtifact> compileDependenciesServerScoped = configurations.fsServerCompile.getResolvedConfiguration().getResolvedArtifacts()
-        Set<ResolvedArtifact> compileDependenciesModuleScoped = configurations.fsModuleCompile.getResolvedConfiguration().getResolvedArtifacts().minus(compileDependenciesServerScoped)
+        Set<ResolvedArtifact> uncleanedDependenciesModuleScoped = configurations.fsModuleCompile.getResolvedConfiguration().getResolvedArtifacts()
+        Set<ResolvedArtifact> cleanedCompileDependenciesModuleScoped = uncleanedDependenciesModuleScoped - compileDependenciesServerScoped
+        logIgnoredModuleScopeDependencies(logger, uncleanedDependenciesModuleScoped, cleanedCompileDependenciesModuleScoped)
         Set<ResolvedArtifact> providedCompileDependencies = configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()
 
         if(skipIsolationOnlyDependencies) {
             Set<ResolvedArtifact> skippedInLegacyDependencies = configurations.skippedInLegacy.getResolvedConfiguration().getResolvedArtifacts()
             compileDependenciesServerScoped.removeAll(skippedInLegacyDependencies)
-            compileDependenciesModuleScoped.removeAll(skippedInLegacyDependencies)
+            cleanedCompileDependenciesModuleScoped.removeAll(skippedInLegacyDependencies)
             providedCompileDependencies.removeAll(skippedInLegacyDependencies)
         }
         def minMaxVersionConfigurations = project.getPlugins().getPlugin(FSMPlugin.class).getDependencyConfigurations()
 
         addResourceTagsForDependencies(indent, compileDependenciesServerScoped, providedCompileDependencies, projectResources, "server", globalResourcesMode, appendDefaultMinVersion, minMaxVersionConfigurations)
         projectResources + "\n"
-        addResourceTagsForDependencies(indent, compileDependenciesModuleScoped, providedCompileDependencies, projectResources, "module", globalResourcesMode, appendDefaultMinVersion, minMaxVersionConfigurations)
+        addResourceTagsForDependencies(indent, cleanedCompileDependenciesModuleScoped, providedCompileDependencies, projectResources, "module", globalResourcesMode, appendDefaultMinVersion, minMaxVersionConfigurations)
         return projectResources.toString()
+    }
+
+    private static void logIgnoredModuleScopeDependencies(Logger logger, Set<ResolvedArtifact> uncleanedDependenciesModuleScoped, Set<ResolvedArtifact> compileDependenciesModuleScoped) {
+        if (logger != null) {
+            Set<ResolvedArtifact> ignoredDependenciesModuleScoped = uncleanedDependenciesModuleScoped - compileDependenciesModuleScoped
+            logger.debug("The following dependencies are found on both module and server scope. The scope will be resolved to server.")
+            ignoredDependenciesModuleScoped.forEach {
+                logger.debug(it.toString())
+            }
+        }
     }
 }

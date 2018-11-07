@@ -1,6 +1,5 @@
 package org.gradle.plugins.fsm
 
-import com.espirit.moddev.components.annotations.WebResource
 import de.espirit.firstspirit.access.Language
 import de.espirit.firstspirit.access.project.Resolution
 import de.espirit.firstspirit.access.project.TemplateSet
