@@ -1,9 +1,12 @@
 package org.example;
 
+import com.espirit.moddev.components.annotations.ModuleComponent;
+
 import de.espirit.firstspirit.module.Module;
 import de.espirit.firstspirit.module.ServerEnvironment;
 import de.espirit.firstspirit.module.descriptor.ModuleDescriptor;
 
+@ModuleComponent
 public class SimpleModule implements Module{
 
     @Override

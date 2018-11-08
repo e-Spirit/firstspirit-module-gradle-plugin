@@ -16,12 +16,15 @@ import com.espirit.moddev.components.annotations.WebResource
 import com.espirit.moddev.components.annotations.ScheduleTaskComponent
 import com.espirit.moddev.components.annotations.UrlFactoryComponent
 import com.espirit.moddev.components.annotations.WebAppComponent
+import com.espirit.moddev.components.annotations.ModuleComponent
 import de.espirit.firstspirit.agency.SpecialistsBroker
 import de.espirit.firstspirit.module.Configuration
 import de.espirit.firstspirit.module.ServerEnvironment
 import de.espirit.firstspirit.scheduling.ScheduleTaskForm
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
 import de.espirit.firstspirit.server.module.ModuleInfo
+import de.espirit.firstspirit.module.Module
+import de.espirit.firstspirit.module.descriptor.ModuleDescriptor
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
@@ -177,7 +180,15 @@ ${INDENT_WS_8}</web-app>
 """.toString(), result.toString())
     }
 
+    @Test
+    void testModuleComponentTagAppending() throws Exception {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendModuleComponentTags(result)
 
+        Assert.assertEquals("""
+${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleComponent</class>
+""".toString(), result.toString())
+    }
 
     @Test
     void testPublicComponentTagAppending() throws Exception {
@@ -427,6 +438,29 @@ ${INDENT_WS_8}</public>
         Assert.assertEquals("""${INDENT_WS_8}<resource name="$GROUP:$NAME" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>
 ${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="server" mode="isolated" version="2.1.1">lib/joda-convert-2.1.1.jar</resource>
 ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated" version="1.7.25">lib/slf4j-api-1.7.25.jar</resource>""".toString(), result)
+    }
+    @ModuleComponent
+    static class TestModuleComponent implements Module {
+
+        @Override
+        void init(ModuleDescriptor moduleDescriptor, ServerEnvironment serverEnvironment) {
+
+        }
+
+        @Override
+        void installed() {
+
+        }
+
+        @Override
+        void uninstalling() {
+
+        }
+
+        @Override
+        void updated(String s) {
+
+        }
     }
 
     @ProjectAppComponent(name = "TestProjectAppComponentName",

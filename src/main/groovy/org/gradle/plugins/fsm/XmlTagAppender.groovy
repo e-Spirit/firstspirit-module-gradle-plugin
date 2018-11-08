@@ -387,4 +387,8 @@ ${resources}
             }
         }
     }
+
+    static void appendModuleComponentTags(StringBuilder result) {
+        result.append("hello world")
+    }
 }
