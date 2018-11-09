@@ -3,6 +3,9 @@
     <version>$version</version>
     <description>$description</description>
     <custom-module-xml>This is a custom module.xml</custom-module-xml>
+    <dependencies>
+        $dependencies
+    </dependencies>
     <components>
 
 $components

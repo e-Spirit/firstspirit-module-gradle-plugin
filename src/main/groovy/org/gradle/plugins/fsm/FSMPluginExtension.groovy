@@ -66,6 +66,11 @@ class FSMPluginExtension {
 	 */
 	boolean appendDefaultMinVersion = true
 
+	/**
+	 * The dependencies of this FS-Module (FSM) to other FSM's. Will at least be displayed in the UI,
+	 * when a user adds this Module.
+	 */
+	Collection<String> fsmDependencies = new ArrayList<String>();
 
 	Set<String> dependenciesSkippedInLegacy = new HashSet<>()
 

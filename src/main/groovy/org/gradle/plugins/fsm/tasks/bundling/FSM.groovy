@@ -25,6 +25,7 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
+import org.gradle.plugins.fsm.XmlTagAppender
 import org.gradle.plugins.fsm.classloader.JarClassLoader
 import org.gradle.plugins.fsm.zip.UnzipUtility
 
@@ -182,6 +183,7 @@ class FSM extends Jar {
         filteredModuleXml = filteredModuleXml.replace('$artifact', project.jar.archiveName.toString())
         filteredModuleXml = filteredModuleXml.replace('$resources', resourcesTags)
         filteredModuleXml = filteredModuleXml.replace('$components', componentTags)
+        filteredModuleXml = filteredModuleXml.replace('$dependencies', XmlTagAppender.getFsmDependencyTags(project))
         getLogger().info("Generated module.xml: \n$filteredModuleXml")
         filteredModuleXml
     }

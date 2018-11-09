@@ -60,6 +60,7 @@ class XmlTagAppenderTest {
 
     @Before
     void setUp() {
+
         project = ProjectBuilder.builder().withName(NAME).build()
         project.setGroup(GROUP)
         project.setVersion(VERSION)
@@ -67,6 +68,7 @@ class XmlTagAppenderTest {
         project.pluginManager.apply(FSMPlugin)
         project.dependencies.add(FSMPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, "joda-time:joda-time:2.3")
         project.dependencies.add(FSMPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
+        project.getExtensions().getByType(FSMPluginExtension).setFsmDependencies(Arrays.asList('oneFSM', 'anotherFSM'))
     }
 
     /**
@@ -402,6 +404,18 @@ ${INDENT_WS_8}</public>
         String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED, false)
         Assert.assertEquals("""${INDENT_WS_8}<resource name="$GROUP:$NAME" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>""".toString(), result)
     }
+
+
+    @Test
+    void getFsmDependencyTags() {
+        def beginsWithANewLineAndIndentation = "\n" + """${INDENT_WS_8}"""
+        def firstFsmDependency = beginsWithANewLineAndIndentation + "<dependency>oneFSM</dependency>"
+        def secondFsmDependency = beginsWithANewLineAndIndentation + "<dependency>anotherFSM</dependency>"
+
+        String result = XmlTagAppender.getFsmDependencyTags(project)
+        Assert.assertEquals(firstFsmDependency + secondFsmDependency, result)
+    }
+
 
     @Test
     void resolveScopeResourceConflict() {

@@ -15,7 +15,7 @@ buildscript {
 
     dependencies {
         classpath 'com.espirit.moddev:fsmgradleplugin:0.10.29'
-        classpath 'de.espirit.firstspirit:fs-isolated-runtime:5.2.180909'
+        classpath 'de.espirit.firstspirit:fs-isolated-runtime:5.2.181007'
     }
 }
 

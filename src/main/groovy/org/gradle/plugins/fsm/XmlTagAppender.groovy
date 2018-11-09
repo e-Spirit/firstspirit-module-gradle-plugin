@@ -2,12 +2,6 @@ package org.gradle.plugins.fsm
 
 import com.espirit.moddev.components.annotations.*
 import de.espirit.firstspirit.generate.UrlFactory
-import com.espirit.moddev.components.annotations.ProjectAppComponent
-import com.espirit.moddev.components.annotations.PublicComponent
-import com.espirit.moddev.components.annotations.ServiceComponent
-import com.espirit.moddev.components.annotations.ScheduleTaskComponent
-import com.espirit.moddev.components.annotations.WebAppComponent
-import com.espirit.moddev.components.annotations.UrlFactoryComponent
 import de.espirit.firstspirit.module.Configuration
 import de.espirit.firstspirit.module.ProjectApp
 import de.espirit.firstspirit.module.ScheduleTaskSpecification
@@ -54,6 +48,20 @@ class XmlTagAppender {
         appendProjectAppTags(classLoader, scan.getNamesOfClassesImplementing(ProjectApp), result)
 
         appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result, appendDefaultMinVersion, project.plugins.getPlugin(FSMPlugin.class).dependencyConfigurations)
+    }
+
+
+    @CompileStatic
+    static String getFsmDependencyTags(Project project) {
+        def result = new StringBuilder()
+
+        FSMPluginExtension fsmPlugin = project.getExtensions().getByType(FSMPluginExtension)
+        Collection<String> fsmDependencies = fsmPlugin.getFsmDependencies()
+
+        for (String name : fsmDependencies) {
+            result.append("\n").append(INDENT_WS_8).append("<dependency>").append(name).append("</dependency>")
+        }
+        return result
     }
 
 
@@ -328,7 +336,7 @@ ${resources}
 
     static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode, boolean appendDefaultMinVersion, boolean skipIsolationOnlyDependencies = false, Logger logger = null) {
 
-        def indent = INDENT_WS_8;
+        def indent = INDENT_WS_8
         def projectResources = new StringBuilder()
         def modeAttribute = globalResourcesMode == null ? "" : """ mode="${globalResourcesMode.name().toLowerCase(Locale.ROOT)}\""""
         projectResources.append("""${indent}<resource name="${project.group}:${project.name}" version="${project.version}" scope="module\"""" +

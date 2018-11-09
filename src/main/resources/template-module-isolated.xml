@@ -4,6 +4,9 @@
     <version>$version</version>
     <description>$description</description>
     <vendor>$vendor</vendor>
+    <dependencies>
+$dependencies
+    </dependencies>
     <components>
 
 $components

@@ -27,6 +27,7 @@ buildscript {
 
 apply plugin: 'groovy'
 apply plugin: 'maven-publish'
+apply plugin: 'idea'
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
@@ -160,5 +161,12 @@ task setVersion() {
         props.setProperty('version', System.getProperty("nextVersion"))
         props.store(propsFile.newWriter(), null)
         props.load(propsFile.newDataInputStream())
+    }
+}
+
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
     }
 }

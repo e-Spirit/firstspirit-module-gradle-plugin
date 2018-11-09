@@ -1,6 +1,8 @@
 import java.nio.file.Paths
 import java.util.zip.ZipFile
 
+import static de.espirit.firstspirit.server.module.ModuleInfo.Mode.ISOLATED
+
 apply plugin: 'fsmgradleplugin'
 apply plugin: 'java'
 
@@ -11,7 +13,7 @@ dependencies {
 //    fsWebCompile 'org.apache.activemq:activemq-all:5.14.2'
 //	fsProvidedCompile 'commons-logging:commons-logging:1.1.3'
 
-    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.180909'
+    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.181007'
     compile "com.espirit.moddev.components:annotations:1.9.0"
 
     fsServerCompile project(':api')
@@ -23,6 +25,12 @@ dependencies {
 
 fsm {
     moduleDirName = 'src/main/fsm'
+    displayName = 'test-project displayName'
+    resourceMode = ISOLATED
+    //isolationDetectorUrl = 'https://fsdev.e-spirit.de/FsmDependencyDetector/'
+    firstSpiritVersion = '5.2.181007'
+    vendor = "e-Spirit AG"
+    fsmDependencies = ['otherModuleName', 'yetAnotherModule']
 }
 
 

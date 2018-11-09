@@ -51,7 +51,7 @@ fsm {
     moduleDirName = 'src/main/module'
     resourceMode = ISOLATED
     isolationDetectorUrl = 'https://...'
-    firstSpiritVersion = '5.2.180909'
+    firstSpiritVersion = '5.2.181007'
     complianceLevel = 'HIGHEST'
 }
 ```
@@ -285,6 +285,8 @@ dependencies {
 fsm {
     // example to set a different directory containing the module.xml
 	// moduleDirName = 'src/main/module'
+	// declare dependencies to other FSM's to be written to the module.xml
+	// fsmDependencies = ['nameOfMyOtherFsmThisFsmDependsOn', 'andAnotherOne']
 }
 
 eclipse {
