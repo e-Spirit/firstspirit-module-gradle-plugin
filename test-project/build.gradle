@@ -4,6 +4,7 @@ apply plugin: 'base'
 
 buildscript {
     repositories {
+        mavenLocal()
         maven {
             url 'https://artifactory.e-spirit.de/artifactory/repo'
             credentials {
@@ -24,6 +25,7 @@ subprojects {
     version = '0.0.1-SNAPSHOT'
 
 	repositories {
+        mavenLocal()
         maven {
             url 'https://artifactory.e-spirit.de/artifactory/repo'
             credentials {

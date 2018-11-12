@@ -52,7 +52,7 @@ class XmlTagAppenderTest {
 
     final List<String> componentImplementingClasses = [TestPublicComponent.getName(), TestScheduleTaskComponentWithConfigurable.getName(), TestPublicComponentWithConfiguration.getName(),
                                                        TestWebAppComponent.getName(), TestProjectAppComponent.getName(), TestScheduleTaskComponentWithForm.getName(),
-                                                       TestScheduleTaskComponentWithoutForm.getName(), TestServiceComponent.getName()]
+                                                       TestScheduleTaskComponentWithoutForm.getName(), TestServiceComponent.getName(), TestModuleComponent.getName()]
     final List<String> validAndInvalidProjectAppClasses = [XmlTagAppender.PROJECT_APP_BLACKLIST, componentImplementingClasses].flatten()
 
     Project project
@@ -188,6 +188,12 @@ ${INDENT_WS_8}</web-app>
         Assert.assertEquals("""
 ${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleComponent</class>
 """.toString(), result.toString())
+    }
+
+    @Test(expected = IllegalStateException)
+    void testModuleComponentTagWithTwoClasses() {
+
+        XmlTagAppender.appendModuleClassTag(result)
     }
 
     @Test
