@@ -73,7 +73,11 @@ class XmlTagAppender {
             //TODO: better error message
             throw new IllegalStateException("Cannot implement more than one class annotated with " + ModuleComponent.getName())
         }
-        result.append("hello world")
+        else if(moduleComponentClasses.size() == 1){
+            //TODO: add configurable
+            result.append("\n" + INDENT_WS_8 + "<class>" + moduleComponentClasses[0] + "</class>\n")
+        }
+
     }
 
     @CompileStatic

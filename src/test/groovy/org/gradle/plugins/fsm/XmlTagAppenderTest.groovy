@@ -52,7 +52,7 @@ class XmlTagAppenderTest {
 
     final List<String> componentImplementingClasses = [TestPublicComponent.getName(), TestScheduleTaskComponentWithConfigurable.getName(), TestPublicComponentWithConfiguration.getName(),
                                                        TestWebAppComponent.getName(), TestProjectAppComponent.getName(), TestScheduleTaskComponentWithForm.getName(),
-                                                       TestScheduleTaskComponentWithoutForm.getName(), TestServiceComponent.getName(), TestModuleComponent.getName()]
+                                                       TestScheduleTaskComponentWithoutForm.getName(), TestServiceComponent.getName()]
     final List<String> validAndInvalidProjectAppClasses = [XmlTagAppender.PROJECT_APP_BLACKLIST, componentImplementingClasses].flatten()
 
     Project project
@@ -183,7 +183,7 @@ ${INDENT_WS_8}</web-app>
     @Test
     void testModuleComponentTagAppending() throws Exception {
         StringBuilder result = new StringBuilder()
-        XmlTagAppender.appendModuleComponentTags(result)
+        XmlTagAppender.appendModuleComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestModuleComponent.getName()], result)
 
         Assert.assertEquals("""
 ${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleComponent</class>
@@ -197,8 +197,13 @@ ${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleCompon
     }
     //TODO: Test for module annotation configuration
     @Test
-    void testModuleAnnotationConfig(){
-
+    void testModuleAnnotationWithConfigurable(){
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendModuleComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestModuleComponentWithConfiguration.getName()], result)
+        Assert.assertEquals("""
+${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleComponent</class>
+${INDENT_WS_8}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
+""".toString(), result.toString())
     }
 
     @Test
@@ -453,6 +458,28 @@ ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated
     @ModuleComponent
     static class TestModuleComponent implements Module {
 
+        @Override
+        void init(ModuleDescriptor moduleDescriptor, ServerEnvironment serverEnvironment) {
+
+        }
+
+        @Override
+        void installed() {
+
+        }
+
+        @Override
+        void uninstalling() {
+
+        }
+
+        @Override
+        void updated(String s) {
+
+        }
+    }
+    @ModuleComponent(configurable = TestConfigurable.class)
+    static class TestModuleComponentWithConfiguration implements Module {
         @Override
         void init(ModuleDescriptor moduleDescriptor, ServerEnvironment serverEnvironment) {
 
