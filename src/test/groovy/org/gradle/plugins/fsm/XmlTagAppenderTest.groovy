@@ -192,8 +192,13 @@ ${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleCompon
 
     @Test(expected = IllegalStateException)
     void testModuleComponentTagWithTwoClasses() {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendModuleComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestModuleComponent.getName(), TestModuleComponent.getName() + "2"], result)
+    }
+    //TODO: Test for module annotation configuration
+    @Test
+    void testModuleAnnotationConfig(){
 
-        XmlTagAppender.appendModuleClassTag(result)
     }
 
     @Test

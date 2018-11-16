@@ -133,7 +133,7 @@ class FSM extends Jar {
         getLogger().info("Generating module.xml files")
         File archive = getArchivePath()
         getLogger().info("Found archive ${archive.getPath()}")
-
+        //TODO: append class tag here
         (FileSystems.newFileSystem(archive.toPath(), getClass().getClassLoader())).withCloseable { fs ->
             new ZipFile(archive).withCloseable { zipFile ->
 
@@ -182,6 +182,7 @@ class FSM extends Jar {
         filteredModuleXml = filteredModuleXml.replace('$description', project.description?.toString() ?: project.name.toString())
         filteredModuleXml = filteredModuleXml.replace('$vendor', pluginExtension.vendor?.toString() ?: "")
         filteredModuleXml = filteredModuleXml.replace('$artifact', project.jar.archiveName.toString())
+        filteredModuleXml = filteredModuleXml.replace('$class', "") //TODO: replace tag here
         filteredModuleXml = filteredModuleXml.replace('$resources', resourcesTags)
         filteredModuleXml = filteredModuleXml.replace('$components', componentTags)
         filteredModuleXml = filteredModuleXml.replace('$dependencies', XmlTagAppender.getFsmDependencyTags(project))

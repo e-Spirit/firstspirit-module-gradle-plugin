@@ -64,6 +64,17 @@ class XmlTagAppender {
         return result
     }
 
+    @CompileStatic
+    static void appendModuleComponentTags(URLClassLoader cl, List<String> moduleComponentClasses, StringBuilder result) {
+        if(moduleComponentClasses.size() == 0){
+
+        }
+        else if(moduleComponentClasses.size() > 1){
+            //TODO: better error message
+            throw new IllegalStateException("Cannot implement more than one class annotated with " + ModuleComponent.getName())
+        }
+        result.append("hello world")
+    }
 
     @CompileStatic
     static void appendPublicComponentTags(URLClassLoader cl, List<String> publicComponentClasses, StringBuilder result) {
@@ -388,7 +399,4 @@ ${resources}
         }
     }
 
-    static void appendModuleComponentTags(StringBuilder result) {
-        result.append("hello world")
-    }
 }
