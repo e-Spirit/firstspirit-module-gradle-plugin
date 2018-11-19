@@ -186,8 +186,7 @@ ${INDENT_WS_8}</web-app>
         XmlTagAppender.appendModuleComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestModuleComponent.getName()], result)
 
         Assert.assertEquals("""
-${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleComponent</class>
-""".toString(), result.toString())
+${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleComponent</class>""".toString(), result.toString())
     }
 
     @Test(expected = IllegalStateException)
@@ -195,15 +194,14 @@ ${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleCompon
         StringBuilder result = new StringBuilder()
         XmlTagAppender.appendModuleComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestModuleComponent.getName(), TestModuleComponent.getName() + "2"], result)
     }
-    //TODO: Test for module annotation configuration
+
     @Test
     void testModuleAnnotationWithConfigurable(){
         StringBuilder result = new StringBuilder()
         XmlTagAppender.appendModuleComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestModuleComponentWithConfiguration.getName()], result)
         Assert.assertEquals("""
-${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleComponent</class>
-${INDENT_WS_8}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
-""".toString(), result.toString())
+${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleComponentWithConfiguration</class>
+${INDENT_WS_8}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>""".toString(), result.toString())
     }
 
     @Test
