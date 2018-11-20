@@ -183,7 +183,21 @@ ${INDENT_WS_8}</web-app>
     @Test
     void testModuleComponentTagAppending() throws Exception {
         StringBuilder result = new StringBuilder()
-        XmlTagAppender.appendModuleComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestModuleComponent.getName()], result)
+        def scannerResultProvider = new FSM.ClassScannerResultProvider() {
+            @Override
+            List<String> getNamesOfClassesImplementing(final Class<?> implementedInterface) {
+                return []
+            }
+
+            @Override
+            List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation) {
+                if (ModuleComponent.isAssignableFrom(annotation)) {
+                    return [TestModuleComponent.getName()]
+                }
+                return []
+            }
+        }
+        XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result)
 
         Assert.assertEquals("""
 ${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleComponent</class>""".toString(), result.toString())
@@ -192,13 +206,41 @@ ${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleCompon
     @Test(expected = IllegalStateException)
     void testModuleComponentTagWithTwoClasses() {
         StringBuilder result = new StringBuilder()
-        XmlTagAppender.appendModuleComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestModuleComponent.getName(), TestModuleComponent.getName() + "2"], result)
+        def scannerResultProvider = new FSM.ClassScannerResultProvider() {
+            @Override
+            List<String> getNamesOfClassesImplementing(final Class<?> implementedInterface) {
+                return []
+            }
+
+            @Override
+            List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation) {
+                if (ModuleComponent.isAssignableFrom(annotation)) {
+                    return [TestModuleComponent.getName(), TestModuleComponent.getName() + "2"]
+                }
+                return []
+            }
+        }
+        XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result)
     }
 
     @Test
     void testModuleAnnotationWithConfigurable(){
         StringBuilder result = new StringBuilder()
-        XmlTagAppender.appendModuleComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestModuleComponentWithConfiguration.getName()], result)
+        def scannerResultProvider = new FSM.ClassScannerResultProvider() {
+            @Override
+            List<String> getNamesOfClassesImplementing(final Class<?> implementedInterface) {
+                return []
+            }
+
+            @Override
+            List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation) {
+                if (ModuleComponent.isAssignableFrom(annotation)) {
+                    return [TestModuleComponentWithConfiguration.getName()]
+                }
+                return []
+            }
+        }
+        XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result)
         Assert.assertEquals("""
 ${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleComponentWithConfiguration</class>
 ${INDENT_WS_8}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>""".toString(), result.toString())

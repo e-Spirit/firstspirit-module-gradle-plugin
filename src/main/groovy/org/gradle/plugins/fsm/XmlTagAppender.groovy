@@ -1,13 +1,6 @@
 package org.gradle.plugins.fsm
 
 import de.espirit.firstspirit.generate.UrlFactory
-import com.espirit.moddev.components.annotations.ProjectAppComponent
-import com.espirit.moddev.components.annotations.PublicComponent
-import com.espirit.moddev.components.annotations.ServiceComponent
-import com.espirit.moddev.components.annotations.ScheduleTaskComponent
-import com.espirit.moddev.components.annotations.WebAppComponent
-import com.espirit.moddev.components.annotations.UrlFactoryComponent
-import com.espirit.moddev.components.annotations.ModuleComponent
 import de.espirit.firstspirit.module.Configuration
 import de.espirit.firstspirit.module.ProjectApp
 import de.espirit.firstspirit.module.ScheduleTaskSpecification
@@ -69,21 +62,23 @@ class XmlTagAppender {
         }
         return result
     }
+    @CompileStatic
+    static void appendModuleAnnotationTags(URLClassLoader cl, FSM.ClassScannerResultProvider scan, StringBuilder result) {
+        def moduleImplClasses = scan.getNamesOfClassesWithAnnotation(ModuleComponent)
 
-    static void appendModuleComponentTags(URLClassLoader cl, List<String> moduleComponentClasses, StringBuilder result) {
-        if(moduleComponentClasses.size() > 1){
+        if(moduleImplClasses.size() > 1){
             //TODO: better error message
             throw new IllegalStateException("Cannot implement more than one class annotated with " + ModuleComponent.getName())
         }
-        else if(moduleComponentClasses.size() == 1){
-            Arrays.asList(cl.loadClass(moduleComponentClasses[0]).annotations)
-            .findAll{ it instanceof ModuleComponent }
-            .forEach{ annotation ->
-                final String configurable = annotation.configurable() == Configuration.class ? "" : "\n${INDENT_WS_8}<configurable>${annotation.configurable().name}</configurable>"
-                result.append("\n" + INDENT_WS_8 + "<class>" + moduleComponentClasses[0] + "</class>${configurable}")
-            }
+        else if(moduleImplClasses.size() == 1){
+            appendModuleClassAndConfigTags(cl.loadClass(moduleImplClasses[0]), result)
         }
 
+    }
+    private static appendModuleClassAndConfigTags(Class<?> module, StringBuilder result){
+        def annotation = module.annotations.find{ it instanceof ModuleComponent }
+        final String configurable = annotation.configurable() == Configuration.class ? "" : "\n${INDENT_WS_8}<configurable>${annotation.configurable().name}</configurable>"
+        result.append("\n" + INDENT_WS_8 + "<class>" + module.getName() + "</class>${configurable}")
     }
 
     @CompileStatic
