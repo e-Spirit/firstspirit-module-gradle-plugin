@@ -28,6 +28,7 @@ import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.XmlTagAppender
 import org.gradle.plugins.fsm.classloader.JarClassLoader
 import org.gradle.plugins.fsm.zip.UnzipUtility
+import org.jetbrains.annotations.NotNull
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.*
@@ -128,31 +129,57 @@ class FSM extends Jar {
         return ""
     }
 
+    class XMLData {
+        String moduleTags
+        String componentTags
+        String resourcesTags
+        boolean isolated
+
+        XMLData(isolated){
+            this.isolated = isolated
+        }
+
+        String filterModuleXml(String unfilteredModuleXml) {
+            String filteredModuleXml = unfilteredModuleXml.replace('$name', pluginExtension.moduleName ?: project.name)
+            filteredModuleXml = filteredModuleXml.replace('$displayName', pluginExtension.displayName?.toString() ?: project.name.toString())
+            filteredModuleXml = filteredModuleXml.replace('$version', project.version.toString())
+            filteredModuleXml = filteredModuleXml.replace('$description', project.description?.toString() ?: project.name.toString())
+            filteredModuleXml = filteredModuleXml.replace('$vendor', pluginExtension.vendor?.toString() ?: "")
+            filteredModuleXml = filteredModuleXml.replace('$artifact', project.jar.archiveName.toString())
+            filteredModuleXml = filteredModuleXml.replace('$class', moduleTags)
+            filteredModuleXml = filteredModuleXml.replace('$resources', resourcesTags)
+            filteredModuleXml = filteredModuleXml.replace('$components', componentTags)
+            getLogger().info("Generated module.xml: \n$filteredModuleXml")
+            filteredModuleXml
+        }
+    }
+
     @TaskAction
     protected void generateModuleXmls() {
         getLogger().info("Generating module.xml files")
         File archive = getArchivePath()
         getLogger().info("Found archive ${archive.getPath()}")
-        //TODO: append class tag here
         (FileSystems.newFileSystem(archive.toPath(), getClass().getClassLoader())).withCloseable { fs ->
             new ZipFile(archive).withCloseable { zipFile ->
 
+                boolean isolated
                 legacy: {
-                    def componentTagsLegacy = getModuleXmlComponentTags(archive, pluginExtension.appendDefaultMinVersion, false)
-                    def resourcesTagsLegacy = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion, true)
-                    writeModuleDescriptorToBuildDirAndZipFile(fs, getUnfilteredModuleXml(zipFile, false), componentTagsLegacy, resourcesTagsLegacy, "module.xml")
+                    isolated = false
+                    XMLData moduleXml = getXMLTagsFromAppender(archive, pluginExtension.appendDefaultMinVersion, isolated)
+                    writeModuleDescriptorToBuildDirAndZipFile(fs, getUnfilteredModuleXml(zipFile, isolated), moduleXml)
                 }
                 isolated: {
-                    def componentTagsIsolated = getModuleXmlComponentTags(archive, pluginExtension.appendDefaultMinVersion, true)
-                    def resourcesTagsIsolated = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion)
-                    writeModuleDescriptorToBuildDirAndZipFile(fs, getUnfilteredModuleXml(zipFile, true), componentTagsIsolated, resourcesTagsIsolated, "module-isolated.xml")
+                    isolated = true
+                    XMLData moduleIsolatedXml = getXMLTagsFromAppender(archive, pluginExtension.appendDefaultMinVersion, isolated)
+                    writeModuleDescriptorToBuildDirAndZipFile(fs, getUnfilteredModuleXml(zipFile, isolated), moduleIsolatedXml)
                 }
 			}
 		}
 	}
 
-    void writeModuleDescriptorToBuildDirAndZipFile(FileSystem fs, String unfilteredModuleXml, String componentTags, String resourcesTags, String fileName) {
-        String filteredModuleXml = XmlUtil.serialize(filterModuleXml(unfilteredModuleXml, resourcesTags, componentTags))
+    void writeModuleDescriptorToBuildDirAndZipFile(FileSystem fs, String unfilteredModuleXml, XMLData moduleXML) {
+        String filteredModuleXml = XmlUtil.serialize(moduleXML.filterModuleXml(unfilteredModuleXml))
+        String fileName = "module" + moduleXML.isolated ? "-isolated" : "" + ".xml"
 
         Paths.get(destinationDir.toString(), fileName).toFile() << filteredModuleXml
 
@@ -190,9 +217,10 @@ class FSM extends Jar {
         filteredModuleXml
     }
 
-    String getModuleXmlComponentTags(File archive, boolean appendDefaultMinVersion, boolean isolated) {
+    XMLData getXMLTagsFromAppender(File archive, boolean appendDefaultMinVersion, boolean isolated){
         StringBuilder result = new StringBuilder()
         File tempDir = unzipFsmToNewTempDir(archive)
+        XMLData xml = new XMLData(isolated:  isolated)
 
         def libDir = new File(Paths.get(tempDir.getPath(), "lib").toString())
         new JarClassLoader(libDir, getClass().getClassLoader()).withCloseable { classLoader ->
@@ -200,6 +228,11 @@ class FSM extends Jar {
                 def scan = new FastClasspathScanner().addClassLoader(classLoader).scan()
 
                 appendComponentsTag(project, classLoader, new ClassScannerResultDelegate(scan), appendDefaultMinVersion, result, isolated)
+                xml.componentTags = result.toString()
+                result = new StringBuilder()
+                appendModuleAnnotationTags(classLoader, new ClassScannerResultDelegate(scan), result)
+                xml.moduleTags = result.toString()
+                xml.resourcesTags = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion, isolated)
 
             } catch (MalformedURLException e) {
                 getLogger().error("Passed URL is malformed", e)
@@ -208,7 +241,7 @@ class FSM extends Jar {
             }
         }
 
-        return result.toString()
+        return xml
     }
 
     /**

@@ -182,6 +182,7 @@ ${INDENT_WS_8}</web-app>
 
     @Test
     void testModuleComponentTagAppending() throws Exception {
+        //TODO: rewrite test to test the appendModuleClassAndConfigTags function and remove annotated classes implementing module interface
         StringBuilder result = new StringBuilder()
         def scannerResultProvider = new FSM.ClassScannerResultProvider() {
             @Override
@@ -205,6 +206,7 @@ ${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleCompon
 
     @Test(expected = IllegalStateException)
     void testModuleComponentTagWithTwoClasses() {
+        //TODO: rewrite this test
         StringBuilder result = new StringBuilder()
         def scannerResultProvider = new FSM.ClassScannerResultProvider() {
             @Override
@@ -225,6 +227,7 @@ ${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleCompon
 
     @Test
     void testModuleAnnotationWithConfigurable(){
+        //TODO: rewrite this test
         StringBuilder result = new StringBuilder()
         def scannerResultProvider = new FSM.ClassScannerResultProvider() {
             @Override

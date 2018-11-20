@@ -357,7 +357,7 @@ ${resources}
         """${indent}<resource name="${dependencyId.group}:${dependencyId.name}"$scopeAttribute$modeAttribute version="${dependencyId.version}"${minVersionString}${maxVersionString}>lib/${dependencyId.name}-${dependencyId.version}$classifier.${artifact.extension}</resource>"""
     }
 
-    static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode, boolean appendDefaultMinVersion, boolean skipIsolationOnlyDependencies = false, Logger logger = null) {
+    static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode, boolean appendDefaultMinVersion, boolean isolationMode = false, Logger logger = null) {
 
         def indent = INDENT_WS_8
         def projectResources = new StringBuilder()
@@ -380,7 +380,7 @@ ${resources}
         logIgnoredModuleScopeDependencies(logger, uncleanedDependenciesModuleScoped, cleanedCompileDependenciesModuleScoped)
         Set<ResolvedArtifact> providedCompileDependencies = configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()
 
-        if(skipIsolationOnlyDependencies) {
+        if(!isolationMode) {
             Set<ResolvedArtifact> skippedInLegacyDependencies = configurations.skippedInLegacy.getResolvedConfiguration().getResolvedArtifacts()
             compileDependenciesServerScoped.removeAll(skippedInLegacyDependencies)
             cleanedCompileDependenciesModuleScoped.removeAll(skippedInLegacyDependencies)
