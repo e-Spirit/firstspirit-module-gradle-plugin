@@ -129,29 +129,11 @@ class FSM extends Jar {
         return ""
     }
 
-    class XMLData {
-        String moduleTags
-        String componentTags
-        String resourcesTags
+    static class XMLData {
+        String moduleTags = ""
+        String componentTags = ""
+        String resourcesTags = ""
         boolean isolated
-
-        XMLData(isolated){
-            this.isolated = isolated
-        }
-
-        String filterModuleXml(String unfilteredModuleXml) {
-            String filteredModuleXml = unfilteredModuleXml.replace('$name', pluginExtension.moduleName ?: project.name)
-            filteredModuleXml = filteredModuleXml.replace('$displayName', pluginExtension.displayName?.toString() ?: project.name.toString())
-            filteredModuleXml = filteredModuleXml.replace('$version', project.version.toString())
-            filteredModuleXml = filteredModuleXml.replace('$description', project.description?.toString() ?: project.name.toString())
-            filteredModuleXml = filteredModuleXml.replace('$vendor', pluginExtension.vendor?.toString() ?: "")
-            filteredModuleXml = filteredModuleXml.replace('$artifact', project.jar.archiveName.toString())
-            filteredModuleXml = filteredModuleXml.replace('$class', moduleTags)
-            filteredModuleXml = filteredModuleXml.replace('$resources', resourcesTags)
-            filteredModuleXml = filteredModuleXml.replace('$components', componentTags)
-            getLogger().info("Generated module.xml: \n$filteredModuleXml")
-            filteredModuleXml
-        }
     }
 
     @TaskAction
@@ -178,7 +160,7 @@ class FSM extends Jar {
 	}
 
     void writeModuleDescriptorToBuildDirAndZipFile(FileSystem fs, String unfilteredModuleXml, XMLData moduleXML) {
-        String filteredModuleXml = XmlUtil.serialize(moduleXML.filterModuleXml(unfilteredModuleXml))
+        String filteredModuleXml = XmlUtil.serialize(filterModuleXml(unfilteredModuleXml, moduleXML))
         String fileName = "module" + moduleXML.isolated ? "-isolated" : "" + ".xml"
 
         Paths.get(destinationDir.toString(), fileName).toFile() << filteredModuleXml
@@ -187,6 +169,19 @@ class FSM extends Jar {
         Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE).withCloseable {
             it.write(filteredModuleXml)
         }
+    }
+    String filterModuleXml(String unfilteredModuleXml, XMLData xmlData) {
+        String filteredModuleXml = unfilteredModuleXml.replace('$name', pluginExtension.moduleName ?: project.name)
+        filteredModuleXml = filteredModuleXml.replace('$displayName', pluginExtension.displayName?.toString() ?: project.name.toString())
+        filteredModuleXml = filteredModuleXml.replace('$version', project.version.toString())
+        filteredModuleXml = filteredModuleXml.replace('$description', project.description?.toString() ?: project.name.toString())
+        filteredModuleXml = filteredModuleXml.replace('$vendor', pluginExtension.vendor?.toString() ?: "")
+        filteredModuleXml = filteredModuleXml.replace('$artifact', project.jar.archiveName.toString())
+        filteredModuleXml = filteredModuleXml.replace('$class', xmlData.moduleTags)
+        filteredModuleXml = filteredModuleXml.replace('$resources', xmlData.resourcesTags)
+        filteredModuleXml = filteredModuleXml.replace('$components', xmlData.componentTags)
+        getLogger().info("Generated module.xml: \n$filteredModuleXml")
+        filteredModuleXml
     }
 
     String getUnfilteredModuleXml(ZipFile zipFile, boolean isolated) {
@@ -220,7 +215,7 @@ class FSM extends Jar {
     XMLData getXMLTagsFromAppender(File archive, boolean appendDefaultMinVersion, boolean isolated){
         StringBuilder result = new StringBuilder()
         File tempDir = unzipFsmToNewTempDir(archive)
-        XMLData xml = new XMLData(isolated:  isolated)
+        def moduleXml = new XMLData(isolated: isolated)
 
         def libDir = new File(Paths.get(tempDir.getPath(), "lib").toString())
         new JarClassLoader(libDir, getClass().getClassLoader()).withCloseable { classLoader ->
@@ -228,11 +223,11 @@ class FSM extends Jar {
                 def scan = new FastClasspathScanner().addClassLoader(classLoader).scan()
 
                 appendComponentsTag(project, classLoader, new ClassScannerResultDelegate(scan), appendDefaultMinVersion, result, isolated)
-                xml.componentTags = result.toString()
+                moduleXml.componentTags = result.toString()
                 result = new StringBuilder()
                 appendModuleAnnotationTags(classLoader, new ClassScannerResultDelegate(scan), result)
-                xml.moduleTags = result.toString()
-                xml.resourcesTags = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion, isolated)
+                moduleXml.moduleTags = result.toString()
+                moduleXml.resourcesTags = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion, isolated)
 
             } catch (MalformedURLException e) {
                 getLogger().error("Passed URL is malformed", e)
@@ -241,7 +236,7 @@ class FSM extends Jar {
             }
         }
 
-        return xml
+        return moduleXml
     }
 
     /**

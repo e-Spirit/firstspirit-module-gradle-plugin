@@ -226,7 +226,7 @@ class FSMTest {
 		String xml = "<module><name>\$name</name></module>"
 		String expectedXML = "<module><name>${projectName}</name></module>"
 
-		String resultXML = myFSM.filterModuleXml(xml, "", "")
+		String resultXML = myFSM.filterModuleXml(xml, new FSM.XMLData())
 
 		assertThat(resultXML).isEqualTo(expectedXML)
 	}
@@ -244,7 +244,7 @@ class FSMTest {
 		String xml = "<module><name>\$name</name></module>"
 		String expectedXML = "<module><name>${moduleName}</name></module>"
 
-		String resultXML = myFSM.filterModuleXml(xml, "", "")
+		String resultXML = myFSM.filterModuleXml(xml, new FSM.XMLData())
 
 		assertThat(resultXML).isEqualTo(expectedXML)
 	}

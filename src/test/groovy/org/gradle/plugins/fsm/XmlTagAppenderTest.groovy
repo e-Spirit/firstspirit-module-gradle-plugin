@@ -242,7 +242,6 @@ ${INDENT_WS_8}</web-app>
                 return TestModuleImpl.getName()
             }
         }
-
         XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result)
 
         Assert.assertEquals("""

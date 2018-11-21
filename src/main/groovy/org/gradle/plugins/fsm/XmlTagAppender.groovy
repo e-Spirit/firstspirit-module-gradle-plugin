@@ -64,6 +64,7 @@ class XmlTagAppender {
         }
         return result
     }
+
     @CompileStatic
     static void appendModuleAnnotationTags(URLClassLoader cl, FSM.ClassScannerResultProvider scan, StringBuilder result) {
         def moduleAnnotatedClasses = scan.getNamesOfClassesWithAnnotation(ModuleComponent)
