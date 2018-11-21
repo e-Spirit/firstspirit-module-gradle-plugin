@@ -2,6 +2,7 @@ package org.gradle.plugins.fsm
 
 import de.espirit.firstspirit.generate.UrlFactory
 import de.espirit.firstspirit.module.Configuration
+import de.espirit.firstspirit.module.Module
 import de.espirit.firstspirit.module.ProjectApp
 import de.espirit.firstspirit.module.ScheduleTaskSpecification
 import de.espirit.firstspirit.module.Service
@@ -15,6 +16,7 @@ import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.logging.Logger
+import org.gradle.api.logging.Logging
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 
 import java.lang.annotation.Annotation
@@ -64,13 +66,25 @@ class XmlTagAppender {
     }
     @CompileStatic
     static void appendModuleAnnotationTags(URLClassLoader cl, FSM.ClassScannerResultProvider scan, StringBuilder result) {
-        def moduleImplClasses = scan.getNamesOfClassesWithAnnotation(ModuleComponent)
-        if(moduleImplClasses.size() > 1){
-            //TODO: better error message
-            throw new IllegalStateException("Cannot implement more than one class annotated with " + ModuleComponent.getName())
+        def moduleAnnotatedClasses = scan.getNamesOfClassesWithAnnotation(ModuleComponent)
+        def moduleImplClasses = scan.getNamesOfClassesImplementing(Module)
+        def logger = Logging.getLogger(XmlTagAppender.class)
+
+        if(moduleAnnotatedClasses.size() == 0){
+            if(moduleImplClasses.size() == 0){
+                logger.warn("No class implementing " + Module.getName() + " were found in your project. Are you sure you want to create " +
+                                                        "an fsm without a module?")
+            }
+            logger.info("No class with @Module annotation found in your project.")
+            if(moduleImplClasses.size() == 1){
+                logger.info("Looks like you forgot to add the @Module annotation to " + moduleImplClasses[0])
+            }
         }
-        else if(moduleImplClasses.size() == 1){
-            appendModuleClassAndConfigTags(cl.loadClass(moduleImplClasses[0]), result)
+        if(moduleAnnotatedClasses.size() > 1){
+            throw new IllegalStateException("You cannot annotate more than one class with @Module in your project.")
+        }
+        else if(moduleAnnotatedClasses.size() == 1){
+            appendModuleClassAndConfigTags(cl.loadClass(moduleAnnotatedClasses[0]), result)
         }
 
     }
