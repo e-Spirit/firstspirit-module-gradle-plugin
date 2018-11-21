@@ -65,7 +65,6 @@ class XmlTagAppender {
     @CompileStatic
     static void appendModuleAnnotationTags(URLClassLoader cl, FSM.ClassScannerResultProvider scan, StringBuilder result) {
         def moduleImplClasses = scan.getNamesOfClassesWithAnnotation(ModuleComponent)
-
         if(moduleImplClasses.size() > 1){
             //TODO: better error message
             throw new IllegalStateException("Cannot implement more than one class annotated with " + ModuleComponent.getName())

@@ -180,33 +180,9 @@ ${INDENT_WS_8}</web-app>
 """.toString(), result.toString())
     }
 
-    @Test
-    void testModuleComponentTagAppending() throws Exception {
-        //TODO: rewrite test to test the appendModuleClassAndConfigTags function and remove annotated classes implementing module interface
-        StringBuilder result = new StringBuilder()
-        def scannerResultProvider = new FSM.ClassScannerResultProvider() {
-            @Override
-            List<String> getNamesOfClassesImplementing(final Class<?> implementedInterface) {
-                return []
-            }
-
-            @Override
-            List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation) {
-                if (ModuleComponent.isAssignableFrom(annotation)) {
-                    return [TestModuleComponent.getName()]
-                }
-                return []
-            }
-        }
-        XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result)
-
-        Assert.assertEquals("""
-${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleComponent</class>""".toString(), result.toString())
-    }
 
     @Test(expected = IllegalStateException)
     void testModuleComponentTagWithTwoClasses() {
-        //TODO: rewrite this test
         StringBuilder result = new StringBuilder()
         def scannerResultProvider = new FSM.ClassScannerResultProvider() {
             @Override
@@ -216,14 +192,63 @@ ${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleCompon
 
             @Override
             List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation) {
-                if (ModuleComponent.isAssignableFrom(annotation)) {
-                    return [TestModuleComponent.getName(), TestModuleComponent.getName() + "2"]
-                }
-                return []
+                return ["org.some.class.implementing.module", "org.some.other.class.definitely.not.the.same.as.the.one.on.the.left"]
             }
         }
         XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result)
     }
+
+    @Test
+    void testModuleComponentTagAppending() throws Exception {
+        StringBuilder result = new StringBuilder()
+        def scannerResultProvider = new FSM.ClassScannerResultProvider() {
+            @ModuleComponent
+            class TestModuleImpl implements Module {
+
+                @Override
+                void init(ModuleDescriptor moduleDescriptor, ServerEnvironment serverEnvironment) {
+
+                }
+
+                @Override
+                void installed() {
+
+                }
+
+                @Override
+                void uninstalling() {
+
+                }
+
+                @Override
+                void updated(String s) {
+
+                }
+
+            }
+            @Override
+            List<String> getNamesOfClassesImplementing(final Class<?> implementedInterface) {
+                return [TestModuleImpl.getName()]
+            }
+
+            @Override
+            List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation) {
+                if (ModuleComponent.isAssignableFrom(annotation)) {
+                    return [TestModuleImpl.getName()]
+                }
+                return []
+            }
+            String getModuleClassName(){
+                return TestModuleImpl.getName()
+            }
+        }
+
+        XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result)
+
+        Assert.assertEquals("""
+${INDENT_WS_8}<class>${scannerResultProvider.getModuleClassName()}</class>""".toString(), result.toString())
+    }
+
 
     @Test
     void testModuleAnnotationWithConfigurable(){
@@ -498,29 +523,7 @@ ${INDENT_WS_8}</public>
 ${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="server" mode="isolated" version="2.1.1">lib/joda-convert-2.1.1.jar</resource>
 ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated" version="1.7.25">lib/slf4j-api-1.7.25.jar</resource>""".toString(), result)
     }
-    @ModuleComponent
-    static class TestModuleComponent implements Module {
 
-        @Override
-        void init(ModuleDescriptor moduleDescriptor, ServerEnvironment serverEnvironment) {
-
-        }
-
-        @Override
-        void installed() {
-
-        }
-
-        @Override
-        void uninstalling() {
-
-        }
-
-        @Override
-        void updated(String s) {
-
-        }
-    }
     @ModuleComponent(configurable = TestConfigurable.class)
     static class TestModuleComponentWithConfiguration implements Module {
         @Override
