@@ -252,9 +252,30 @@ ${INDENT_WS_8}<class>${scannerResultProvider.getModuleClassName()}</class>""".to
 
     @Test
     void testModuleAnnotationWithConfigurable(){
-        //TODO: rewrite this test
         StringBuilder result = new StringBuilder()
         def scannerResultProvider = new FSM.ClassScannerResultProvider() {
+            @ModuleComponent(configurable = TestConfigurable.class)
+            class TestModuleImplWithConfiguration implements Module {
+                @Override
+                void init(ModuleDescriptor moduleDescriptor, ServerEnvironment serverEnvironment) {
+
+                }
+
+                @Override
+                void installed() {
+
+                }
+
+                @Override
+                void uninstalling() {
+
+                }
+
+                @Override
+                void updated(String s) {
+
+                }
+            }
             @Override
             List<String> getNamesOfClassesImplementing(final Class<?> implementedInterface) {
                 return []
@@ -263,14 +284,17 @@ ${INDENT_WS_8}<class>${scannerResultProvider.getModuleClassName()}</class>""".to
             @Override
             List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation) {
                 if (ModuleComponent.isAssignableFrom(annotation)) {
-                    return [TestModuleComponentWithConfiguration.getName()]
+                    return [TestModuleImplWithConfiguration.getName()]
                 }
                 return []
+            }
+            String getModuleClassName(){
+                return TestModuleImplWithConfiguration.getName()
             }
         }
         XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result)
         Assert.assertEquals("""
-${INDENT_WS_8}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleComponentWithConfiguration</class>
+${INDENT_WS_8}<class>${scannerResultProvider.getModuleClassName()}</class>
 ${INDENT_WS_8}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>""".toString(), result.toString())
     }
 
@@ -522,29 +546,6 @@ ${INDENT_WS_8}</public>
         Assert.assertEquals("""${INDENT_WS_8}<resource name="$GROUP:$NAME" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>
 ${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="server" mode="isolated" version="2.1.1">lib/joda-convert-2.1.1.jar</resource>
 ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated" version="1.7.25">lib/slf4j-api-1.7.25.jar</resource>""".toString(), result)
-    }
-
-    @ModuleComponent(configurable = TestConfigurable.class)
-    static class TestModuleComponentWithConfiguration implements Module {
-        @Override
-        void init(ModuleDescriptor moduleDescriptor, ServerEnvironment serverEnvironment) {
-
-        }
-
-        @Override
-        void installed() {
-
-        }
-
-        @Override
-        void uninstalling() {
-
-        }
-
-        @Override
-        void updated(String s) {
-
-        }
     }
 
     @ProjectAppComponent(name = "TestProjectAppComponentName",

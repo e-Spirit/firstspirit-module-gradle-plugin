@@ -81,7 +81,9 @@ class XmlTagAppender {
             }
         }
         if(moduleAnnotatedClasses.size() > 1){
-            throw new IllegalStateException("You cannot annotate more than one class with @Module in your project.")
+            throw new IllegalStateException("The following classes annotated with @Module were found in your project:\n" +
+                                            moduleAnnotatedClasses.toString() +
+                                            "\nYou cannot have more than one class annotated with @Module in your project.")
         }
         else if(moduleAnnotatedClasses.size() == 1){
             appendModuleClassAndConfigTags(cl.loadClass(moduleAnnotatedClasses[0]), result)
