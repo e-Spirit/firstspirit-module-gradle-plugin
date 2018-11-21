@@ -161,7 +161,7 @@ class FSM extends Jar {
 
     void writeModuleDescriptorToBuildDirAndZipFile(FileSystem fs, String unfilteredModuleXml, XMLData moduleXML) {
         String filteredModuleXml = XmlUtil.serialize(filterModuleXml(unfilteredModuleXml, moduleXML))
-        String fileName = "module" + moduleXML.isolated ? "-isolated" : "" + ".xml"
+        String fileName = "module${moduleXML.isolated ? "-isolated" : ""}.xml"
 
         Paths.get(destinationDir.toString(), fileName).toFile() << filteredModuleXml
 
