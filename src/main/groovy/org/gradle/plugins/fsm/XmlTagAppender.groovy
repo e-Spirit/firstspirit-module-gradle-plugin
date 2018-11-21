@@ -28,6 +28,10 @@ class XmlTagAppender {
 
     static final List<String> PROJECT_APP_BLACKLIST = ["de.espirit.firstspirit.feature.ContentTransportProjectApp"]
 
+    static final List<String> MODULE_BLACKLIST = ["org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleImplWithConfiguration",
+                                                  "org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleImpl"]
+
+    static final String INDENT_WS_4 = "    "
     static final String INDENT_WS_8 = "        "
     static final String INDENT_WS_12 = "            "
     static final String INDENT_WS_16 = "                "
@@ -67,7 +71,7 @@ class XmlTagAppender {
 
     @CompileStatic
     static void appendModuleAnnotationTags(URLClassLoader cl, FSM.ClassScannerResultProvider scan, StringBuilder result) {
-        def moduleAnnotatedClasses = scan.getNamesOfClassesWithAnnotation(ModuleComponent)
+        def moduleAnnotatedClasses = scan.getNamesOfClassesWithAnnotation(ModuleComponent).findAll{!MODULE_BLACKLIST.contains(it)}
         def moduleImplClasses = scan.getNamesOfClassesImplementing(Module)
         def logger = Logging.getLogger(XmlTagAppender.class)
 
@@ -91,10 +95,10 @@ class XmlTagAppender {
         }
 
     }
-    private static appendModuleClassAndConfigTags(Class<?> module, StringBuilder result){
+    static appendModuleClassAndConfigTags(Class<?> module, StringBuilder result){
         def annotation = module.annotations.find{ it instanceof ModuleComponent }
-        final String configurable = annotation.configurable() == Configuration.class ? "" : "\n${INDENT_WS_8}<configurable>${annotation.configurable().name}</configurable>"
-        result.append("\n" + INDENT_WS_8 + "<class>" + module.getName() + "</class>${configurable}")
+        final String configurable = annotation.configurable() == Configuration.class ? "" : "\n${INDENT_WS_4}<configurable>${annotation.configurable().name}</configurable>"
+        result.append("\n" + INDENT_WS_4 + "<class>" + module.getName() + "</class>${configurable}")
     }
 
     @CompileStatic

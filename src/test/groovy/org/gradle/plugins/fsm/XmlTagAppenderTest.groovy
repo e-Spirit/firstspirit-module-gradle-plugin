@@ -46,6 +46,7 @@ import static org.mockito.Mockito.when
 
 class XmlTagAppenderTest {
 
+    static final String INDENT_WS_4 = XmlTagAppender.INDENT_WS_4
     static final String INDENT_WS_8 = XmlTagAppender.INDENT_WS_8
     static final String INDENT_WS_12___ = XmlTagAppender.INDENT_WS_12
     static final String INDENT_WS_16_______ = XmlTagAppender.INDENT_WS_16
@@ -182,7 +183,7 @@ ${INDENT_WS_8}</web-app>
 
 
     @Test(expected = IllegalStateException)
-    void testModuleComponentTagWithTwoClasses() {
+    void testModuleTagWithTwoClasses() {
         StringBuilder result = new StringBuilder()
         def scannerResultProvider = new FSM.ClassScannerResultProvider() {
             @Override
@@ -199,102 +200,24 @@ ${INDENT_WS_8}</web-app>
     }
 
     @Test
-    void testModuleComponentTagAppending() throws Exception {
+    void testModuleTagAppending() throws Exception {
         StringBuilder result = new StringBuilder()
-        def scannerResultProvider = new FSM.ClassScannerResultProvider() {
-            @ModuleComponent
-            class TestModuleImpl implements Module {
 
-                @Override
-                void init(ModuleDescriptor moduleDescriptor, ServerEnvironment serverEnvironment) {
-
-                }
-
-                @Override
-                void installed() {
-
-                }
-
-                @Override
-                void uninstalling() {
-
-                }
-
-                @Override
-                void updated(String s) {
-
-                }
-
-            }
-            @Override
-            List<String> getNamesOfClassesImplementing(final Class<?> implementedInterface) {
-                return [TestModuleImpl.getName()]
-            }
-
-            @Override
-            List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation) {
-                if (ModuleComponent.isAssignableFrom(annotation)) {
-                    return [TestModuleImpl.getName()]
-                }
-                return []
-            }
-            String getModuleClassName(){
-                return TestModuleImpl.getName()
-            }
-        }
-        XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result)
+        XmlTagAppender.appendModuleClassAndConfigTags(TestModuleImpl, result)
 
         Assert.assertEquals("""
-${INDENT_WS_8}<class>${scannerResultProvider.getModuleClassName()}</class>""".toString(), result.toString())
+${INDENT_WS_4}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleImpl</class>""".toString(), result.toString())
     }
 
 
     @Test
     void testModuleAnnotationWithConfigurable(){
         StringBuilder result = new StringBuilder()
-        def scannerResultProvider = new FSM.ClassScannerResultProvider() {
-            @ModuleComponent(configurable = TestConfigurable.class)
-            class TestModuleImplWithConfiguration implements Module {
-                @Override
-                void init(ModuleDescriptor moduleDescriptor, ServerEnvironment serverEnvironment) {
 
-                }
-
-                @Override
-                void installed() {
-
-                }
-
-                @Override
-                void uninstalling() {
-
-                }
-
-                @Override
-                void updated(String s) {
-
-                }
-            }
-            @Override
-            List<String> getNamesOfClassesImplementing(final Class<?> implementedInterface) {
-                return []
-            }
-
-            @Override
-            List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation) {
-                if (ModuleComponent.isAssignableFrom(annotation)) {
-                    return [TestModuleImplWithConfiguration.getName()]
-                }
-                return []
-            }
-            String getModuleClassName(){
-                return TestModuleImplWithConfiguration.getName()
-            }
-        }
-        XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result)
+        XmlTagAppender.appendModuleClassAndConfigTags(TestModuleImplWithConfiguration, result)
         Assert.assertEquals("""
-${INDENT_WS_8}<class>${scannerResultProvider.getModuleClassName()}</class>
-${INDENT_WS_8}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>""".toString(), result.toString())
+${INDENT_WS_4}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleImplWithConfiguration</class>
+${INDENT_WS_4}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>""".toString(), result.toString())
     }
 
     @Test
@@ -545,6 +468,52 @@ ${INDENT_WS_8}</public>
         Assert.assertEquals("""${INDENT_WS_8}<resource name="$GROUP:$NAME" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>
 ${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="server" mode="isolated" version="2.1.1">lib/joda-convert-2.1.1.jar</resource>
 ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated" version="1.7.25">lib/slf4j-api-1.7.25.jar</resource>""".toString(), result)
+    }
+    @ModuleComponent
+    class TestModuleImpl implements Module {
+
+        @Override
+        void init(ModuleDescriptor moduleDescriptor, ServerEnvironment serverEnvironment) {
+
+        }
+
+        @Override
+        void installed() {
+
+        }
+
+        @Override
+        void uninstalling() {
+
+        }
+
+        @Override
+        void updated(String s) {
+
+        }
+
+    }
+    @ModuleComponent(configurable = TestConfigurable.class)
+    static class TestModuleImplWithConfiguration implements Module {
+        @Override
+        void init(ModuleDescriptor moduleDescriptor, ServerEnvironment serverEnvironment) {
+
+        }
+
+        @Override
+        void installed() {
+
+        }
+
+        @Override
+        void uninstalling() {
+
+        }
+
+        @Override
+        void updated(String s) {
+
+        }
     }
 
     @ProjectAppComponent(name = "TestProjectAppComponentName",
