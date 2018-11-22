@@ -1,5 +1,13 @@
 package org.gradle.plugins.fsm
 
+import com.espirit.moddev.components.annotations.ModuleComponent
+import com.espirit.moddev.components.annotations.ProjectAppComponent
+import com.espirit.moddev.components.annotations.PublicComponent
+import com.espirit.moddev.components.annotations.ScheduleTaskComponent
+import com.espirit.moddev.components.annotations.ServiceComponent
+import com.espirit.moddev.components.annotations.UrlFactoryComponent
+import com.espirit.moddev.components.annotations.WebAppComponent
+import com.espirit.moddev.components.annotations.WebResource
 import de.espirit.firstspirit.generate.UrlFactory
 import de.espirit.firstspirit.module.Configuration
 import de.espirit.firstspirit.module.Module
