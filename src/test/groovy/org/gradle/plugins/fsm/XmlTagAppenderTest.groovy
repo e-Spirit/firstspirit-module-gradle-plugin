@@ -180,10 +180,25 @@ ${INDENT_WS_12___}</web-resources>
 ${INDENT_WS_8}</web-app>
 """.toString(), result.toString())
     }
+    @Test(expected = IllegalStateException)
+    void testModuleTagWithTwoClassesImpl() {
+        StringBuilder result = new StringBuilder()
+        def scannerResultProvider = new FSM.ClassScannerResultProvider() {
+            @Override
+            List<String> getNamesOfClassesImplementing(final Class<?> implementedInterface) {
+                return ["org.some.class.implementing.module", "org.some.other.class.definitely.not.the.same.as.the.one.on.the.left"]
+            }
 
+            @Override
+            List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation) {
+                return []
+            }
+        }
+        XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result)
+    }
 
     @Test(expected = IllegalStateException)
-    void testModuleTagWithTwoClasses() {
+    void testModuleTagWithTwoClassesAnnotated() {
         StringBuilder result = new StringBuilder()
         def scannerResultProvider = new FSM.ClassScannerResultProvider() {
             @Override

@@ -73,7 +73,7 @@ class XmlTagAppender {
     @CompileStatic
     static void appendModuleAnnotationTags(URLClassLoader cl, FSM.ClassScannerResultProvider scan, StringBuilder result) {
         def moduleAnnotatedClasses = scan.getNamesOfClassesWithAnnotation(ModuleComponent).findAll{!MODULE_BLACKLIST.contains(it)}
-        def moduleImplClasses = scan.getNamesOfClassesImplementing(Module)
+        def moduleImplClasses = scan.getNamesOfClassesImplementing(Module).findAll{!MODULE_BLACKLIST.contains(it)}
         def logger = Logging.getLogger(XmlTagAppender.class)
 
         if(moduleAnnotatedClasses.size() == 0){
@@ -85,6 +85,11 @@ class XmlTagAppender {
             if(moduleImplClasses.size() == 1){
                 logger.info("Looks like you forgot to add the @ModuleComponent annotation to " + moduleImplClasses[0])
             }
+        }
+        if(moduleImplClasses.size() > 1){
+            throw new IllegalStateException("The following classes implementing ${Module.getName()} were found in your project:\n" +
+                                            moduleImplClasses.toString() +
+                                            "\nYou cannot have more than one class implementing the module interface in your project.")
         }
         if(moduleAnnotatedClasses.size() > 1){
             throw new IllegalStateException("The following classes annotated with @ModuleComponent were found in your project:\n" +
