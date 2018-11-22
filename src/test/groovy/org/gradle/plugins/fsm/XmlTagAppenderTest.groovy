@@ -205,8 +205,7 @@ ${INDENT_WS_8}</web-app>
 
         XmlTagAppender.appendModuleClassAndConfigTags(TestModuleImpl, result)
 
-        Assert.assertEquals("""
-${INDENT_WS_4}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleImpl</class>""".toString(), result.toString())
+        Assert.assertEquals("""${INDENT_WS_4}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleImpl</class>""".toString(), result.toString())
     }
 
 
@@ -215,8 +214,7 @@ ${INDENT_WS_4}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleImpl</
         StringBuilder result = new StringBuilder()
 
         XmlTagAppender.appendModuleClassAndConfigTags(TestModuleImplWithConfiguration, result)
-        Assert.assertEquals("""
-${INDENT_WS_4}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleImplWithConfiguration</class>
+        Assert.assertEquals("""${INDENT_WS_4}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleImplWithConfiguration</class>
 ${INDENT_WS_4}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>""".toString(), result.toString())
     }
 

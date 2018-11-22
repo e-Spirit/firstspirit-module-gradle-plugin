@@ -28,6 +28,7 @@ class XmlTagAppender {
 
     static final List<String> PROJECT_APP_BLACKLIST = ["de.espirit.firstspirit.feature.ContentTransportProjectApp"]
 
+    //blacklist contains test classes because of the restriction of allowing only 1 class to implement module
     static final List<String> MODULE_BLACKLIST = ["org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleImplWithConfiguration",
                                                   "org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleImpl"]
 
@@ -77,18 +78,18 @@ class XmlTagAppender {
 
         if(moduleAnnotatedClasses.size() == 0){
             if(moduleImplClasses.size() == 0){
-                logger.warn("No class implementing " + Module.getName() + " were found in your project. Are you sure you want to create " +
+                logger.warn("No class implementing " + Module.getName() + " was found in your project. Are you sure you want to create " +
                                                         "an fsm without a module?")
             }
-            logger.info("No class with @Module annotation found in your project.")
+            logger.info("No class with an @ModuleComponent annotation could be found in your project.")
             if(moduleImplClasses.size() == 1){
-                logger.info("Looks like you forgot to add the @Module annotation to " + moduleImplClasses[0])
+                logger.info("Looks like you forgot to add the @ModuleComponent annotation to " + moduleImplClasses[0])
             }
         }
         if(moduleAnnotatedClasses.size() > 1){
-            throw new IllegalStateException("The following classes annotated with @Module were found in your project:\n" +
+            throw new IllegalStateException("The following classes annotated with @ModuleComponent were found in your project:\n" +
                                             moduleAnnotatedClasses.toString() +
-                                            "\nYou cannot have more than one class annotated with @Module in your project.")
+                                            "\nYou cannot have more than one class annotated with @ModuleComponent in your project.")
         }
         else if(moduleAnnotatedClasses.size() == 1){
             appendModuleClassAndConfigTags(cl.loadClass(moduleAnnotatedClasses[0]), result)
@@ -98,7 +99,7 @@ class XmlTagAppender {
     static appendModuleClassAndConfigTags(Class<?> module, StringBuilder result){
         def annotation = module.annotations.find{ it instanceof ModuleComponent }
         final String configurable = annotation.configurable() == Configuration.class ? "" : "\n${INDENT_WS_4}<configurable>${annotation.configurable().name}</configurable>"
-        result.append("\n" + INDENT_WS_4 + "<class>" + module.getName() + "</class>${configurable}")
+        result.append("${INDENT_WS_4}<class>${module.getName()}</class>${configurable}")
     }
 
     @CompileStatic
@@ -114,7 +115,7 @@ class XmlTagAppender {
             Arrays.asList(publicComponentClass.annotations)
                 .findAll { it instanceof PublicComponent }
                 .forEach { annotation ->
-                    final String configurable = annotation.configurable() == Configuration.class ? "" : "\n" + INDENT_WS_12 + "<configurable>${annotation.configurable().name}</configurable>"
+                    final String configurable = annotation.configurable() == Configuration.class ? "" : "\n${INDENT_WS_12}<configurable>${annotation.configurable().name}</configurable>"
 
 // keep indent (2 tabs / 8 whitespaces) --> 3. level <module><components><public>
                     result.append("""

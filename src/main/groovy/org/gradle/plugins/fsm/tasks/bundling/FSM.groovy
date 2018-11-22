@@ -25,10 +25,8 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
-import org.gradle.plugins.fsm.XmlTagAppender
 import org.gradle.plugins.fsm.classloader.JarClassLoader
 import org.gradle.plugins.fsm.zip.UnzipUtility
-import org.jetbrains.annotations.NotNull
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.*
@@ -54,6 +52,7 @@ class FSM extends Jar {
     public FSMPluginExtension pluginExtension
 
     FSM() {
+
         extension = FSM_EXTENSION
         destinationDir = project.file('build/fsm')
         pluginExtension = project.getExtensions().getByType(FSMPluginExtension)
@@ -111,15 +110,15 @@ class FSM extends Jar {
                             include "module-isolated.xml"
                         }
                     }
-
                 }
             }
+
         }
 
     }
 
     //checks if a path contains a filename and removes the filename
-    String trimPathToDirectory(String path){
+    static String trimPathToDirectory(String path){
         if(path != null){
             if(path.lastIndexOf("/") < path.lastIndexOf(".")){
                 return path.substring(0,path.lastIndexOf("/"))
@@ -184,13 +183,13 @@ class FSM extends Jar {
         filteredModuleXml
     }
 
-    String getUnfilteredModuleXml(ZipFile zipFile, boolean isolated) {
-        String isolationMode = isolated ? "-isolated" : ""
+    String getUnfilteredModuleXml(ZipFile zipFile, boolean iso) {
+        String isolated = iso ? "-isolated" : ""
         def unfilteredModuleXml
-        def moduleXmlFile = zipFile.getEntry("META-INF/module" + isolationMode + ".xml")
+        def moduleXmlFile = zipFile.getEntry("META-INF/module${isolated}.xml")
         if (moduleXmlFile == null) {
-            getLogger().info("module.xml not found in ZipArchive ${zipFile.getName()}, using an empty one")
-            unfilteredModuleXml = getClass().getResource("/template-module" + isolationMode + ".xml").getText("utf-8")
+            getLogger().info("module${isolated}.xml not found in ZipArchive ${zipFile.getName()}, using an empty one")
+            unfilteredModuleXml = getClass().getResource("/template-module${isolated}.xml").getText("utf-8")
         } else {
             unfilteredModuleXml = zipFile.getInputStream(moduleXmlFile).getText("utf-8")
         }
