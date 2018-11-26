@@ -310,6 +310,22 @@ class FSMTest {
 		assertThat(moduleXml()).contains("""<resource name="junit:junit" scope="module" mode="legacy" version="4.12" minVersion="4.12">lib/junit-4.12.jar</resource>""")
 		assertThat(moduleXml()).doesNotContain("""<resource name="com.google.guava:guava" scope="module" mode="legacy" version="24.0-jre" minVersion="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
 	}
+	@Test
+	void webResourceIsSkippedInLegacyWhenConfigured() {
+		project.repositories.add(project.getRepositories().mavenCentral())
+		project.dependencies.add("fsWebCompile", project.fsDependency(dependency: 'junit:junit:4.12', skipInLegacy: true))
+		project.dependencies.add("fsWebCompile", project.fsDependency(dependency: 'com.google.guava:guava:24.0-jre', skipInLegacy: false))
+		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
+		pluginExtension.resourceMode = ModuleInfo.Mode.LEGACY
+
+		fsm.execute()
+
+		String legacy = moduleXml(false)
+		String isolated = moduleXml(true)
+		assertThat(legacy).contains("<resource name=\"com.google.guava:guava\" version=\"24.0-jre\" minVersion=\"24.0-jre\">lib/guava-24.0-jre.jar</resource>")
+		assertThat(isolated).contains("<resource name=\"com.google.guava:guava\" version=\"24.0-jre\" minVersion=\"24.0-jre\">lib/guava-24.0-jre.jar</resource>")
+		assertThat(legacy).doesNotContain("<resource name=\"junit:junit\" version=\"4.12\" minVersion=\"4.12\">lib/junit-4.12.jar</resource>")
+	}
 
     @Test
     void staticFilesResource() {

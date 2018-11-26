@@ -153,6 +153,7 @@ class XmlTagAppender {
                     .forEach { annotation ->
 
                     StringBuilder webResources = new StringBuilder()
+                    //TODO: check if dependency needs to be skipped here?
                     if (project.file('src/main/files').exists()) {
                         webResources.append("""${webResourceIndent}<resource name="${project.group}:${project.name}-files" """ +
                                             """version="${project.version}">files/</resource>\n""")

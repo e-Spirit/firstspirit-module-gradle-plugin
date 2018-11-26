@@ -75,7 +75,7 @@ class FSMPlugin implements Plugin<Project> {
 
     String fsDependency(String dependency, boolean skipInLegacy = false, String minVersion = null, String maxVersion = null) {
         if(dependency == null || dependency.allWhitespace) {
-            throw new IllegalStateException('You have to specify a non-empty depdendency!')
+            throw new IllegalStateException('You have to specify a non-empty dependency!')
         }
 
         if(skipInLegacy) {
