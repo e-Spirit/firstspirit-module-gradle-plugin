@@ -136,15 +136,16 @@ class FSM extends Jar {
 
         (FileSystems.newFileSystem(archive.toPath(), getClass().getClassLoader())).withCloseable { fs ->
             new ZipFile(archive).withCloseable { zipFile ->
-                def componentTags = getModuleXmlComponentTags(archive, pluginExtension.appendDefaultMinVersion)
 
                 legacy: {
+                    def componentTagsLegacy = getModuleXmlComponentTags(archive, pluginExtension.appendDefaultMinVersion, false)
                     def resourcesTagsLegacy = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion, true)
-                    writeModuleDescriptorToBuildDirAndZipFile(fs, getUnfilteredModuleXml(zipFile, false), componentTags, resourcesTagsLegacy, "module.xml")
+                    writeModuleDescriptorToBuildDirAndZipFile(fs, getUnfilteredModuleXml(zipFile, false), componentTagsLegacy, resourcesTagsLegacy, "module.xml")
                 }
                 isolated: {
+                    def componentTagsIsolated = getModuleXmlComponentTags(archive, pluginExtension.appendDefaultMinVersion, true)
                     def resourcesTagsIsolated = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion)
-                    writeModuleDescriptorToBuildDirAndZipFile(fs, getUnfilteredModuleXml(zipFile, true), componentTags, resourcesTagsIsolated, "module-isolated.xml")
+                    writeModuleDescriptorToBuildDirAndZipFile(fs, getUnfilteredModuleXml(zipFile, true), componentTagsIsolated, resourcesTagsIsolated, "module-isolated.xml")
                 }
 			}
 		}
@@ -188,7 +189,7 @@ class FSM extends Jar {
         filteredModuleXml
     }
 
-    String getModuleXmlComponentTags(File archive, boolean appendDefaultMinVersion) {
+    String getModuleXmlComponentTags(File archive, boolean appendDefaultMinVersion, boolean isolated) {
         StringBuilder result = new StringBuilder()
         File tempDir = unzipFsmToNewTempDir(archive)
 
@@ -197,7 +198,7 @@ class FSM extends Jar {
             try {
                 def scan = new FastClasspathScanner().addClassLoader(classLoader).scan()
 
-                appendComponentsTag(project, classLoader, new ClassScannerResultDelegate(scan), appendDefaultMinVersion, result)
+                appendComponentsTag(project, classLoader, new ClassScannerResultDelegate(scan), appendDefaultMinVersion, result, isolated)
 
             } catch (MalformedURLException e) {
                 getLogger().error("Passed URL is malformed", e)

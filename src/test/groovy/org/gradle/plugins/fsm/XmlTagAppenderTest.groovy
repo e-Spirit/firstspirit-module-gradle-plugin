@@ -99,7 +99,7 @@ class XmlTagAppenderTest {
                 return []
             }
         }
-        XmlTagAppender.appendComponentsTag(project, new URLClassLoader(new URL[0]), scannerResultProvider, false, result)
+        XmlTagAppender.appendComponentsTag(project, new URLClassLoader(new URL[0]), scannerResultProvider, false, result, true)
         /* explicitly test indent and pretty printing of components tag
         * within module.xml
         * <module>
@@ -262,7 +262,7 @@ ${INDENT_WS_8}</public>""".toString(), result.toString())
     @Test
     void appendWebAppTags_with_target_path() throws Exception {
         StringBuilder result = new StringBuilder()
-        XmlTagAppender.appendWebAppTags(project, new URLClassLoader(new URL[0], getClass().getClassLoader()), componentImplementingClasses, result, true)
+        XmlTagAppender.appendWebAppTags(project, new URLClassLoader(new URL[0], getClass().getClassLoader()), componentImplementingClasses, result, true, true)
 
         // targetPath defined in WebResource annotation at {@link TestWebAppComponent}
         def targetPathValue = 'targetPath'
@@ -290,7 +290,7 @@ ${INDENT_WS_8}</web-app>
     @Test
     void appendWebAppTagsWithoutConfig() throws Exception {
         StringBuilder result = new StringBuilder()
-        XmlTagAppender.appendWebAppTags(project, new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestWebAppComponentWithoutConfiguration.getName()], result, true)
+        XmlTagAppender.appendWebAppTags(project, new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestWebAppComponentWithoutConfiguration.getName()], result, true, true)
 
         Assert.assertEquals("""
 ${INDENT_WS_8}<web-app scopes="project,global">
