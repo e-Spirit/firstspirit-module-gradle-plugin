@@ -143,20 +143,6 @@ class XmlTagAppender {
     }
 
     private static appendWebAppComponentTagsOfClasses(List<Class<?>> loadedClasses, Project project, result, boolean appendDefaultMinVersion, Set<FSMPlugin.MinMaxVersion> minMaxVersionConfigurations = new HashSet<>(), boolean isolated) {
-        //TODO: check if dependency needs to be skipped here?
-/*        Set<ResolvedArtifact> compileDependenciesServerScoped = configurations.fsServerCompile.getResolvedConfiguration().getResolvedArtifacts()
-        Set<ResolvedArtifact> uncleanedDependenciesModuleScoped = configurations.fsModuleCompile.getResolvedConfiguration().getResolvedArtifacts()
-        Set<ResolvedArtifact> cleanedCompileDependenciesModuleScoped = uncleanedDependenciesModuleScoped - compileDependenciesServerScoped
-        logIgnoredModuleScopeDependencies(logger, uncleanedDependenciesModuleScoped, cleanedCompileDependenciesModuleScoped)
-        Set<ResolvedArtifact> providedCompileDependencies = configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()
-
-        if(skipIsolationOnlyDependencies) {
-            Set<ResolvedArtifact> skippedInLegacyDependencies = configurations.skippedInLegacy.getResolvedConfiguration().getResolvedArtifacts()
-            compileDependenciesServerScoped.removeAll(skippedInLegacyDependencies)
-            cleanedCompileDependenciesModuleScoped.removeAll(skippedInLegacyDependencies)
-            providedCompileDependencies.removeAll(skippedInLegacyDependencies)
-        }*/
-
 
         Set<ResolvedArtifact> webCompileDependencies = project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> providedCompileDependencies = project.configurations.getByName(PROVIDED_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()

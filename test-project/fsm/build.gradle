@@ -10,7 +10,6 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-//    fsWebCompile 'org.apache.activemq:activemq-all:5.14.2'
 //	fsProvidedCompile 'commons-logging:commons-logging:1.1.3'
 
     compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.181007'
@@ -19,6 +18,9 @@ dependencies {
     fsServerCompile project(':api')
     fsModuleCompile fsDependency(dependency: 'joda-time:joda-time:2.10', skipInLegacy: true)
     fsModuleCompile fsDependency('commons-logging:commons-logging:1.2', true, '1.0', '1.5')
+    fsModuleCompile fsDependency('org.apache.activemq:activemq-all:5.14.2', true)
+
+    fsWebCompile fsDependency('org.apache.activemq:activemq-all:5.14.2', true)
 
     testCompile 'junit:junit:4.12'
 }
