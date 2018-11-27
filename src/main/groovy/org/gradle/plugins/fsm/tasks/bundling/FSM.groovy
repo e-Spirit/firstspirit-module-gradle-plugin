@@ -178,6 +178,7 @@ class FSM extends Jar {
         filteredModuleXml = filteredModuleXml.replace('$vendor', pluginExtension.vendor?.toString() ?: "")
         filteredModuleXml = filteredModuleXml.replace('$artifact', project.jar.archiveName.toString())
         filteredModuleXml = filteredModuleXml.replace('$class', xmlData.moduleTags)
+        filteredModuleXml = filteredModuleXml.replace('$dependencies', getFsmDependencyTags(project))
         filteredModuleXml = filteredModuleXml.replace('$resources', xmlData.resourcesTags)
         filteredModuleXml = filteredModuleXml.replace('$components', xmlData.componentTags)
         getLogger().info("Generated module.xml: \n$filteredModuleXml")
@@ -198,7 +199,6 @@ class FSM extends Jar {
     }
 
     XMLData getXMLTagsFromAppender(File archive, boolean appendDefaultMinVersion, boolean isolated){
-        StringBuilder result = new StringBuilder()
         File tempDir = unzipFsmToNewTempDir(archive)
         def moduleXml = new XMLData(isolated: isolated)
 
@@ -207,11 +207,18 @@ class FSM extends Jar {
             try {
                 def scan = new FastClasspathScanner().addClassLoader(classLoader).scan()
 
-                appendComponentsTag(project, classLoader, new ClassScannerResultDelegate(scan), appendDefaultMinVersion, result, isolated)
-                moduleXml.componentTags = result.toString()
-                result = new StringBuilder()
-                appendModuleAnnotationTags(classLoader, new ClassScannerResultDelegate(scan), result)
-                moduleXml.moduleTags = result.toString()
+                components: {
+                    StringBuilder result = new StringBuilder()
+                    appendComponentsTag(project, classLoader, new ClassScannerResultDelegate(scan), appendDefaultMinVersion, result, isolated)
+                    moduleXml.componentTags = result.toString()
+                }
+
+                moduleAnnotation: {
+                    StringBuilder result = new StringBuilder()
+                    appendModuleAnnotationTags(classLoader, new ClassScannerResultDelegate(scan), result)
+                    moduleXml.moduleTags = result.toString()
+                }
+                
                 moduleXml.resourcesTags = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion, isolated)
 
             } catch (MalformedURLException e) {

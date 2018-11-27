@@ -84,31 +84,47 @@ class XmlTagAppender {
         def moduleImplClasses = scan.getNamesOfClassesImplementing(Module).findAll{!MODULE_BLACKLIST.contains(it)}
         def logger = Logging.getLogger(XmlTagAppender.class)
 
-        if(moduleAnnotatedClasses.size() == 0){
-            if(moduleImplClasses.size() == 0){
-                logger.warn("No class implementing " + Module.getName() + " was found in your project. Are you sure you want to create " +
-                                                        "an fsm without a module?")
-            }
-            logger.info("No class with an @ModuleComponent annotation could be found in your project.")
-            if(moduleImplClasses.size() == 1){
-                logger.info("Looks like you forgot to add the @ModuleComponent annotation to " + moduleImplClasses[0])
-            }
-        }
-        if(moduleImplClasses.size() > 1){
-            throw new IllegalStateException("The following classes implementing ${Module.getName()} were found in your project:\n" +
-                                            moduleImplClasses.toString() +
-                                            "\nYou cannot have more than one class implementing the module interface in your project.")
-        }
-        if(moduleAnnotatedClasses.size() > 1){
-            throw new IllegalStateException("The following classes annotated with @ModuleComponent were found in your project:\n" +
-                                            moduleAnnotatedClasses.toString() +
-                                            "\nYou cannot have more than one class annotated with @ModuleComponent in your project.")
-        }
-        else if(moduleAnnotatedClasses.size() == 1){
-            appendModuleClassAndConfigTags(cl.loadClass(moduleAnnotatedClasses[0]), result)
-        }
+        handleModuleComponentAnnotations(moduleAnnotatedClasses, moduleImplClasses, logger, cl, result)
 
     }
+
+    private static void handleModuleComponentAnnotations(List<String> moduleAnnotatedClasses, List<String> moduleImplClasses, Logger logger, URLClassLoader cl, StringBuilder result) {
+
+        failIfMultipleModuleImplementations(moduleImplClasses)
+
+        def noModuleAnnotatedClasses = moduleAnnotatedClasses.size() == 0
+        def singleModuleAnnotatedClass = moduleAnnotatedClasses.size() == 1
+        def multipleModuleAnnotatedClasses = moduleAnnotatedClasses.size() > 1
+
+        boolean noModuleImplementations = moduleImplClasses.size() == 0
+        boolean singleModuleImplementation = moduleImplClasses.size() == 1
+
+        if (noModuleAnnotatedClasses) {
+            logger.info("No class with an @ModuleComponent annotation could be found in your project.")
+            if (noModuleImplementations) {
+                logger.warn("No class implementing " + Module.getName() + " was found in your project. Are you sure you want to create an fsm without a module?")
+            } else if (singleModuleImplementation) {
+                logger.info("Looks like you forgot to add the @ModuleComponent annotation to " + moduleImplClasses[0])
+            }
+        } else if (multipleModuleAnnotatedClasses) {
+            throw new IllegalStateException("The following classes annotated with @ModuleComponent were found in your project:\n" +
+                    moduleAnnotatedClasses.toString() +
+                    "\nYou cannot have more than one class annotated with @ModuleComponent in your project.")
+        } else if (singleModuleAnnotatedClass) {
+            appendModuleClassAndConfigTags(cl.loadClass(moduleAnnotatedClasses[0]), result)
+        }
+    }
+
+    private static void failIfMultipleModuleImplementations(List<String> moduleImplClasses) {
+        def multipleModuleImplementations = moduleImplClasses.size() > 1
+
+        if (multipleModuleImplementations) {
+            throw new IllegalStateException("The following classes implementing ${Module.getName()} were found in your project:\n" +
+                    moduleImplClasses.toString() +
+                    "\nYou cannot have more than one class implementing the module interface in your project.")
+        }
+    }
+
     static appendModuleClassAndConfigTags(Class<?> module, StringBuilder result){
         def annotation = module.annotations.find{ it instanceof ModuleComponent }
         final String configurable = annotation.configurable() == Configuration.class ? "" : "\n${INDENT_WS_4}<configurable>${annotation.configurable().name}</configurable>"
@@ -414,7 +430,8 @@ ${resources}
         logIgnoredModuleScopeDependencies(logger, uncleanedDependenciesModuleScoped, cleanedCompileDependenciesModuleScoped)
         Set<ResolvedArtifact> providedCompileDependencies = configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()
 
-        if(!isolationMode) {
+        boolean legacyMode = !isolationMode
+        if(legacyMode) {
             Set<ResolvedArtifact> skippedInLegacyDependencies = configurations.skippedInLegacy.getResolvedConfiguration().getResolvedArtifacts()
             compileDependenciesServerScoped.removeAll(skippedInLegacyDependencies)
             cleanedCompileDependenciesModuleScoped.removeAll(skippedInLegacyDependencies)
