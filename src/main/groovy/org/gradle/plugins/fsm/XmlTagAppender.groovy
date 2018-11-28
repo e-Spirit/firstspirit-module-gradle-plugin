@@ -18,10 +18,12 @@ import de.espirit.firstspirit.module.WebApp
 import de.espirit.firstspirit.module.descriptor.WebAppDescriptor
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
 import de.espirit.firstspirit.server.module.ModuleInfo
+import groovy.io.FileType
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.ModuleVersionIdentifier
+import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
@@ -224,12 +226,26 @@ class XmlTagAppender {
                     .findAll { it instanceof WebAppComponent } as List<WebAppComponent>)
                     .forEach { annotation ->
 
-                    StringBuilder webResources = new StringBuilder()
+                    StringBuilder webResources = new StringBuilder("\n")
 
-                    if (project.file('src/main/files').exists()) {
-                        webResources.append("""${webResourceIndent}<resource name="${project.group}:${project.name}-files" """ +
-                                            """version="${project.version}">files/</resource>\n""")
+                    def appendWebResources = { Project currentProject ->
+
+                        def fsmWebResourcesPath = currentProject.projectDir.absolutePath + '/' + FSM.FSM_RESOURCES_PATH
+                        def fsmWebResourcesFolder = new File(fsmWebResourcesPath)
+                        if (fsmWebResourcesFolder.exists()) {
+                            fsmWebResourcesFolder.eachFile(FileType.ANY) { file ->
+                                def relPath = fsmWebResourcesFolder.toPath().relativize(file.toPath()).toFile()
+                                webResources.append("""${webResourceIndent}<resource name="${relPath.toPath()}" version="${project.version}">${relPath.toPath()}</resource>\n""")
+                            }
+                        }
                     }
+
+                    def webCompileConfiguration = project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME)
+                    def projectDependencies = webCompileConfiguration.getAllDependencies().withType(ProjectDependency)
+                    projectDependencies.forEach { ProjectDependency dep ->
+                        appendWebResources(dep.dependencyProject)
+                    }
+
                     addResourceTagsForDependencies(webResourceIndent, webCompileDependencies, providedCompileDependencies, webResources, "", null, appendDefaultMinVersion, minMaxVersionConfigurations)
 
                     final String scopes = scopes(annotation.scope())
@@ -419,10 +435,45 @@ ${resources}
         projectResources.append("""${indent}<resource name="${getJarFilename(project)}" version="${project.version}" scope="module\"""" +
                                 """${modeAttribute}>lib/${getJarFilename(project)}</resource>"""
         )
-        if (project.file('src/main/files').exists()) {
-            projectResources.append("""${indent}<resource name="${project.group}:${project.name}-files" version="${project.version}" scope="module\"""" +
-                                    """${modeAttribute}>files/</resource>\n""")
+
+
+        Map<String, String> tempResourceTags = new HashMap<>()
+        def addResourceTagsToBuffer = { Project currentProject, String scope ->
+            def fsmResourcesPath = currentProject.projectDir.absolutePath + '/' + FSM.FSM_RESOURCES_PATH
+            def fsmResourcesFolder = new File(fsmResourcesPath)
+            if (fsmResourcesFolder.exists()) {
+                fsmResourcesFolder.eachFile(FileType.ANY) { file ->
+                    def relPath = fsmResourcesFolder.toPath().relativize(file.toPath()).toFile()
+                    def resourceTag = """${indent}<resource name="${relPath}" version="${project.version}" scope="${scope}\"${modeAttribute}>${relPath}</resource>\n"""
+
+                    if(!tempResourceTags.containsKey(relPath)) {
+                        tempResourceTags.put(relPath.toString(), resourceTag.toString())
+                    } else {
+                        boolean overrideModuleScopedResourceWithServerScopedOne = tempResourceTags.get(relPath).contains("scope=\"module\"") && "server" == scope
+                        if(overrideModuleScopedResourceWithServerScopedOne) {
+                            tempResourceTags.put(relPath.toString(), resourceTag.toString())
+                        }
+                    }
+                }
+            }
         }
+
+        FSMPlugin.FS_CONFIGURATIONS.forEach { configName ->
+            def config = project.configurations.getByName(configName)
+            def projectDependencies = config.getAllDependencies().withType(ProjectDependency)
+            projectDependencies.collect { it.dependencyProject }.forEach {
+                addResourceTagsToBuffer(it, configName == FSMPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME ? "module" : "server")
+            }
+        }
+
+        addResourceTagsToBuffer(project, "module")
+
+        tempResourceTags.values().forEach { String tag ->
+            projectResources.append(tag)
+        }
+
+        addResourceTagsToBuffer(project, "module")
+
         ConfigurationContainer configurations = project.configurations
 
         def fsServerCompileConfiguration = configurations.getByName("fsModuleCompile")

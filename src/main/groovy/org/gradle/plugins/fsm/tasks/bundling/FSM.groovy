@@ -15,17 +15,18 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
-
 import groovy.xml.XmlUtil
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
 import io.github.lukehutch.fastclasspathscanner.scanner.ScanResult
+import org.gradle.api.Project
+import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
+import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.plugins.fsm.FSMPluginExtension
-import org.gradle.plugins.fsm.XmlTagAppender
 import org.gradle.plugins.fsm.classloader.JarClassLoader
 import org.gradle.plugins.fsm.zip.UnzipUtility
 
@@ -43,6 +44,7 @@ import static org.gradle.plugins.fsm.XmlTagAppender.*
 class FSM extends Jar {
 
     static final String FSM_EXTENSION = 'fsm'
+    static final String FSM_RESOURCES_PATH = 'src/main/fsm-resources'
 
     /**
      * The fsm runtime classpath. All libraries in this
@@ -71,16 +73,14 @@ class FSM extends Jar {
                 }
             }
 
-            into('/') {
-                from("src/main/resources") {
-                    include("**/*")
+            FSMPlugin.FS_CONFIGURATIONS.forEach { configName ->
+                def config = project.configurations.getByName(configName)
+                def projectDependencies = config.getAllDependencies().withType(ProjectDependency)
+                projectDependencies.forEach { ProjectDependency dep ->
+                    copyResourceFolderToFsm(dep.dependencyProject, FSM_RESOURCES_PATH)
                 }
             }
-
-            into('/files') {
-                from('src/main/files')
-            }
-
+            copyResourceFolderToFsm(project, FSM_RESOURCES_PATH)
 
             configure {
                 metaInf {
@@ -116,6 +116,19 @@ class FSM extends Jar {
 
         }
 
+    }
+
+    protected void copyResourceFolderToFsm(Project dep, String relativeResourcesPath) {
+        def fsmResourcesPath = dep.projectDir.absolutePath + '/' + relativeResourcesPath
+        def fsmResourcesFolder = new File(fsmResourcesPath)
+        if (fsmResourcesFolder.exists()) {
+            logger.info("Adding folder ${fsmResourcesPath} from project ${dep.name} to fsm")
+            into('/') {
+                from(fsmResourcesPath)
+            }
+        } else {
+            logger.debug("Not adding folder ${fsmResourcesPath} from project ${dep.name} to fsm, because it doesn't exist.")
+        }
     }
 
     //checks if a path contains a filename and removes the filename
