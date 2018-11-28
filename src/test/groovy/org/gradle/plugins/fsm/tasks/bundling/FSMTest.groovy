@@ -32,6 +32,7 @@ import java.nio.file.Path
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
+import static junit.framework.Assert.assertNotNull
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.Mockito.spy
 
@@ -326,36 +327,27 @@ class FSMTest {
 		assertThat(legacy).doesNotContain("<resource name=\"junit:junit\" version=\"4.12\" minVersion=\"4.12\">lib/junit-4.12.jar</resource>")
 	}
 
-    @Test
-    void staticFilesResource() {
-        Path filesDir = fsm.project.file('src/main/files').toPath()
-        Files.createDirectories(filesDir)
-        Files.write(filesDir.resolve("testFile"), "Test".getBytes(StandardCharsets.UTF_8))
-
-        fsm.execute()
-
-        assertThat(moduleXml()).contains("""<resource name=":test-files" version="unspecified" scope="module" mode="isolated">files/</resource>""")
-    }
-
 	@Test
-	void staticIsolatedFilesResource() {
-		Path filesDir = fsm.project.file('src/main/files').toPath()
-		Files.createDirectories(filesDir)
-		Files.write(filesDir.resolve("testFile"), "Test".getBytes(StandardCharsets.UTF_8))
-		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
-		pluginExtension.resourceMode = ModuleInfo.Mode.ISOLATED
+	void testFsmResourceFilesAreUsed() {
+		project.version = "1.0.0"
+		Path fsmResourcesProjectFolder = fsm.project.file('src/main/fsm-resources').toPath()
+		Path fsmResourcesNestedProjectFolder = fsm.project.file('src/main/fsm-resources/resourcesFolder').toPath()
+		Files.createDirectories(fsmResourcesNestedProjectFolder)
+		Files.write(fsmResourcesProjectFolder.resolve("testResource.txt"), "Test".getBytes(StandardCharsets.UTF_8))
+		Files.write(fsmResourcesNestedProjectFolder.resolve("testNested0.txt"), "Test".getBytes(StandardCharsets.UTF_8))
+		Files.write(fsmResourcesNestedProjectFolder.resolve("testNested1.txt"), "Test".getBytes(StandardCharsets.UTF_8))
 
 		fsm.execute()
 
-		assertThat(moduleXml()).contains("""<resource name=":test-files" version="unspecified" scope="module" mode="isolated">files/</resource>""")
+		assertThat(moduleXml()).contains("<resource name=\"testResource.txt\" version=\"1.0.0\" scope=\"module\" mode=\"isolated\">testResource.txt</resource>")
+		assertThat(moduleXml()).contains("<resource name=\"resourcesFolder\" version=\"1.0.0\" scope=\"module\" mode=\"isolated\">resourcesFolder</resource>")
+
+		withFsmFile { ZipFile fsm ->
+			assertNotNull(fsm.getEntry("testResource.txt"))
+			assertNotNull(fsm.getEntry("resourcesFolder/testNested0.txt"))
+			assertNotNull(fsm.getEntry("resourcesFolder/testNested1.txt"))
+		}
 	}
-
-    @Test
-    void noStaticFilesResource() {
-        fsm.execute()
-
-        assertThat(moduleXml()).doesNotContain(":test-files")
-    }
 
     private String moduleXml(boolean isolated = false) {
 		String isolationMode = isolated ? "-isolated" : ""
@@ -371,4 +363,13 @@ class FSMTest {
             }
         }
     }
+
+	private void withFsmFile(Closure closure) {
+		final Path fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.archiveName)
+		assertThat(fsmFile).exists()
+		final ZipFile zipFile = new ZipFile(fsmFile.toFile())
+		zipFile.withCloseable {
+			closure(zipFile)
+		}
+	}
 }

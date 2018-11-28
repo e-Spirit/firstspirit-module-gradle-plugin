@@ -16,6 +16,8 @@ dependencies {
     compile "com.espirit.moddev.components:annotations:1.9.1"
 
     fsServerCompile project(':api')
+    fsModuleCompile project(':impl')
+    fsWebCompile project(':web')
     fsModuleCompile fsDependency(dependency: 'joda-time:joda-time:2.10', skipInLegacy: true)
     fsModuleCompile fsDependency('commons-logging:commons-logging:1.2', true, '1.0', '1.5')
     fsModuleCompile fsDependency('org.apache.activemq:activemq-all:5.14.2', true)

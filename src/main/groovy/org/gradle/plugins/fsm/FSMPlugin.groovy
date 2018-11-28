@@ -56,6 +56,12 @@ class FSMPlugin implements Plugin<Project> {
 
     static final String FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME = "skippedInLegacy"
 
+    static final Set<String> FS_CONFIGURATIONS = [
+        FS_SERVER_COMPILE_CONFIGURATION_NAME,
+        FS_MODULE_COMPILE_CONFIGURATION_NAME,
+        FS_WEB_COMPILE_CONFIGURATION_NAME
+    ]
+
     @Immutable
     static class MinMaxVersion {
         String dependency

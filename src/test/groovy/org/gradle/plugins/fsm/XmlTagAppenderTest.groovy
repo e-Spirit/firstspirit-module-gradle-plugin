@@ -172,8 +172,10 @@ ${INDENT_WS_12___}<web-xml>/test/web.xml</web-xml>
 ${INDENT_WS_12___}<web-resources>
 ${INDENT_WS_16_______}<resource name="test:webapps-test-project" version="1.2">lib/webapps-test-project-1.2.jar</resource>
 ${INDENT_WS_16_______}<resource>/test/web.xml</resource>
+
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
 ${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1" target="targetPath">lib/commons-lang-3.0.jar</resource>
+
 ${INDENT_WS_16_______}<resource name="joda-time:joda-time" version="2.3">lib/joda-time-2.3.jar</resource>
 ${INDENT_WS_16_______}<resource name="org.joda:joda-convert" version="2.1.1">lib/joda-convert-2.1.1.jar</resource>
 ${INDENT_WS_12___}</web-resources>
@@ -332,8 +334,10 @@ ${INDENT_WS_12___}<web-xml>/test/web.xml</web-xml>
 ${INDENT_WS_12___}<web-resources>
 ${INDENT_WS_16_______}<resource name="$GROUP:$NAME" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
 ${INDENT_WS_16_______}<resource>/test/web.xml</resource>
+
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
 ${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1" target="${targetPathValue}">lib/commons-lang-3.0.jar</resource>
+
 ${INDENT_WS_16_______}<resource name="joda-time:joda-time" version="2.3" minVersion="2.3">lib/joda-time-2.3.jar</resource>
 ${INDENT_WS_16_______}<resource name="org.joda:joda-convert" version="2.1.1" minVersion="2.1.1">lib/joda-convert-2.1.1.jar</resource>
 ${INDENT_WS_12___}</web-resources>
@@ -356,8 +360,10 @@ ${INDENT_WS_12___}<web-xml>/test/web.xml</web-xml>
 ${INDENT_WS_12___}<web-resources>
 ${INDENT_WS_16_______}<resource name="$GROUP:$NAME" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
 ${INDENT_WS_16_______}<resource>/test/web.xml</resource>
+
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
 ${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1">lib/commons-lang-3.0.jar</resource>
+
 ${INDENT_WS_16_______}<resource name="joda-time:joda-time" version="2.3" minVersion="2.3">lib/joda-time-2.3.jar</resource>
 ${INDENT_WS_16_______}<resource name="org.joda:joda-convert" version="2.1.1" minVersion="2.1.1">lib/joda-convert-2.1.1.jar</resource>
 ${INDENT_WS_12___}</web-resources>
@@ -455,7 +461,7 @@ ${INDENT_WS_8}</public>
 
     @Test
     void getResourcesTags() {
-        String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED, false)
+        String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED, false).replaceAll("\n", "")
         Assert.assertEquals("""${INDENT_WS_8}<resource name="$GROUP:$NAME" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>""".toString(), result)
     }
 
@@ -479,6 +485,7 @@ ${INDENT_WS_8}</public>
         project.dependencies.add(FSMPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
         String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED, false)
         Assert.assertEquals("""${INDENT_WS_8}<resource name="$GROUP:$NAME" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>
+
 ${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="server" mode="isolated" version="2.1.1">lib/joda-convert-2.1.1.jar</resource>
 ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated" version="1.7.25">lib/slf4j-api-1.7.25.jar</resource>""".toString(), result)
     }

@@ -105,7 +105,10 @@ With this a <code>.fsm</code> file is generated which includes a jar with all th
 ### Resources by convention
 
 The Jar file resulting from the Java Plugin is included in the module.xml as `${project.name}-lib` with the given group id and version.
-Additionally, files in `src/main/files` will be placed in the `/files` directory of the FSM with a resource definition named `${project.name}-files`. 
+Additionally, files in `src/main/fsm-resources` in all referenced sub projects and the main project will be merged into the root of the resulting fsm file.
+All resources in the main project (the project where you apply the fsm plugin), are module scoped. Please keep in mind that resource entries
+with server scope override those with module scope.
+ 
 
 ### Examples
 
