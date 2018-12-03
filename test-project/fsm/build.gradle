@@ -13,7 +13,6 @@ dependencies {
 //	fsProvidedCompile 'commons-logging:commons-logging:1.1.3'
 
     compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.181007'
-    compile "com.espirit.moddev.components:annotations:1.9.1"
 
     fsServerCompile project(':api')
     fsModuleCompile project(':impl')
@@ -40,7 +39,6 @@ fsm {
     vendor = "e-Spirit AG"
     fsmDependencies = ['otherModuleName', 'yetAnotherModule']
 }
-
 
 def fsmArchivePath = Paths.get(project.buildDir.path, "fsm", "fsm-${project.version}.fsm")
 

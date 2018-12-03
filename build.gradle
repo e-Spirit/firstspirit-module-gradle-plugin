@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 buildscript {
+    ext.fsmAnnotationsVersion = '1.9.1'
+
     repositories {
         maven {
             url 'https://artifactory.e-spirit.de/artifactory/repo'
@@ -37,7 +39,6 @@ group = 'com.espirit.moddev'
 ext.artifactName = 'fsmgradleplugin'
 
 repositories {
-    mavenLocal()
     maven {
         url 'https://artifactory.e-spirit.de/artifactory/repo'
         credentials {
@@ -54,7 +55,7 @@ dependencies {
     compile gradleApi()
     compile localGroovy()
     compile 'io.github.lukehutch:fast-classpath-scanner:2.6.2'
-    compile 'com.espirit.moddev.components:annotations:1.9.1'
+    compile "com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}"
     compile 'de.espirit.mavenplugins:fsmchecker:0.8'
     compileOnly "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}"
     testCompile (
@@ -146,6 +147,19 @@ task install(dependsOn: 'publishMavenJavaPublicationToMavenLocal', group:'publis
         logger.info "Installed $project.name"
     }
 }
+
+task writePropertiesToResourceFile() {
+    outputs.upToDateWhen { false }
+    doLast {
+        Properties props = new Properties()
+        props.setProperty('fsm-annotations-version', project.fsmAnnotationsVersion)
+        File propsFile = sourceSets.main.output.resourcesDir.toPath().resolve("versions.properties").toFile()
+        propsFile.newWriter().withCloseable { writer ->
+            props.store(writer, null)
+        }
+    }
+}
+build.dependsOn writePropertiesToResourceFile
 
 task integrationTest() {
     dependsOn("jar")

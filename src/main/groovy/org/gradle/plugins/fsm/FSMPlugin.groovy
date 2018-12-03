@@ -108,6 +108,8 @@ class FSMPlugin implements Plugin<Project> {
         project.getPlugins().apply(JavaPlugin.class)
         configureConfigurations(project.getConfigurations())
 
+        addFsmAnnotationsDependencyToProject()
+
         def fsmPluginExtension = project.getExtensions().create("fsm", FSMPluginExtension.class)
 
         project.ext.fsDependency = { Object... args ->
@@ -141,6 +143,18 @@ class FSMPlugin implements Plugin<Project> {
 
 
         configureJarTask(project)
+    }
+
+    def addFsmAnnotationsDependencyToProject() {
+        Properties props = new Properties()
+        props.load(FSMPlugin.class.getResourceAsStream("/versions.properties"))
+
+        project.dependencies {
+            def annotationsDep = "com.espirit.moddev.components:annotations:${props.get("fsm-annotations-version")}"
+            Logging.getLogger(this.getClass()).debug("fsmgradleplugin uses $annotationsDep")
+
+            delegate.compile(annotationsDep)
+        }
     }
 
     private FSM configureFsmTask(final Project project) {

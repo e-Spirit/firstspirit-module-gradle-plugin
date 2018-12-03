@@ -64,6 +64,21 @@ class FSMPluginTest {
 		def task = project.tasks[FSMPlugin.FSM_TASK_NAME]
 		assertThat(task, instanceOf(FSM))
 	}
+	@Test
+	void addsAnnotationsDependencyToProject() {
+		project.apply plugin: FSMPlugin.NAME
+
+		def annotationDependency = project.getConfigurations().getByName("compile").dependencies.find {
+			it.group == 'com.espirit.moddev.components' && it.name == 'annotations'
+		}
+
+		assertNotNull("Expected the project's compile config to contain the annotations dependency", annotationDependency)
+
+		Properties props = new Properties()
+		props.load(FSMPlugin.class.getResourceAsStream('/versions.properties'))
+
+		assertEquals("The project's annotations version should be the plugins's configured version.", props.get('fsm-annotations-version'), annotationDependency.version)
+	}
 	
 	@Test
 	void fsmTaskDependsOnJarAndClassesTask() {
