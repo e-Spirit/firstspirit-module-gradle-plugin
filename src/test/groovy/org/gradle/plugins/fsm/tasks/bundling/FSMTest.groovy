@@ -133,6 +133,21 @@ class FSMTest {
 		assertThat(project.tasks[verb + object]).isNotNull();
 	}
 
+	@Test
+	void jarBaseNameIsUsed() {
+		project.version = '0.0.1-SNAPSHOT'
+		project.jar {
+			baseName = 'xxxxx'
+		}
+		fsm.execute()
+
+		assertThat(moduleXml())
+			.as("module.xml should contain a 'global' resource with the correctly named jar task output in module scope!")
+			.contains("""<resource name="xxxxx-0.0.1-SNAPSHOT.jar" version="0.0.1-SNAPSHOT" scope="module" mode="isolated">lib/xxxxx-0.0.1-SNAPSHOT.jar</resource>""")
+		assertThat(moduleXml())
+			.as("module.xml should contain a web resource with the correctly named jar task output!")
+			.contains("""<resource name="xxxxx-0.0.1-SNAPSHOT.jar" version="0.0.1-SNAPSHOT">lib/xxxxx-0.0.1-SNAPSHOT.jar</resource>""")
+	}
 
 	@Test
 	void archivePathUsed() {

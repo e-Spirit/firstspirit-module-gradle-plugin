@@ -245,7 +245,7 @@ class XmlTagAppender {
             <class>${webAppClass.getName().toString()}</class>${configurable}
             <web-xml>${evaluateAnnotation(annotation, "webXml").toString()}</web-xml>
             <web-resources>
-                <resource name="${project.group}:${project.name}" version="${project.version}">lib/${project.jar.archiveName.toString()}</resource>
+                <resource name="${getJarFilename(project)}" version="${project.version}">lib/${getJarFilename(project)}</resource>
                 <resource>${evaluateAnnotation(annotation, "webXml").toString()}</resource>${evaluateResources(annotation, webResourceIndent)}${webResources.toString()}
             </web-resources>
         </web-app>
@@ -407,13 +407,17 @@ ${resources}
         """${indent}<resource name="${dependencyId.group}:${dependencyId.name}"$scopeAttribute$modeAttribute version="${dependencyId.version}"${minVersionString}${maxVersionString}>lib/${dependencyId.name}-${dependencyId.version}$classifier.${artifact.extension}</resource>"""
     }
 
+    static String getJarFilename(Project project) {
+        return project.jar.archiveName
+    }
+
     static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode, boolean appendDefaultMinVersion, boolean isolationMode = false, Logger logger = null) {
 
         def indent = INDENT_WS_8
         def projectResources = new StringBuilder()
         def modeAttribute = globalResourcesMode == null ? "" : """ mode="${globalResourcesMode.name().toLowerCase(Locale.ROOT)}\""""
-        projectResources.append("""${indent}<resource name="${project.group}:${project.name}" version="${project.version}" scope="module\"""" +
-                                """${modeAttribute}>lib/${project.name}-${project.version}.jar</resource>"""
+        projectResources.append("""${indent}<resource name="${getJarFilename(project)}" version="${project.version}" scope="module\"""" +
+                                """${modeAttribute}>lib/${getJarFilename(project)}</resource>"""
         )
         if (project.file('src/main/files').exists()) {
             projectResources.append("""${indent}<resource name="${project.group}:${project.name}-files" version="${project.version}" scope="module\"""" +
