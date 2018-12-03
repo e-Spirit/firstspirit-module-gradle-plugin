@@ -107,7 +107,16 @@ With this a <code>.fsm</code> file is generated which includes a jar with all th
 The Jar file resulting from the Java Plugin is included in the module.xml as `${project.name}-lib` with the given group id and version.
 Additionally, files in `src/main/fsm-resources` in all referenced sub projects and the main project will be merged into the root of the resulting fsm file.
 All resources in the main project (the project where you apply the fsm plugin), are module scoped. Please keep in mind that resource entries
-with server scope override those with module scope.
+with server scope override those with module scope. If you want to include other resource directories, for example for including a generated-resources-folder,
+you can configure the assembleFSM task just like other archive tasks accordingly:
+```
+assembleFSM {
+    into('/') { // embed right into the fsm root
+        from(project.projectDir.toPath().resolve('..').resolve('impl').resolve('build').resolve('generated-resources'))
+    }
+}
+assembleFSM.dependsOn 'generateMyResources'
+```
  
 
 ### Examples
