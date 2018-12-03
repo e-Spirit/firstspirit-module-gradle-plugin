@@ -15,17 +15,14 @@
  */
 package org.gradle.plugins.fsm
 
-import groovy.transform.Immutable
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.artifacts.publish.ArchivePublishArtifact
 import org.gradle.api.internal.plugins.DefaultArtifactPublicationSet
-import org.gradle.api.logging.Logging
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.plugins.JavaPlugin
@@ -33,6 +30,7 @@ import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.language.base.plugins.LifecycleBasePlugin
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 import org.gradle.plugins.fsm.tasks.verification.IsolationCheck
 
@@ -46,92 +44,16 @@ class FSMPlugin implements Plugin<Project> {
     public static final String FSM_TASK_NAME = "assembleFSM"
     public static final String ISOLATION_CHECK_TASK_NAME = "checkIsolation"
 
-    static final String PROVIDED_COMPILE_CONFIGURATION_NAME = "fsProvidedCompile"
-    static final String PROVIDED_RUNTIME_CONFIGURATION_NAME = "fsProvidedRuntime"
-
-    static final String FS_SERVER_COMPILE_CONFIGURATION_NAME = "fsServerCompile"
-    static final String FS_MODULE_COMPILE_CONFIGURATION_NAME = "fsModuleCompile"
-
-    static final String FS_WEB_COMPILE_CONFIGURATION_NAME = "fsWebCompile"
-
-    static final String FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME = "skippedInLegacy"
-
-    static final Set<String> FS_CONFIGURATIONS = [
-        FS_SERVER_COMPILE_CONFIGURATION_NAME,
-        FS_MODULE_COMPILE_CONFIGURATION_NAME,
-        FS_WEB_COMPILE_CONFIGURATION_NAME
-    ]
-
-    @Immutable
-    static class MinMaxVersion {
-        String dependency
-        String minVersion
-        String maxVersion
-    }
-    private Set<MinMaxVersion> minMaxVersions = new HashSet<>()
-    Set<MinMaxVersion> getDependencyConfigurations() {
-        return minMaxVersions
-    }
-
     private Project project
-
-    String fsDependency(Map<String, Object> map) {
-        return fsDependency(map.dependency, map.skipInLegacy, map.minVersion, map.maxVersion)
-    }
-
-    String fsDependency(String dependency, boolean skipInLegacy = false, String minVersion = null, String maxVersion = null) {
-        if(dependency == null || dependency.allWhitespace) {
-            throw new IllegalStateException('You have to specify a non-empty dependency!')
-        }
-
-        if(skipInLegacy) {
-            project.dependencies.add(FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME, dependency)
-        }
-
-        if(minVersion != null || maxVersion != null) {
-            if(minMaxVersions.find { it.dependency == dependency } != null) {
-                throw new IllegalStateException("You cannot specify minVersion or maxVersion twice for depdendency ${dependency}!")
-            } else {
-                def minMaxVersionDefinition = new MinMaxVersion(dependency, minVersion, maxVersion)
-                Logging.getLogger(this.getClass()).debug("Adding definition for minVersion and maxVersion to project: $minMaxVersionDefinition")
-                minMaxVersions.add(minMaxVersionDefinition)
-            }
-        }
-
-        return dependency
-    }
 
     @Override
     void apply(Project project) {
         this.project = project
 
-        project.getPlugins().apply(JavaPlugin.class)
-        configureConfigurations(project.getConfigurations())
+        project.getPlugins().apply(JavaPlugin)
+        project.getPlugins().apply(FSMConfigurationsPlugin)
 
-        addFsmAnnotationsDependencyToProject()
-
-        def fsmPluginExtension = project.getExtensions().create("fsm", FSMPluginExtension.class)
-
-        project.ext.fsDependency = { Object... args ->
-            if(args.length < 1) {
-                throw new IllegalArgumentException("Please provide at least a dependency as String for fsDependency! You can also use named parameters.")
-            }
-
-            def dependency
-            def isCalledWithNamedParams = args[0] instanceof Map
-
-            try {
-                if(isCalledWithNamedParams) {
-                    dependency = fsDependency(args[0] as Map<String, Object>)
-                } else {
-                    dependency = fsDependency(*args)
-                }
-            } catch (MissingMethodException mme) {
-                throw new IllegalArgumentException("The given argument types are not supported!", mme)
-            }
-
-            return dependency
-        }
+        def fsmPluginExtension = project.getExtensions().create(FSM_EXTENSION_NAME, FSMPluginExtension)
 
         project.getPlugins().apply(JavaPlugin.class)
 
@@ -191,8 +113,8 @@ class FSMPlugin implements Plugin<Project> {
 
             final Configuration providedRuntime = project
                 .getConfigurations().getByName(
-                    PROVIDED_RUNTIME_CONFIGURATION_NAME)
-            return runtimeClasspath.minus(providedRuntime).plus(outputs)
+                    FSMConfigurationsPlugin.PROVIDED_RUNTIME_CONFIGURATION_NAME)
+            return (runtimeClasspath - providedRuntime) + outputs
         })
 
         project.gradle.taskGraph.beforeTask { task ->
@@ -217,50 +139,6 @@ class FSMPlugin implements Plugin<Project> {
             .getByType(DefaultArtifactPublicationSet.class)
 
         publicationSet.addCandidate(new ArchivePublishArtifact(fsm))
-    }
-
-    private void configureConfigurations(ConfigurationContainer configurationContainer) {
-        Configuration fsServerCompileConfiguration = configurationContainer
-                .create(FS_SERVER_COMPILE_CONFIGURATION_NAME)
-                .setVisible(false)
-                .setDescription("Added automatically to module.xml with server scope")
-
-        Configuration fsModuleCompileConfiguration = configurationContainer
-                .create(FS_MODULE_COMPILE_CONFIGURATION_NAME)
-                .setVisible(false)
-                .setDescription("Added automatically to module.xml with module scope")
-
-        Configuration fsWebCompileConfiguration = configurationContainer
-                .create(FS_WEB_COMPILE_CONFIGURATION_NAME)
-                .setVisible(false)
-                .setDescription("Added automatically to web resources of WebApp components in module.xml")
-
-        Configuration skippedInLegacy = configurationContainer
-                .create(FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME)
-                .setVisible(false)
-                .setDescription("Those dependencies are not included in the module.xml, but in the module-isolated.xml")
-
-
-        Configuration provideCompileConfiguration = configurationContainer
-            .create(PROVIDED_COMPILE_CONFIGURATION_NAME)
-            .setVisible(false)
-            .setDescription("Additional compile classpath for libraries that should not be part of the FSM archive.")
-
-        Configuration provideRuntimeConfiguration = configurationContainer
-                .create(PROVIDED_RUNTIME_CONFIGURATION_NAME)
-                .setVisible(false)
-                .extendsFrom(provideCompileConfiguration)
-                .setDescription("Additional runtime classpath for libraries that should not be part of the FSM archive.")
-
-        configurationContainer.getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME)
-                .extendsFrom(provideCompileConfiguration)
-        configurationContainer.getByName(JavaPlugin.RUNTIME_CONFIGURATION_NAME)
-            .extendsFrom(provideRuntimeConfiguration)
-
-        configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
-                .extendsFrom(fsServerCompileConfiguration)
-                .extendsFrom(fsModuleCompileConfiguration)
-                .extendsFrom(fsWebCompileConfiguration)
     }
 
     private IsolationCheck configureIsolationCheckTask(final Project project, final FSM fsmTask) {

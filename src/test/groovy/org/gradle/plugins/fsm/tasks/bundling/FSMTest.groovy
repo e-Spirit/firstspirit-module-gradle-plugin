@@ -21,6 +21,7 @@ import org.apache.commons.io.IOUtils
 import org.gradle.api.Project
 import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.plugins.fsm.FSMPluginExtension
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Before
 import org.junit.Rule
@@ -71,60 +72,6 @@ class FSMTest {
 		fsm.execute()
 		assertThat(fsm.destinationDir).isDirectory()
 		assertThat(fsm.archivePath).isFile()
-	}
-
-	@Test
-	void pluginExposesMethodForExcludedDependencies() {
-		project.repositories.add(project.getRepositories().mavenCentral())
-		def resultingDependency = project.fsDependency("com.google.guava:guava:24.0-jre", true)
-		fsm.execute()
-		assertThat(resultingDependency).is("com.google.guava:guava:24.0-jre")
-		def skippedInLegacyDependencies = project.configurations.getByName(FSMPlugin.FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME).dependencies.collect { it }
-		assertThat(skippedInLegacyDependencies.size()).isEqualTo(1)
-		assertThat(skippedInLegacyDependencies.get(0).group).isEqualTo("com.google.guava")
-		assertThat(skippedInLegacyDependencies.get(0).name).isEqualTo("guava")
-		assertThat(skippedInLegacyDependencies.get(0).version).isEqualTo("24.0-jre")
-	}
-
-	@Test
-	void pluginExposesMethodWithNamedArgumentsForExcludedDependencies() {
-		project.repositories.add(project.getRepositories().mavenCentral())
-		def resultingDependency = project.fsDependency(dependency: "com.google.guava:guava:24.0-jre", skipInLegacy:  true, maxVersion: "31.0")
-		fsm.execute()
-		assertThat(resultingDependency).is("com.google.guava:guava:24.0-jre")
-		def skippedInLegacyDependencies = project.configurations.getByName(FSMPlugin.FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME).dependencies.collect { it }
-		assertThat(skippedInLegacyDependencies.size()).isEqualTo(1)
-		assertThat(skippedInLegacyDependencies.get(0).group).isEqualTo("com.google.guava")
-		assertThat(skippedInLegacyDependencies.get(0).name).isEqualTo("guava")
-		assertThat(skippedInLegacyDependencies.get(0).version).isEqualTo("24.0-jre")
-
-		def dependencyConfigurations = project.plugins.getPlugin(FSMPlugin.class).getDependencyConfigurations()
-		assertThat(dependencyConfigurations).contains(
-				new FSMPlugin.MinMaxVersion("com.google.guava:guava:24.0-jre", null, "31.0"))
-	}
-
-	@Test(expected = IllegalArgumentException.class)
-	void fsDependencyMethodFailsForDuplicatedExcludedDependencies() {
-		project.repositories.add(project.getRepositories().mavenCentral())
-		project.fsDependency(dependency: "com.google.guava:guava:24.0-jre", skipInLegacy:  true, maxVersion: "31.0")
-		project.fsDependency(dependency: "com.google.guava:guava:24.0-jre", minVersion: "2.0")
-	}
-
-	@Test(expected = IllegalArgumentException.class)
-	void fsDependencyMethodFailsOnNonBooleanTypeForSkipInLegacyParameter() {
-		project.repositories.add(project.getRepositories().mavenCentral())
-		project.fsDependency("com.google.guava:guava:24.0-jre", "31.0")
-	}
-
-	@Test(expected = IllegalArgumentException.class)
-	void fsDependencyMethodFailsOnNonStringTypeForMinVersionParameter() {
-		project.repositories.add(project.getRepositories().mavenCentral())
-		project.fsDependency("com.google.guava:guava:24.0-jre", true, true)
-	}
-	@Test(expected = IllegalArgumentException.class)
-	void fsDependencyMethodFailsOnNonStringTypeForMaxVersionParameter() {
-		project.repositories.add(project.getRepositories().mavenCentral())
-		project.fsDependency("com.google.guava:guava:24.0-jre", true, "1.0.0", true)
 	}
 
 	@Test
@@ -310,8 +257,8 @@ class FSMTest {
 		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
 		pluginExtension.resourceMode = ModuleInfo.Mode.LEGACY
 
-		def dependencyConfigurations = project.plugins.getPlugin(FSMPlugin.class).getDependencyConfigurations()
-		assertThat(dependencyConfigurations).contains(new FSMPlugin.MinMaxVersion("com.google.guava:guava:24.0-jre", "0.0.1", "99.0.0"))
+		def dependencyConfigurations = project.plugins.getPlugin(FSMConfigurationsPlugin.class).getDependencyConfigurations()
+		assertThat(dependencyConfigurations).contains(new FSMConfigurationsPlugin.MinMaxVersion("com.google.guava:guava:24.0-jre", "0.0.1", "99.0.0"))
 		assertThat(dependencyConfigurations.size()).isEqualTo(1)
 		fsm.execute()
 

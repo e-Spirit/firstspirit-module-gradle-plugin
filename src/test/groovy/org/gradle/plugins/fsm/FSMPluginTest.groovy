@@ -15,34 +15,31 @@
  */
 package org.gradle.plugins.fsm
 
-import org.gradle.api.plugins.JavaBasePlugin
-
-import static org.gradle.plugins.fsm.util.Matchers.*
-import static org.gradle.plugins.fsm.util.TestUtil.getNames
-import static org.hamcrest.Matchers.*
-import static org.junit.Assert.*
-
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.plugins.BasePlugin
+import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 import org.gradle.testfixtures.ProjectBuilder
-import org.gradle.util.WrapUtil
 import org.junit.Before
 import org.junit.Test
+
+import static org.gradle.plugins.fsm.util.Matchers.dependsOn
+import static org.hamcrest.Matchers.*
+import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 
 class FSMPluginTest {
 
 	Project project
-	FSMPlugin fsmPlugin
 
 	@Before
 	void setUp() {
 		project = ProjectBuilder.builder().build()
-		fsmPlugin = new FSMPlugin()
 	}
 
 	@Test
@@ -52,9 +49,9 @@ class FSMPluginTest {
 	}
 
 	@Test
-	void javaPluginApplied() {
+	void fsmPluginAppliesConfigurationPlugin() {
 		project.apply plugin: FSMPlugin.NAME
-		assertTrue(project.plugins.hasPlugin(JavaPlugin))
+		assertTrue(project.plugins.hasPlugin(FSMConfigurationsPlugin))
 	}
 
 	@Test
@@ -136,50 +133,10 @@ class FSMPluginTest {
 		assertThat(archiveConfiguration.getAllArtifacts().iterator().next().getType(), equalTo("fsm"))
 	}
 
-	@Test
-	void jarCompileConfigurationExtendsFsScopes() {
-		fsmPlugin.apply(project)
-
-		def compileConfig = project.configurations.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
-		def fsCompileScopes = WrapUtil.toSet(FSMPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, FSMPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, FSMPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME)
-		assertThat(getNames(compileConfig.extendsFrom), equalTo(fsCompileScopes))
-		assertFalse(compileConfig.visible)
-		assertTrue(compileConfig.transitive)
-	}
-
-	@Test
-	void jarRuntimeConfigurationExtendsFsScopes() {
-		fsmPlugin.apply(project)
-
-		def runtimeConfig = project.configurations.getByName(JavaPlugin.RUNTIME_CONFIGURATION_NAME)
-		assertThat(getNames(runtimeConfig.extendsFrom), equalTo(WrapUtil.toSet(JavaPlugin.COMPILE_CONFIGURATION_NAME, FSMPlugin.PROVIDED_RUNTIME_CONFIGURATION_NAME)))
-		assertFalse(runtimeConfig.visible)
-		assertTrue(runtimeConfig.transitive)
-	}
-
-	@Test
-	void jarCompileOnlyConfigurationExtendsFsScopes() {
-		fsmPlugin.apply(project)
-
-		def compileOnlyConfig = project.configurations.getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME)
-		assertThat(getNames(compileOnlyConfig.extendsFrom), equalTo(WrapUtil.toSet(FSMPlugin.PROVIDED_COMPILE_CONFIGURATION_NAME)))
-		assertFalse(compileOnlyConfig.visible)
-		assertTrue(compileOnlyConfig.transitive)
-	}
-
-	@Test
-	void createsConfigurations() {
-		fsmPlugin.apply(project)
-
-		def configuration = project.configurations.getByName(FSMPlugin.PROVIDED_RUNTIME_CONFIGURATION_NAME)
-		assertThat(getNames(configuration.extendsFrom), equalTo(WrapUtil.toSet(FSMPlugin.PROVIDED_COMPILE_CONFIGURATION_NAME)))
-		assertFalse(configuration.visible)
-		assertTrue(configuration.transitive)
-	}
 	
 	@Test
 	void moduleXMLExcludedFromJarArtifact() {
-		fsmPlugin.apply(project)
+		new FSMPlugin().apply(project)
 		
 		Task jarTask = project.tasks[JavaPlugin.JAR_TASK_NAME]
 		assertThat(jarTask.excludes, contains("module.xml"))

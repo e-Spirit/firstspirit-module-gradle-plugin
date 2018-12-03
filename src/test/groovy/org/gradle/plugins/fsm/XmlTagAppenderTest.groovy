@@ -28,6 +28,7 @@ import de.espirit.firstspirit.module.descriptor.ModuleDescriptor
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 import org.gradle.plugins.fsm.util.BaseConfiguration
 import org.gradle.plugins.fsm.util.BaseProjectApp
@@ -42,6 +43,7 @@ import javax.swing.JComponent
 import java.awt.Frame
 import java.nio.file.Files
 
+import static org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when
 
@@ -73,8 +75,8 @@ class XmlTagAppenderTest {
         project.setVersion(VERSION)
         project.repositories.add(project.repositories.mavenCentral())
         project.pluginManager.apply(FSMPlugin)
-        project.dependencies.add(FSMPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, "joda-time:joda-time:2.3")
-        project.dependencies.add(FSMPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
+        project.dependencies.add(FS_WEB_COMPILE_CONFIGURATION_NAME, "joda-time:joda-time:2.3")
+        project.dependencies.add(FS_WEB_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
         project.getExtensions().getByType(FSMPluginExtension).setFsmDependencies(Arrays.asList('oneFSM', 'anotherFSM'))
     }
 
@@ -531,11 +533,11 @@ ${INDENT_WS_8}</public>
 
     @Test
     void resolveScopeResourceConflict() {
-        project.dependencies.add(FSMPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
-        project.dependencies.add(FSMPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
-        project.dependencies.add(FSMPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
-        project.dependencies.add(FSMPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
-        String result = XmlTagAppender.getResourcesTags(project, new XmlTagAppender.WebXmlPaths(), ModuleInfo.Mode.ISOLATED, false)
+        project.dependencies.add(FSMConfigurationsPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
+        project.dependencies.add(FSMConfigurationsPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
+        project.dependencies.add(FSMConfigurationsPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
+        project.dependencies.add(FSMConfigurationsPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
+        String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED, false)
         Assert.assertEquals("""${INDENT_WS_8}<resource name="${XmlTagAppender.getJarFilename(project)}" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>
 ${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="server" mode="isolated" version="2.1.1">lib/joda-convert-2.1.1.jar</resource>
 ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated" version="1.7.25">lib/slf4j-api-1.7.25.jar</resource>""".toString(), result)

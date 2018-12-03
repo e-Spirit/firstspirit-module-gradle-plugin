@@ -72,6 +72,4 @@ class FSMPluginExtension {
 	 */
 	Collection<String> fsmDependencies = new ArrayList<String>()
 
-	Set<String> dependenciesSkippedInLegacy = new HashSet<>()
-
 }

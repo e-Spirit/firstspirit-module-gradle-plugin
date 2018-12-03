@@ -1,0 +1,5 @@
+apply plugin: 'fsmgradleplugin'
+
+dependencies {
+    fsModuleCompile(project(':api'))
+}

@@ -1,0 +1,5 @@
+apply plugin: 'fsmconfigurationsgradleplugin'
+
+dependencies {
+    compile fsDependency('junit:junit:4.12', true)
+}
