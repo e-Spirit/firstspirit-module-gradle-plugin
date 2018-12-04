@@ -441,7 +441,7 @@ ${resources}
             if (fsmResourcesFolder.exists()) {
                 fsmResourcesFolder.eachFile(FileType.ANY) { file ->
                     def relPath = fsmResourcesFolder.toPath().relativize(file.toPath()).toFile()
-                    def resourceTag = """${indent}<resource name="${relPath}" version="${project.version}" scope="${scope}\"${modeAttribute}>${relPath}</resource>\n"""
+                    def resourceTag = """${indent}<resource name="${project.group}:${project.name}-${relPath}" version="${project.version}" scope="${scope}\"${modeAttribute}>${relPath}</resource>\n"""
 
                     if(!tempResourceTags.containsKey(relPath)) {
                         tempResourceTags.put(relPath.toString(), resourceTag.toString())
