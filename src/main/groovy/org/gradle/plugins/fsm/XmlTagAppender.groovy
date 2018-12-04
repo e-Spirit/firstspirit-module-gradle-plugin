@@ -27,6 +27,7 @@ import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
+import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 
@@ -500,7 +501,7 @@ ${resources}
             cleanedCompileDependenciesModuleScoped.removeAll(skippedInLegacyDependencies)
             providedCompileDependencies.removeAll(skippedInLegacyDependencies)
         }
-        def minMaxVersionConfigurations = project.getPlugins().getPlugin(FSMPlugin.class).getDependencyConfigurations()
+        def minMaxVersionConfigurations = project.getPlugins().getPlugin(FSMConfigurationsPlugin.class).getDependencyConfigurations()
 
         addResourceTagsForDependencies(indent, compileDependenciesServerScoped, providedCompileDependencies, projectResources, "server", globalResourcesMode, appendDefaultMinVersion, minMaxVersionConfigurations)
         projectResources + "\n"

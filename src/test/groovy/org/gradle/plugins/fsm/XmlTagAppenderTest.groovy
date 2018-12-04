@@ -493,8 +493,8 @@ ${INDENT_WS_8}</public>
     void getResourceTagForDependencyWithMinMaxVersion() throws Exception {
         ResolvedArtifact resolvedArtifact = createArtifactMock()
         ModuleVersionIdentifier moduleVersionIdentifier = createVersionIdentifierMock("mygroup", "myname", "1.0.0")
-        def minMaxVersions = new HashSet<FSMPlugin.MinMaxVersion>()
-        minMaxVersions.add(new FSMPlugin.MinMaxVersion(dependency: "mygroup:myname:1.0.0", minVersion: "0.9", maxVersion: "1.1.0"))
+        def minMaxVersions = new HashSet<FSMConfigurationsPlugin.MinMaxVersion>()
+        minMaxVersions.add(new FSMConfigurationsPlugin.MinMaxVersion(dependency: "mygroup:myname:1.0.0", minVersion: "0.9", maxVersion: "1.1.0"))
 
         def indent = INDENT_WS_8
         String result = XmlTagAppender.getResourceTagForDependency(indent, moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED, true, minMaxVersions)
@@ -505,8 +505,8 @@ ${INDENT_WS_8}</public>
     void getResourceTagForDependencyWithNullMinMaxVersions() throws Exception {
         ResolvedArtifact resolvedArtifact = createArtifactMock()
         ModuleVersionIdentifier moduleVersionIdentifier = createVersionIdentifierMock("mygroup", "myname", "1.0.0")
-        def minMaxVersions = new HashSet<FSMPlugin.MinMaxVersion>()
-        minMaxVersions.add(new FSMPlugin.MinMaxVersion(dependency: "mygroup:myname:1.0.0", maxVersion: "1.1.0"))
+        def minMaxVersions = new HashSet<FSMConfigurationsPlugin.MinMaxVersion>()
+        minMaxVersions.add(new FSMConfigurationsPlugin.MinMaxVersion(dependency: "mygroup:myname:1.0.0", maxVersion: "1.1.0"))
 
         def indent = INDENT_WS_8
         String result = XmlTagAppender.getResourceTagForDependency(indent, moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED, false, minMaxVersions)

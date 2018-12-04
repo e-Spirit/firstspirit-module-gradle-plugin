@@ -76,7 +76,7 @@ class FSMConfigurationsPluginSpecification extends Specification {
         project.apply plugin: FSMConfigurationsPlugin.NAME
         project.repositories.add(project.getRepositories().mavenCentral())
         def resultingDependency = project.fsDependency("com.google.guava:guava:24.0-jre", true)
-        def skippedInLegacyDependencies = project.configurations.getByName(FSMPlugin.FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME).dependencies.collect { it }
+        def skippedInLegacyDependencies = project.configurations.getByName(FSMConfigurationsPlugin.FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME).dependencies.collect { it }
 
         then:
         resultingDependency == "com.google.guava:guava:24.0-jre"

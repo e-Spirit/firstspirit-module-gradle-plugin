@@ -30,6 +30,7 @@ import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.language.base.plugins.LifecycleBasePlugin
+import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 import org.gradle.plugins.fsm.tasks.verification.IsolationCheck
@@ -52,6 +53,7 @@ class FSMPlugin implements Plugin<Project> {
 
         project.getPlugins().apply(JavaPlugin)
         project.getPlugins().apply(FSMConfigurationsPlugin)
+        project.getPlugins().apply(FSMAnnotationsPlugin)
 
         def fsmPluginExtension = project.getExtensions().create(FSM_EXTENSION_NAME, FSMPluginExtension)
 

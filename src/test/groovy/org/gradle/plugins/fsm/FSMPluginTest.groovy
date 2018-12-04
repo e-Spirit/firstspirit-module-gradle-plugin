@@ -22,6 +22,7 @@ import org.gradle.api.artifacts.Dependency
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 import org.gradle.testfixtures.ProjectBuilder
@@ -52,6 +53,11 @@ class FSMPluginTest {
 	void fsmPluginAppliesConfigurationPlugin() {
 		project.apply plugin: FSMPlugin.NAME
 		assertTrue(project.plugins.hasPlugin(FSMConfigurationsPlugin))
+	}
+	@Test
+	void fsmPluginAppliesAnnotationsPlugin() {
+		project.apply plugin: FSMPlugin.NAME
+		assertTrue(project.plugins.hasPlugin(FSMAnnotationsPlugin))
 	}
 
 	@Test
