@@ -101,6 +101,16 @@ class FSMPluginTest {
     }
 
 	@Test
+	void isolationCheckTaskDependsOnFsmTask() {
+		project.apply plugin: FSMPlugin.NAME
+
+		Task fsmTask = project.tasks[FSMPlugin.FSM_TASK_NAME]
+		Task checkIsolationTask = project.tasks[FSMPlugin.ISOLATION_CHECK_TASK_NAME]
+
+		assertThat(checkIsolationTask, dependsOn(fsmTask.name))
+	}
+
+	@Test
 	void replacesJarAsPublication() {
 		project.apply plugin: FSMPlugin.NAME
 

@@ -133,9 +133,9 @@ class FSMPlugin implements Plugin<Project> {
 
         project.getPlugins().apply(JavaPlugin.class)
 
-        FSM fsm = configureFsmTask(project)
+        FSM fsmTask = configureFsmTask(project)
 
-        IsolationCheck isolationCheck = configureIsolationCheckTask(project, fsm)
+        IsolationCheck isolationCheck = configureIsolationCheckTask(project, fsmTask)
         Task checkTask = project.getTasksByName(JavaBasePlugin.CHECK_TASK_NAME, false).iterator().next()
         checkTask.dependsOn(isolationCheck)
 
@@ -145,22 +145,22 @@ class FSMPlugin implements Plugin<Project> {
 
     private FSM configureFsmTask(final Project project) {
 
-        FSM fsm = project.getTasks().create(FSM_TASK_NAME, FSM.class)
-        fsm.setDescription("Assembles a fsm archive containing the FirstSpirit module.")
-        fsm.setGroup(BasePlugin.BUILD_GROUP)
+        FSM fsmTask = project.getTasks().create(FSM_TASK_NAME, FSM.class)
+        fsmTask.setDescription("Assembles a fsmTask archive containing the FirstSpirit module.")
+        fsmTask.setGroup(BasePlugin.BUILD_GROUP)
 
-        addPublication(project, fsm)
+        addPublication(project, fsmTask)
 
-        fsm.dependsOn({ project.getConvention()
+        fsmTask.dependsOn({ project.getConvention()
             .getPlugin(JavaPluginConvention.class)
             .getSourceSets()
             .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
             .getRuntimeClasspath()
         })
 
-        fsm.dependsOn({ JavaPlugin.JAR_TASK_NAME})
+        fsmTask.dependsOn({ JavaPlugin.JAR_TASK_NAME})
 
-        fsm.classpath({
+        fsmTask.classpath({
             final FileCollection runtimeClasspath = project
                 .getConvention()
                 .getPlugin(JavaPluginConvention.class)
@@ -187,7 +187,7 @@ class FSMPlugin implements Plugin<Project> {
             }
         }
 
-        return fsm
+        return fsmTask
     }
 
     private void addPublication(Project project, FSM fsm) {
@@ -250,6 +250,7 @@ class FSMPlugin implements Plugin<Project> {
         isolationCheck.setDescription("Verifies the isolation of resources in the FSM.")
         isolationCheck.setGroup(LifecycleBasePlugin.VERIFICATION_GROUP)
         isolationCheck.getInputs().file(fsmTask.getOutputs().getFiles().getSingleFile())
+        isolationCheck.dependsOn(fsmTask)
 
         Task checkTask = project.getTasksByName(JavaBasePlugin.CHECK_TASK_NAME, false).iterator().next()
         checkTask.dependsOn(isolationCheck)
