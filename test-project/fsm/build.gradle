@@ -25,6 +25,10 @@ dependencies {
     testCompile 'junit:junit:4.12'
 }
 
+jar {
+    baseName = "testyMcTestface"
+}
+
 fsm {
     moduleDirName = 'src/main/fsm'
     displayName = 'test-project displayName'

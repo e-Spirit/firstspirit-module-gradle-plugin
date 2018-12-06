@@ -170,7 +170,7 @@ ${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppCo
 ${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent\$TestConfigurable</configurable>
 ${INDENT_WS_12___}<web-xml>/test/web.xml</web-xml>
 ${INDENT_WS_12___}<web-resources>
-${INDENT_WS_16_______}<resource name="test:webapps-test-project" version="1.2">lib/webapps-test-project-1.2.jar</resource>
+${INDENT_WS_16_______}<resource name="webapps-test-project-1.2.jar" version="1.2">lib/webapps-test-project-1.2.jar</resource>
 ${INDENT_WS_16_______}<resource>/test/web.xml</resource>
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
 ${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1" target="targetPath">lib/commons-lang-3.0.jar</resource>
@@ -330,7 +330,7 @@ ${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppCo
 ${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent\$TestConfigurable</configurable>
 ${INDENT_WS_12___}<web-xml>/test/web.xml</web-xml>
 ${INDENT_WS_12___}<web-resources>
-${INDENT_WS_16_______}<resource name="$GROUP:$NAME" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
+${INDENT_WS_16_______}<resource name="${XmlTagAppender.getJarFilename(project)}" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
 ${INDENT_WS_16_______}<resource>/test/web.xml</resource>
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
 ${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1" target="${targetPathValue}">lib/commons-lang-3.0.jar</resource>
@@ -345,7 +345,6 @@ ${INDENT_WS_8}</web-app>
     void appendWebAppTagsWithoutConfig() throws Exception {
         StringBuilder result = new StringBuilder()
         XmlTagAppender.appendWebAppTags(project, new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestWebAppComponentWithoutConfiguration.getName()], result, true, true)
-
         Assert.assertEquals("""
 ${INDENT_WS_8}<web-app scopes="project,global">
 ${INDENT_WS_12___}<name>TestWebAppComponentName</name>
@@ -354,7 +353,7 @@ ${INDENT_WS_12___}<description>TestDescription</description>
 ${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponentWithoutConfiguration</class>
 ${INDENT_WS_12___}<web-xml>/test/web.xml</web-xml>
 ${INDENT_WS_12___}<web-resources>
-${INDENT_WS_16_______}<resource name="$GROUP:$NAME" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
+${INDENT_WS_16_______}<resource name="${XmlTagAppender.getJarFilename(project)}" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
 ${INDENT_WS_16_______}<resource>/test/web.xml</resource>
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
 ${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1">lib/commons-lang-3.0.jar</resource>
@@ -456,7 +455,7 @@ ${INDENT_WS_8}</public>
     @Test
     void getResourcesTags() {
         String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED, false)
-        Assert.assertEquals("""${INDENT_WS_8}<resource name="$GROUP:$NAME" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>""".toString(), result)
+        Assert.assertEquals("""${INDENT_WS_8}<resource name="${XmlTagAppender.getJarFilename(project)}" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>""".toString(), result)
     }
 
 
@@ -478,7 +477,7 @@ ${INDENT_WS_8}</public>
         project.dependencies.add(FSMPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
         project.dependencies.add(FSMPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
         String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED, false)
-        Assert.assertEquals("""${INDENT_WS_8}<resource name="$GROUP:$NAME" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>
+        Assert.assertEquals("""${INDENT_WS_8}<resource name="${XmlTagAppender.getJarFilename(project)}" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>
 ${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="server" mode="isolated" version="2.1.1">lib/joda-convert-2.1.1.jar</resource>
 ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated" version="1.7.25">lib/slf4j-api-1.7.25.jar</resource>""".toString(), result)
     }
