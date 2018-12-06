@@ -339,8 +339,8 @@ class FSMTest {
 
 		fsm.execute()
 
-		assertThat(moduleXml()).contains("<resource name=\"testResource.txt\" version=\"1.0.0\" scope=\"module\" mode=\"isolated\">testResource.txt</resource>")
-		assertThat(moduleXml()).contains("<resource name=\"resourcesFolder\" version=\"1.0.0\" scope=\"module\" mode=\"isolated\">resourcesFolder</resource>")
+		assertThat(moduleXml()).contains("<resource name=\"${project.group}:${project.name}-testResource.txt\" version=\"1.0.0\" scope=\"module\" mode=\"isolated\">testResource.txt</resource>")
+		assertThat(moduleXml()).contains("<resource name=\"${project.group}:${project.name}-resourcesFolder\" version=\"1.0.0\" scope=\"module\" mode=\"isolated\">resourcesFolder</resource>")
 
 		withFsmFile { ZipFile fsm ->
 			assertNotNull(fsm.getEntry("testResource.txt"))
