@@ -82,7 +82,7 @@ The configuration for your implemented FirstSpirit components has to be placed s
 Your project app, web app and other components can be annotated with our custom annotations that can be found in a separate project.
 In order to be able to use them, add the following dependency to your project:
 
-compile 'com.espirit.moddev.components:annotations:1.9.11'
+compile 'com.espirit.moddev.components:annotations:1.9.1'
 
 The project where you apply the plugin directly gets a corresponding annotations dependency applied automatically.
 Thus, you don't need to configure the annotations dependency in the sub project where you apply the fsm plugin.
@@ -307,7 +307,7 @@ dependencies {
 
 	testCompile 'junit:junit:4.12'
 
-    compile 'com.espirit.moddev.components:annotations:1.9.0'
+    compile 'com.espirit.moddev.components:annotations:1.9.1'
 }
 
 fsm {
