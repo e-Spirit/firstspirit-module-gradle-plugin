@@ -154,12 +154,22 @@ task writePropertiesToResourceFile() {
         Properties props = new Properties()
         props.setProperty('fsm-annotations-version', project.fsmAnnotationsVersion)
         File propsFile = sourceSets.main.output.resourcesDir.toPath().resolve("versions.properties").toFile()
-        propsFile.newWriter().withCloseable { writer ->
-            props.store(writer, null)
+        File propsFileTest = sourceSets.test.output.resourcesDir.toPath().resolve("versions.properties").toFile()
+        [propsFile, propsFileTest].forEach { targetFile ->
+            targetFile.newWriter().withCloseable { writer ->
+                props.store(writer, null)
+            }
         }
     }
 }
-build.dependsOn writePropertiesToResourceFile
+
+jar.dependsOn writePropertiesToResourceFile
+test.dependsOn writePropertiesToResourceFile
+
+test {
+    systemProperty "artifactory_username", findProperty("artifactory_username")
+    systemProperty "artifactory_password", findProperty("artifactory_password")
+}
 
 task integrationTest() {
     dependsOn("jar")

@@ -22,6 +22,8 @@ import java.util.zip.ZipOutputStream
 import static de.espirit.mavenplugins.fsmchecker.ComplianceLevel.*
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown
+import static org.gradle.plugins.fsm.util.TestProjectUtils.defineArtifactoryForProject
+import static org.gradle.plugins.fsm.util.TestProjectUtils.setArtifactoryCredentialsFromLocalProperties
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC
 import static org.objectweb.asm.Opcodes.V1_8
 
@@ -44,6 +46,8 @@ class IsolationCheckTest {
     void setup() {
         testDir = temporaryFolder.newFolder()
         project = ProjectBuilder.builder().withProjectDir(testDir).build()
+        setArtifactoryCredentialsFromLocalProperties(project)
+        defineArtifactoryForProject(project)
         project.apply plugin: FSMPlugin.NAME
         isolationCheck = project.tasks[FSMPlugin.ISOLATION_CHECK_TASK_NAME] as IsolationCheck
         isolationCheck.setFirstSpiritVersion("5.2.181007")

@@ -34,6 +34,8 @@ import java.util.zip.ZipFile
 
 import static junit.framework.Assert.assertNotNull
 import static org.assertj.core.api.Assertions.assertThat
+import static org.gradle.plugins.fsm.util.TestProjectUtils.defineArtifactoryForProject
+import static org.gradle.plugins.fsm.util.TestProjectUtils.setArtifactoryCredentialsFromLocalProperties
 import static org.mockito.Mockito.spy
 
 class FSMTest {
@@ -51,6 +53,9 @@ class FSMTest {
         testDir = temporaryFolder.newFolder()
 
 		project = ProjectBuilder.builder().withProjectDir(testDir).build()
+		setArtifactoryCredentialsFromLocalProperties(project)
+		defineArtifactoryForProject(project)
+
 		project.apply plugin: FSMPlugin.NAME
 
 		fsm = project.tasks[FSMPlugin.FSM_TASK_NAME] as FSM
