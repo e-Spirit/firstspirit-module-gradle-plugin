@@ -157,7 +157,7 @@ class FSMPlugin implements Plugin<Project> {
             def annotationsDep = "com.espirit.moddev.components:annotations:${props.get("fsm-annotations-version")}"
             Logging.getLogger(this.getClass()).debug("fsmgradleplugin uses $annotationsDep")
 
-            delegate.compile(annotationsDep)
+            delegate.compileOnly(annotationsDep)
         }
     }
 

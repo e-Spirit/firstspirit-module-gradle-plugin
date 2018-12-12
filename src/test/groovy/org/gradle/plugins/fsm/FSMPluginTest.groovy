@@ -64,11 +64,13 @@ class FSMPluginTest {
 		def task = project.tasks[FSMPlugin.FSM_TASK_NAME]
 		assertThat(task, instanceOf(FSM))
 	}
+
+
 	@Test
 	void addsAnnotationsDependencyToProject() {
 		project.apply plugin: FSMPlugin.NAME
 
-		def annotationDependency = project.getConfigurations().getByName("compile").dependencies.find {
+		def annotationDependency = project.getConfigurations().getByName("compileOnly").dependencies.find {
 			it.group == 'com.espirit.moddev.components' && it.name == 'annotations'
 		}
 
