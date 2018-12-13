@@ -59,7 +59,7 @@ dependencies {
     compile localGroovy()
     compile 'io.github.lukehutch:fast-classpath-scanner:2.6.2'
     compile "com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}"
-    compile 'de.espirit.mavenplugins:fsmchecker:0.8'
+    compile 'de.espirit.mavenplugins:fsmchecker:0.9'
     compileOnly "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}"
     testCompile (
         "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}",
