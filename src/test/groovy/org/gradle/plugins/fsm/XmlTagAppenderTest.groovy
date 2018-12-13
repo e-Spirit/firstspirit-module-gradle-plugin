@@ -51,9 +51,11 @@ class XmlTagAppenderTest {
     static final String INDENT_WS_12___ = XmlTagAppender.INDENT_WS_12
     static final String INDENT_WS_16_______ = XmlTagAppender.INDENT_WS_16
 
-    final List<String> componentImplementingClasses = [TestPublicComponent.getName(), TestScheduleTaskComponentWithConfigurable.getName(), TestPublicComponentWithConfiguration.getName(),
-                                                       TestWebAppComponent.getName(), TestProjectAppComponent.getName(), TestScheduleTaskComponentWithForm.getName(),
-                                                       TestScheduleTaskComponentWithoutForm.getName(), TestServiceComponent.getName()]
+    final List<String> componentImplementingClasses = [TestPublicComponent.getName(), TestScheduleTaskComponentWithConfigurable.getName(),
+                                                       TestPublicComponentWithConfiguration.getName(), TestWebAppComponent.getName(),
+                                                       TestProjectAppComponent.getName(), TestProjectAppComponentWithoutConfigurable.getName(),
+                                                       TestScheduleTaskComponentWithForm.getName(), TestScheduleTaskComponentWithoutForm.getName(),
+                                                       TestServiceComponent.getName(), TestServiceComponentWithoutConfigurable.getName()]
     final List<String> validAndInvalidProjectAppClasses = [XmlTagAppender.PROJECT_APP_BLACKLIST, componentImplementingClasses].flatten()
 
     Project project
@@ -151,6 +153,13 @@ ${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestServiceC
 ${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestServiceComponent\$TestConfigurable</configurable>
 ${INDENT_WS_8}</service>
 
+${INDENT_WS_8}<service>
+${INDENT_WS_12___}<name>TestServiceComponentWithoutConfigurableName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>TestDescription</description>
+${INDENT_WS_12___}<class>${getClass().name}\$TestServiceComponentWithoutConfigurable</class>
+${INDENT_WS_8}</service>
+
 ${INDENT_WS_8}<project-app>
 ${INDENT_WS_12___}<name>TestProjectAppComponentName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
@@ -160,6 +169,13 @@ ${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestP
 ${INDENT_WS_12___}<resources>
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0" scope="MODULE" mode="LEGACY">lib/guava-24.0.jar</resource>
 ${INDENT_WS_12___}</resources>
+${INDENT_WS_8}</project-app>
+
+${INDENT_WS_8}<project-app>
+${INDENT_WS_12___}<name>TestProjectAppComponentWithoutConfigurableName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>TestDescription</description>
+${INDENT_WS_12___}<class>${getClass().name}\$TestProjectAppComponentWithoutConfigurable</class>
 ${INDENT_WS_8}</project-app>
 
 ${INDENT_WS_8}<web-app scopes="project,global">
@@ -383,6 +399,28 @@ ${INDENT_WS_12___}<resources>
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0" scope="MODULE" mode="LEGACY">lib/guava-24.0.jar</resource>
 ${INDENT_WS_12___}</resources>
 ${INDENT_WS_8}</project-app>
+
+${INDENT_WS_8}<project-app>
+${INDENT_WS_12___}<name>TestProjectAppComponentWithoutConfigurableName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>TestDescription</description>
+${INDENT_WS_12___}<class>${getClass().name}\$TestProjectAppComponentWithoutConfigurable</class>
+${INDENT_WS_8}</project-app>
+""".toString(), result.toString())
+    }
+
+    @Test
+    void project_app_output_should_have_no_configurable_tag_if_no_config_class_was_set() {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendProjectAppTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestProjectAppComponentWithoutConfigurable.name], result)
+
+        Assert.assertEquals("""
+${INDENT_WS_8}<project-app>
+${INDENT_WS_12___}<name>TestProjectAppComponentWithoutConfigurableName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>TestDescription</description>
+${INDENT_WS_12___}<class>${getClass().name}\$TestProjectAppComponentWithoutConfigurable</class>
+${INDENT_WS_8}</project-app>
 """.toString(), result.toString())
     }
 
@@ -401,6 +439,23 @@ ${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestS
 ${INDENT_WS_8}</service>
 """.toString(), result.toString())
     }
+
+
+    @Test
+    void service_output_should_have_no_configurable_tag_if_no_config_class_was_set() {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendServiceTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestServiceComponentWithoutConfigurable.name], result)
+
+        Assert.assertEquals("""
+${INDENT_WS_8}<service>
+${INDENT_WS_12___}<name>TestServiceComponentWithoutConfigurableName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>TestDescription</description>
+${INDENT_WS_12___}<class>${getClass().name}\$TestServiceComponentWithoutConfigurable</class>
+${INDENT_WS_8}</service>
+""".toString(), result.toString())
+    }
+
 
     @Test
     void appendUrlCreatorTags() throws Exception {
@@ -540,6 +595,13 @@ ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated
         static class TestConfigurable extends BaseConfiguration { }
     }
 
+    @ProjectAppComponent(name = "TestProjectAppComponentWithoutConfigurableName",
+            displayName = "TestDisplayName",
+            description = "TestDescription")
+    static class TestProjectAppComponentWithoutConfigurable extends BaseProjectApp {
+
+    }
+
     @WebAppComponent(name = "TestWebAppComponentName",
             displayName = "TestDisplayName",
             description = "TestDescription",
@@ -643,6 +705,14 @@ ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated
         static class TestConfigurable extends BaseConfiguration { }
 
         static class ServiceResource {}
+    }
+
+
+    @ServiceComponent(name = "TestServiceComponentWithoutConfigurableName",
+            displayName = "TestDisplayName",
+            description = "TestDescription")
+    static class TestServiceComponentWithoutConfigurable extends BaseService {
+
     }
 
     @UrlFactoryComponent(name = "TestUrlFactoryComponentName",

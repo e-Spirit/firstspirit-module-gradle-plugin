@@ -292,7 +292,8 @@ class XmlTagAppender {
                 .findAll { it.annotationType() == ProjectAppComponent }
                 .forEach { annotation ->
                     final String resources = evaluateResources(annotation, resourceIndent)
-                    final String resourcesTag = resources.isEmpty() ? "" : """<resources>
+                    final String configurable = annotation.configurable() == Configuration.class ? "" : "\n" + INDENT_WS_12 + "<configurable>${annotation.configurable().name}</configurable>"
+                    final String resourcesTag = resources.isEmpty() ? "" : """\n${INDENT_WS_12}<resources>
 ${resources}
             </resources>"""
                     result.append("""
@@ -300,9 +301,7 @@ ${resources}
             <name>${evaluateAnnotation(annotation, "name")}</name>
             <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
             <description>${evaluateAnnotation(annotation, "description")}</description>
-            <class>${projectAppClass.getName().toString()}</class>
-            <configurable>${evaluateAnnotation(annotation, "configurable").getName().toString()}</configurable>
-            ${resourcesTag}
+            <class>${projectAppClass.getName().toString()}</class>${configurable}${resourcesTag}
         </project-app>
 """)
             }
@@ -321,13 +320,13 @@ ${resources}
             Arrays.asList(serviceClass.annotations)
                     .findAll { it.annotationType() == ServiceComponent }
                     .forEach { annotation ->
+                final String configurable = annotation.configurable() == Configuration.class ? "" : "\n" + INDENT_WS_12 + "<configurable>${annotation.configurable().name}</configurable>"
                 result.append("""
         <service>
             <name>${evaluateAnnotation(annotation, "name")}</name>
             <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
             <description>${evaluateAnnotation(annotation, "description")}</description>
-            <class>${serviceClass.getName().toString()}</class>
-            <configurable>${evaluateAnnotation(annotation, "configurable").getName().toString()}</configurable>
+            <class>${serviceClass.getName().toString()}</class>${configurable}
         </service>
 """)
             }
