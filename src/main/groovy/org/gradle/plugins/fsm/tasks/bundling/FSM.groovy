@@ -28,6 +28,7 @@ import org.gradle.api.tasks.bundling.Jar
 import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.classloader.JarClassLoader
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.zip.UnzipUtility
 
 import java.nio.charset.StandardCharsets
@@ -73,7 +74,7 @@ class FSM extends Jar {
                 }
             }
 
-            FSMPlugin.FS_CONFIGURATIONS.forEach { configName ->
+            FSMConfigurationsPlugin.FS_CONFIGURATIONS.forEach { configName ->
                 def config = project.configurations.getByName(configName)
                 def projectDependencies = config.getAllDependencies().withType(ProjectDependency)
                 projectDependencies.forEach { ProjectDependency dep ->

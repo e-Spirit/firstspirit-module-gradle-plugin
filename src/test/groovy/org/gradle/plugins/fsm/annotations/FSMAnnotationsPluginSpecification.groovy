@@ -1,8 +1,14 @@
 package org.gradle.plugins.fsm.annotations
 
 import org.gradle.api.Project
+import org.gradle.api.plugins.JavaPlugin
+import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.testfixtures.ProjectBuilder
+import org.junit.Test
 import spock.lang.Specification
+
+import static junit.framework.TestCase.assertNotNull
+import static org.gradle.internal.impldep.junit.framework.TestCase.assertEquals
 
 class FSMAnnotationsPluginSpecification extends Specification {
 
@@ -17,13 +23,26 @@ class FSMAnnotationsPluginSpecification extends Specification {
         project.plugins.hasPlugin(FSMAnnotationsPlugin)
     }
 
-    def 'adds annotation dependency to project'() {
+    def 'applies java plugin to project'() {
         when:
         project.apply plugin: FSMAnnotationsPlugin.NAME
 
         then:
-//        TODO: Transfer addsAnnotationsDependencyToProject logic to here from
-//        https://git.e-spirit.de/projects/DEVEX/repos/fsmgradleplugin/pull-requests/37/diff#src/test/groovy/org/gradle/plugins/fsm/FSMPluginTest.groovy
-        throw new IllegalStateException("This is blocked by DEVEX-226")
+        project.plugins.hasPlugin(JavaPlugin)
+    }
+
+    def 'adds annotation dependency to project'() {
+        when:
+        project.apply plugin: FSMAnnotationsPlugin.NAME
+        def annotationDependency = project.getConfigurations().getByName("compileOnly").dependencies.find {
+            it.group == 'com.espirit.moddev.components' && it.name == 'annotations'
+        }
+
+        Properties props = new Properties()
+        props.load(FSMPlugin.class.getResourceAsStream('/versions.properties'))
+
+        then:
+        annotationDependency != null
+        props.get('fsm-annotations-version') == annotationDependency.version
     }
 }

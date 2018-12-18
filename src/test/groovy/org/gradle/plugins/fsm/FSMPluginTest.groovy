@@ -29,6 +29,8 @@ import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Before
 import org.junit.Test
 
+import static junit.framework.TestCase.assertNotNull
+import static org.gradle.internal.impldep.junit.framework.TestCase.assertEquals
 import static org.gradle.plugins.fsm.util.Matchers.dependsOn
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
@@ -68,23 +70,6 @@ class FSMPluginTest {
 		assertThat(task, instanceOf(FSM))
 	}
 
-
-	@Test
-	void addsAnnotationsDependencyToProject() {
-		project.apply plugin: FSMPlugin.NAME
-
-		def annotationDependency = project.getConfigurations().getByName("compileOnly").dependencies.find {
-			it.group == 'com.espirit.moddev.components' && it.name == 'annotations'
-		}
-
-		assertNotNull("Expected the project's compile config to contain the annotations dependency", annotationDependency)
-
-		Properties props = new Properties()
-		props.load(FSMPlugin.class.getResourceAsStream('/versions.properties'))
-
-		assertEquals("The project's annotations version should be the plugins's configured version.", props.get('fsm-annotations-version'), annotationDependency.version)
-	}
-	
 	@Test
 	void fsmTaskDependsOnJarAndClassesTask() {
 		project.apply plugin: FSMPlugin.NAME

@@ -465,11 +465,11 @@ ${resources}
             }
         }
 
-        FSMPlugin.FS_CONFIGURATIONS.forEach { configName ->
+        FSMConfigurationsPlugin.FS_CONFIGURATIONS.forEach { configName ->
             def config = project.configurations.getByName(configName)
             def projectDependencies = config.getAllDependencies().withType(ProjectDependency)
             projectDependencies.collect { it.dependencyProject }.forEach {
-                addResourceTagsToBuffer(it, configName == FSMPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME ? "module" : "server")
+                addResourceTagsToBuffer(it, configName == FSMConfigurationsPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME ? "module" : "server")
             }
         }
 

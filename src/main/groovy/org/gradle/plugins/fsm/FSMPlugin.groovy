@@ -69,22 +69,6 @@ class FSMPlugin implements Plugin<Project> {
         configureJarTask(project)
     }
 
-    def addFsmAnnotationsDependencyToProject() {
-        Properties props = new Properties()
-        InputStream versionsFile = FSMPlugin.class.getResourceAsStream("/versions.properties")
-        if(versionsFile == null) {
-            throw new IllegalStateException("Couldn't find versions.properties file that should be a generated resource!")
-        }
-        props.load(versionsFile)
-
-        project.dependencies {
-            def annotationsDep = "com.espirit.moddev.components:annotations:${props.get("fsm-annotations-version")}"
-            Logging.getLogger(this.getClass()).debug("fsmgradleplugin uses $annotationsDep")
-
-            delegate.compileOnly(annotationsDep)
-        }
-    }
-
     private FSM configureFsmTask(final Project project) {
 
         FSM fsmTask = project.getTasks().create(FSM_TASK_NAME, FSM.class)

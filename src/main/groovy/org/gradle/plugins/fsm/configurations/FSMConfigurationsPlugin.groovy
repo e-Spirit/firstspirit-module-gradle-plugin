@@ -36,6 +36,12 @@ class FSMConfigurationsPlugin implements Plugin<Project> {
 
     static final String FS_WEB_COMPILE_CONFIGURATION_NAME = "fsWebCompile"
 
+    static final Set<String> FS_CONFIGURATIONS = [
+            FS_SERVER_COMPILE_CONFIGURATION_NAME,
+            FS_MODULE_COMPILE_CONFIGURATION_NAME,
+            FS_WEB_COMPILE_CONFIGURATION_NAME
+    ]
+
     static final List<String> COMPILE_CONFIGURATIONS = [FS_SERVER_COMPILE_CONFIGURATION_NAME, FS_MODULE_COMPILE_CONFIGURATION_NAME, FS_WEB_COMPILE_CONFIGURATION_NAME]
 
     static final String FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME = "skippedInLegacy"

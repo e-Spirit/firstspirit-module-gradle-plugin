@@ -1,5 +1,7 @@
 package components;
 
-@PublicComponent
+import com.espirit.moddev.components.annotations.PublicComponent;
+
+@PublicComponent(name = "MyPublicComponent")
 public class MyPublicComponent {
 }
