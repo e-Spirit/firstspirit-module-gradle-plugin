@@ -1,4 +1,4 @@
 rootProject.name = 'test-project'
 
 include "api", "impl", "fsm", "web"
-includeBuild '../../fsmgradleplugin'
+includeBuild '../../../fsmgradleplugin'
