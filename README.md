@@ -6,10 +6,53 @@
 
 ## Usage
 
+TLDR: Apply the fsmgradleplugin to your project, configure your components and use assembleFSM to build your module.
+
+There are three plugins you can use for slightly different purposes:
+fsmannotationsgradleplugin, fsmconfigurationsgradleplugin and fsmgradleplugin.
+
+We ship all three plugins in a single dependency, so that it's easy for you to use all modules without version incompatibilities in your multi project build.
+If you only need a specific feature in one of your sub projects, you can only apply the corresponding plugin, instead of adding all features and capabilities to this project.
+The most important task of the plugins is to provide a task to bundle your application as a FirstSpirit module.
+The fsmannotationsgradleplugin and fsmconfigurationsgradleplugin can be used to configure FirstSpirit components and their scope and make them visible for the fsmgradleplugin, that contains the bundling task.
+
+
+### fsmgradleplugin
+
+This is the most important plugin.
+It applies the fsmannotationsgradleplugin and the fsmannotationsgradleplugin as well on application.
+Additionally to the other two plugin's capabilities, it adds an `assembleFSM` task to your project.
+This task assembles a FirstSpirit module file, based on the components in your project.
+For further information, please read the sections below.
+
 To use the plugin, include the following snippet on top of your build script:
 
 ```groovy
 apply plugin: 'fsmgradleplugin'
+```
+
+### fsmannotationsgradleplugin
+
+This plugin applies a dependency to our annotations module to a project.
+Its version corresponds with the other gradle plugins in the bundle.
+The dependency is added as compileOnly so that you can use our component annotations at compile time, while the dependency is not shipped with your application.
+This is sufficient, because the fsmgradleplugin also comes with it's own runtime dependency on the annotation module.
+For more information about available annotations, please take a look at the `com.espirit.moddev.components.annotations` package.
+
+To use the plugin, include the following snippet on top of your build script:
+
+```groovy
+apply plugin: 'fsmannotationsgradleplugin'
+```
+
+### fsmannotationsgradleplugin
+
+This plugin adds gradle configurations to your project.
+They enable you to configure FirstSpirit scopes (module or server) and other aspects (for example FirstSpirit isolation) for your dependencies.
+Please take a loot at #dependency-management for a detailed description of the available scopes and when to use them.
+
+```groovy
+apply plugin: 'fsmannotationsgradleplugin'
 ```
 
 Keep in mind, that you have to add a repository where the plugin can be found.
@@ -17,11 +60,16 @@ For example you can install it in your local Maven repo and add mavenLocal() to 
 
 ## Project layout
 
-This plugin applies the [Java Plugin](http://www.gradle.org/docs/current/userguide/java_plugin.html), thus uses the same layout as any standard Java project using Gradle.
+All plugins also apply the [Java Plugin](http://www.gradle.org/docs/current/userguide/java_plugin.html), thus using the same layout as any standard Java project using Gradle.
+
+For a single project build, you can apply the fsmgradleplugin alone and place all your components into your source folders as usual.
+
+For a multi project build, you only apply the fsmgradleplugin to the project that is responsible for assembling your module.
+The other projects can use the fsmannotationsgradleplugin and the fsmconfigurationsplugin, depending on what the project actually contains.
 
 ## Tasks
 
-The plugin defines the following tasks:
+The fsmgradleplugin defines the following tasks:
 
 Task | Depends on | Type | Description
 :---:|:----------:|:----:| -----------
@@ -30,7 +78,7 @@ checkIsolation | fsm    | IsolationCheck  | Checks if the FSM is compliant to th
 
 ## Extension properties
 
-The plugin defines the following extension properties in the `fsm` closure:
+The fsmgradleplugin defines the following extension properties in the `fsm` closure:
 
 Property | Type | Default | Description
 :-------:|:----:|:-------:| -----------
@@ -80,13 +128,7 @@ This is useful, if you don't want to add any custom behaviour to your module.xml
 
 The configuration for your implemented FirstSpirit components has to be placed somewhere, so that the plugin can generate a module.xml file.
 Your project app, web app and other components can be annotated with our custom annotations that can be found in a separate project.
-In order to be able to use them, add the following dependency to your project:
-
-compile 'com.espirit.moddev.components:annotations:1.9.1'
-
-The project where you apply the plugin directly gets a corresponding annotations dependency applied automatically.
-Thus, you don't need to configure the annotations dependency in the sub project where you apply the fsm plugin.
-This comes in handy for very small projects, where all components can be implemented in a single project.
+In order to be able to use them, apply the fsmannotationsplugin to your project.
 
 The annotations should be self explanatory. If a component doesn't provide annotations, it won't be treated for module.xml generation.
 You could add tags to your module.xml template by hand in this case. Please note, if you are using an @WebAppComponent annotation with 
