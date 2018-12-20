@@ -121,7 +121,11 @@ assembleFSM {
 }
 assembleFSM.dependsOn 'generateMyResources'
 ```
- 
+
+CAUTION: Files on the root level of your fsm-resources folder that are used as web.xml files in WebApp components are excluded from resource
+declarations in the resulting module.xml. This is because web.xml files are a special kind of resource, that normally should get embedded
+in your fsm file but not be treated as a runtime resource for the application. web.xml files you place in a subfolder
+of the fsm-resources directory, are not excluded in any way.
 
 ### Examples
 
