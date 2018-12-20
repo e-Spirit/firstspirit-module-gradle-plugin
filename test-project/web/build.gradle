@@ -1,1 +1,6 @@
 apply plugin: 'java'
+
+dependencies {
+    compile "com.espirit.moddev.components:annotations:1.9.1"
+    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.181007'
+}

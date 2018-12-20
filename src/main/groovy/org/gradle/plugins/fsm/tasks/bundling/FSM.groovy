@@ -220,9 +220,10 @@ class FSM extends Jar {
             try {
                 def scan = new FastClasspathScanner().addClassLoader(classLoader).scan()
 
+                WebXmlPaths webXmlPaths
                 components: {
                     StringBuilder result = new StringBuilder()
-                    appendComponentsTag(project, classLoader, new ClassScannerResultDelegate(scan), appendDefaultMinVersion, result, isolated)
+                    webXmlPaths = appendComponentsTag(project, classLoader, new ClassScannerResultDelegate(scan), appendDefaultMinVersion, result, isolated)
                     moduleXml.componentTags = result.toString()
                 }
 
@@ -231,8 +232,9 @@ class FSM extends Jar {
                     appendModuleAnnotationTags(classLoader, new ClassScannerResultDelegate(scan), result)
                     moduleXml.moduleTags = result.toString()
                 }
-                
-                moduleXml.resourcesTags = getResourcesTags(project, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion, isolated)
+
+
+                moduleXml.resourcesTags = getResourcesTags(project, webXmlPaths, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion, isolated)
 
             } catch (MalformedURLException e) {
                 getLogger().error("Passed URL is malformed", e)

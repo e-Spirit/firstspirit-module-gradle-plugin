@@ -40,6 +40,7 @@ import org.junit.Test
 
 import javax.swing.JComponent
 import java.awt.Frame
+import java.nio.file.Files
 
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when
@@ -184,10 +185,10 @@ ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
 ${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent</class>
 ${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent\$TestConfigurable</configurable>
-${INDENT_WS_12___}<web-xml>/test/web.xml</web-xml>
+${INDENT_WS_12___}<web-xml>/web.xml</web-xml>
 ${INDENT_WS_12___}<web-resources>
 ${INDENT_WS_16_______}<resource name="webapps-test-project-1.2.jar" version="1.2">lib/webapps-test-project-1.2.jar</resource>
-${INDENT_WS_16_______}<resource>/test/web.xml</resource>
+${INDENT_WS_16_______}
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
 ${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1" target="targetPath">lib/commons-lang-3.0.jar</resource>
 
@@ -345,10 +346,10 @@ ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
 ${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent</class>
 ${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent\$TestConfigurable</configurable>
-${INDENT_WS_12___}<web-xml>/test/web.xml</web-xml>
+${INDENT_WS_12___}<web-xml>/web.xml</web-xml>
 ${INDENT_WS_12___}<web-resources>
 ${INDENT_WS_16_______}<resource name="${XmlTagAppender.getJarFilename(project)}" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
-${INDENT_WS_16_______}<resource>/test/web.xml</resource>
+${INDENT_WS_16_______}
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
 ${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1" target="${targetPathValue}">lib/commons-lang-3.0.jar</resource>
 
@@ -369,10 +370,10 @@ ${INDENT_WS_12___}<name>TestWebAppComponentName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
 ${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponentWithoutConfiguration</class>
-${INDENT_WS_12___}<web-xml>/test/web.xml</web-xml>
+${INDENT_WS_12___}<web-xml>web0.xml</web-xml>
 ${INDENT_WS_12___}<web-resources>
 ${INDENT_WS_16_______}<resource name="${XmlTagAppender.getJarFilename(project)}" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
-${INDENT_WS_16_______}<resource>/test/web.xml</resource>
+${INDENT_WS_16_______}
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
 ${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1">lib/commons-lang-3.0.jar</resource>
 
@@ -512,7 +513,7 @@ ${INDENT_WS_8}</public>
 
     @Test
     void getResourcesTags() {
-        String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED, false)
+        String result = XmlTagAppender.getResourcesTags(project, new XmlTagAppender.WebXmlPaths(), ModuleInfo.Mode.ISOLATED, false)
         Assert.assertEquals("""${INDENT_WS_8}<resource name="${XmlTagAppender.getJarFilename(project)}" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>""".toString(), result)
     }
 
@@ -534,11 +535,12 @@ ${INDENT_WS_8}</public>
         project.dependencies.add(FSMPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
         project.dependencies.add(FSMPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
         project.dependencies.add(FSMPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
-        String result = XmlTagAppender.getResourcesTags(project, ModuleInfo.Mode.ISOLATED, false)
+        String result = XmlTagAppender.getResourcesTags(project, new XmlTagAppender.WebXmlPaths(), ModuleInfo.Mode.ISOLATED, false)
         Assert.assertEquals("""${INDENT_WS_8}<resource name="${XmlTagAppender.getJarFilename(project)}" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>
 ${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="server" mode="isolated" version="2.1.1">lib/joda-convert-2.1.1.jar</resource>
 ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated" version="1.7.25">lib/slf4j-api-1.7.25.jar</resource>""".toString(), result)
     }
+
     @ModuleComponent
     class TestModuleImpl implements Module {
 
@@ -606,7 +608,7 @@ ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated
             displayName = "TestDisplayName",
             description = "TestDescription",
             configurable = TestConfigurable,
-            webXml = "/test/web.xml",
+            webXml = "/web.xml",
             webResources = [@WebResource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0"),
                             @WebResource(targetPath = "targetPath", path = "lib/commons-lang-3.0.jar", name = "org.apache.commons:commons-lang3", version = "3.0", minVersion = "2.9", maxVersion = "3.1")])
     static class TestWebAppComponent extends BaseWebApp {
@@ -616,7 +618,7 @@ ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated
     @WebAppComponent(name = "TestWebAppComponentName",
             displayName = "TestDisplayName",
             description = "TestDescription",
-            webXml = "/test/web.xml",
+            webXml = "web0.xml",  // Please don't add leading slash, we want to test web.xml file handling without leading slash as well
             webResources = [@WebResource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0"),
                             @WebResource(path = "lib/commons-lang-3.0.jar", name = "org.apache.commons:commons-lang3", version = "3.0", minVersion = "2.9", maxVersion = "3.1")])
     static class TestWebAppComponentWithoutConfiguration extends BaseWebApp {

@@ -15,12 +15,20 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
+import com.espirit.moddev.components.annotations.WebAppComponent
+import com.espirit.moddev.components.annotations.WebResource
 import de.espirit.firstspirit.server.module.ModuleInfo
 import org.apache.commons.io.IOUtils
+import org.assertj.core.api.AssertDelegateTarget
 import org.gradle.api.Project
+import org.gradle.api.logging.LogLevel
+import org.gradle.api.logging.StandardOutputListener
 import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.plugins.fsm.FSMPluginExtension
+import org.gradle.plugins.fsm.util.BaseConfiguration
+import org.gradle.plugins.fsm.util.BaseWebApp
 import org.gradle.testfixtures.ProjectBuilder
+import org.gradle.testkit.runner.GradleRunner
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -367,6 +375,36 @@ class FSMTest {
 			assertNotNull(fsm.getEntry("resourcesFolder/testNested0.txt"))
 			assertNotNull(fsm.getEntry("resourcesFolder/testNested1.txt"))
 		}
+	}
+
+
+	@Test
+	void testWebXmlResourcesAreExcludedFromResources() {
+		/**
+		 * web.xml and web0.xml files are used by our test webcomponent implementations.
+		 * Those should be excluded from the resources tags in the module.xml, because
+		 * they aren't regular fsm resources.
+		 */
+		project.version = "1.0.0"
+		Path fsmResourcesTestProjectFolder = fsm.project.file('src/main/fsm-resources').toPath()
+		Files.createDirectories(fsmResourcesTestProjectFolder)
+		Files.write(fsmResourcesTestProjectFolder.resolve("web.xml"), "<xml></xml>".getBytes(StandardCharsets.UTF_8))
+		Files.write(fsmResourcesTestProjectFolder.resolve("web0.xml"), "<xml></xml>".getBytes(StandardCharsets.UTF_8))
+		Files.write(fsmResourcesTestProjectFolder.resolve("web1.xml"), "<xml></xml>".getBytes(StandardCharsets.UTF_8))
+
+		fsm.execute()
+
+		def moduleXml = moduleXml()
+		assertThat(moduleXml).doesNotContain("<resource name=\"${project.group}:${project.name}-web.xml\" version=\"1.0.0\" scope=\"module\" mode=\"isolated\">web.xml</resource>")
+		assertThat(moduleXml).doesNotContain("<resource name=\"${project.group}:${project.name}-web0.xml\" version=\"1.0.0\" scope=\"module\" mode=\"isolated\">web0.xml</resource>")
+		assertThat(moduleXml).contains("<resource name=\"${project.group}:${project.name}-web1.xml\" version=\"1.0.0\" scope=\"module\" mode=\"isolated\">web1.xml</resource>")
+
+		withFsmFile { ZipFile fsm ->
+			assertNotNull(fsm.getEntry("web.xml"))
+			assertNotNull(fsm.getEntry("web0.xml"))
+			assertNotNull(fsm.getEntry("web1.xml"))
+		}
+
 	}
 
     private String moduleXml(boolean isolated = false) {

@@ -12,7 +12,7 @@ import java.util.Set;
         displayName = "SimpleWebApp",
         description = "This is a simple WebApp",
         configurable = SimpleWebApp.WebAppConfigurable.class,
-        webXml = "/lib/web.xml"
+        webXml = "/web.xml"
 //        TODO: This doesn't work out currently
 //        webResources = "<resource>web/abtesting.tld</resource>\n" +
 //            "<resource target=\"web/images/\">web/images/abtest_icon_selected.png</resource>\n" +

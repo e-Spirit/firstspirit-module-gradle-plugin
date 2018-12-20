@@ -51,7 +51,7 @@ class XmlTagAppender {
      * Append components tag to given result StringBuilder
      */
     @CompileStatic
-    static void appendComponentsTag(Project project, URLClassLoader classLoader, FSM.ClassScannerResultProvider scan, final boolean appendDefaultMinVersion, final StringBuilder result, boolean isolated) {
+    static WebXmlPaths appendComponentsTag(Project project, URLClassLoader classLoader, FSM.ClassScannerResultProvider scan, final boolean appendDefaultMinVersion, final StringBuilder result, boolean isolated) {
 
         appendPublicComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(PublicComponent), result)
 
@@ -63,7 +63,7 @@ class XmlTagAppender {
 
         appendProjectAppTags(classLoader, scan.getNamesOfClassesImplementing(ProjectApp), result)
 
-        appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result, appendDefaultMinVersion, project.plugins.getPlugin(FSMPlugin.class).dependencyConfigurations, isolated)
+        return appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result, appendDefaultMinVersion, project.plugins.getPlugin(FSMPlugin.class).dependencyConfigurations, isolated)
     }
 
 
@@ -202,15 +202,17 @@ class XmlTagAppender {
         }
     }
 
+    static class WebXmlPaths extends ArrayList<String> { }
+
     @CompileStatic
-    static void appendWebAppTags(Project project, URLClassLoader cl, List<String> webAppClasses, StringBuilder result, boolean appendDefaultMinVersion, Set<FSMPlugin.MinMaxVersion> minMaxVersionConfigurations = new HashSet<>(), boolean isolated) {
+    static WebXmlPaths appendWebAppTags(Project project, URLClassLoader cl, List<String> webAppClasses, StringBuilder result, boolean appendDefaultMinVersion, Set<FSMPlugin.MinMaxVersion> minMaxVersionConfigurations = new HashSet<>(), boolean isolated) {
         List<Class<?>> loadedClasses = webAppClasses
             .collect{ cl.loadClass(it) }
 
-        appendWebAppComponentTagsOfClasses(loadedClasses, project, result, appendDefaultMinVersion, minMaxVersionConfigurations, isolated)
+        return appendWebAppComponentTagsOfClasses(loadedClasses, project, result, appendDefaultMinVersion, minMaxVersionConfigurations, isolated)
     }
 
-    private static appendWebAppComponentTagsOfClasses(List<Class<?>> loadedClasses, Project project, result, boolean appendDefaultMinVersion, Set<FSMPlugin.MinMaxVersion> minMaxVersionConfigurations = new HashSet<>(), boolean isolated) {
+    private static WebXmlPaths appendWebAppComponentTagsOfClasses(List<Class<?>> loadedClasses, Project project, result, boolean appendDefaultMinVersion, Set<FSMPlugin.MinMaxVersion> minMaxVersionConfigurations = new HashSet<>(), boolean isolated) {
 
         Set<ResolvedArtifact> webCompileDependencies = project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> providedCompileDependencies = project.configurations.getByName(PROVIDED_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()
@@ -221,53 +223,57 @@ class XmlTagAppender {
         }
         def webResourceIndent = INDENT_WS_16
 
+        def webXmlPaths = new WebXmlPaths()
+
         loadedClasses.forEach { webAppClass ->
-            (Arrays.asList(webAppClass.annotations)
-                    .findAll { it instanceof WebAppComponent } as List<WebAppComponent>)
-                    .forEach { annotation ->
+            WebAppComponent annotation = Arrays.asList(webAppClass.annotations).find { it instanceof WebAppComponent }
+            if(annotation != null) {
+                StringBuilder webResources = new StringBuilder("\n")
 
-                    StringBuilder webResources = new StringBuilder("\n")
+                def appendWebResources = { Project currentProject ->
 
-                    def appendWebResources = { Project currentProject ->
-
-                        def fsmWebResourcesPath = currentProject.projectDir.absolutePath + '/' + FSM.FSM_RESOURCES_PATH
-                        def fsmWebResourcesFolder = new File(fsmWebResourcesPath)
-                        if (fsmWebResourcesFolder.exists()) {
-                            fsmWebResourcesFolder.eachFile(FileType.ANY) { file ->
-                                def relPath = fsmWebResourcesFolder.toPath().relativize(file.toPath()).toFile()
-                                webResources.append("""${webResourceIndent}<resource name="${relPath.toPath()}" version="${project.version}">${relPath.toPath()}</resource>\n""")
-                            }
+                    def fsmWebResourcesPath = currentProject.projectDir.absolutePath + '/' + FSM.FSM_RESOURCES_PATH
+                    def fsmWebResourcesFolder = new File(fsmWebResourcesPath)
+                    if (fsmWebResourcesFolder.exists()) {
+                        fsmWebResourcesFolder.eachFile(FileType.ANY) { file ->
+                            def relPath = fsmWebResourcesFolder.toPath().relativize(file.toPath()).toFile()
+                            webResources.append("""${webResourceIndent}<resource name="${relPath.toPath()}" version="${project.version}">${relPath.toPath()}</resource>\n""")
                         }
                     }
+                }
 
-                    def webCompileConfiguration = project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME)
-                    def projectDependencies = webCompileConfiguration.getAllDependencies().withType(ProjectDependency)
-                    projectDependencies.forEach { ProjectDependency dep ->
-                        appendWebResources(dep.dependencyProject)
-                    }
+                def webCompileConfiguration = project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME)
+                def projectDependencies = webCompileConfiguration.getAllDependencies().withType(ProjectDependency)
+                projectDependencies.forEach { ProjectDependency dep ->
+                    appendWebResources(dep.dependencyProject)
+                }
 
-                    addResourceTagsForDependencies(webResourceIndent, webCompileDependencies, providedCompileDependencies, webResources, "", null, appendDefaultMinVersion, minMaxVersionConfigurations)
+                addResourceTagsForDependencies(webResourceIndent, webCompileDependencies, providedCompileDependencies, webResources, "", null, appendDefaultMinVersion, minMaxVersionConfigurations)
 
-                    final String scopes = scopes(annotation.scope())
-                    def indent = INDENT_WS_12
-                    final String configurable = annotation.configurable() == Configuration.class ? "" : "\n" + indent + "<configurable>${annotation.configurable().name}</configurable>"
+                final String scopes = scopes(annotation.scope())
+                def indent = INDENT_WS_12
+                final String configurable = annotation.configurable() == Configuration.class ? "" : "\n" + indent + "<configurable>${annotation.configurable().name}</configurable>"
 
+                def webXmlPath = evaluateAnnotation(annotation, "webXml").toString()
+                webXmlPaths.add(webXmlPath)
 // keep indent (2 tabs / 8 whitespaces) --> 3. level <module><components><web-app>
-                    result.append("""
+                result.append("""
         <web-app${scopes}>
             <name>${evaluateAnnotation(annotation, "name")}</name>
             <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
             <description>${evaluateAnnotation(annotation, "description")}</description>
             <class>${webAppClass.getName().toString()}</class>${configurable}
-            <web-xml>${evaluateAnnotation(annotation, "webXml").toString()}</web-xml>
+            <web-xml>${ webXmlPath}</web-xml>
             <web-resources>
                 <resource name="${getJarFilename(project)}" version="${project.version}">lib/${getJarFilename(project)}</resource>
-                <resource>${evaluateAnnotation(annotation, "webXml").toString()}</resource>${evaluateResources(annotation, webResourceIndent)}${webResources.toString()}
+                ${evaluateResources(annotation, webResourceIndent)}${webResources.toString()}
             </web-resources>
         </web-app>
 """)
-                }
+            }
+
         }
+        return webXmlPaths
     }
 
     private static String scopes(WebAppDescriptor.WebAppScope[] scopes) {
@@ -426,7 +432,7 @@ ${resources}
         return project.jar.archiveName
     }
 
-    static String getResourcesTags(Project project, ModuleInfo.Mode globalResourcesMode, boolean appendDefaultMinVersion, boolean isolationMode = false, Logger logger = null) {
+    static String getResourcesTags(Project project, WebXmlPaths webXmlPaths, ModuleInfo.Mode globalResourcesMode, boolean appendDefaultMinVersion, boolean isolationMode = false, Logger logger = null) {
 
         def indent = INDENT_WS_8
         def projectResources = new StringBuilder()
@@ -467,6 +473,8 @@ ${resources}
 
         addResourceTagsToBuffer(project, "module")
 
+        removeWebXmlEntriesFromResources(tempResourceTags, webXmlPaths)
+
         tempResourceTags.values().forEach { String tag ->
             projectResources.append(tag)
         }
@@ -497,6 +505,26 @@ ${resources}
         projectResources + "\n"
         addResourceTagsForDependencies(indent, cleanedCompileDependenciesModuleScoped, providedCompileDependencies, projectResources, "module", globalResourcesMode, appendDefaultMinVersion, minMaxVersionConfigurations)
         return projectResources.toString()
+    }
+
+    static def removeWebXmlEntriesFromResources(Map<String, String> resourceTags, WebXmlPaths webXmlPaths) {
+
+        def removeIfPresent = { String webXmlPath ->
+            if(resourceTags.containsKey(webXmlPath)) {
+                Logging.getLogger(XmlTagAppender).info("Removing resource ${webXmlPath} from resources, because it is used as web.xml file!")
+                resourceTags.remove(webXmlPath)
+            }
+        }
+
+        webXmlPaths.forEach { String webXmlPath ->
+            removeIfPresent(webXmlPath)
+
+            def simpleFileHasSlashPrefix = webXmlPath.count("/") == 1 && webXmlPath.startsWith("/")
+            if(simpleFileHasSlashPrefix) {
+                def trimmedWebXmlPath = webXmlPath.replaceFirst("/", "")
+                removeIfPresent(trimmedWebXmlPath)
+            }
+        }
     }
 
     private static void logIgnoredModuleScopeDependencies(Logger logger, Set<ResolvedArtifact> uncleanedDependenciesModuleScoped, Set<ResolvedArtifact> compileDependenciesModuleScoped) {
