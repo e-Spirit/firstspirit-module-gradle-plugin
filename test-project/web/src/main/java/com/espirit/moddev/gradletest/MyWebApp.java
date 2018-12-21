@@ -11,9 +11,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.Set;
 
-@WebAppComponent(name = "SimpleWebApp",
-        displayName = "SimpleWebApp",
-        description = "This is a simple WebApp",
+@WebAppComponent(name = "MyWebApp",
+        displayName = "MyWebApp",
+        description = "This is my WebApp",
         configurable = MyWebApp.WebAppConfigurable.class,
         webXml = "/webResourceFolder/web.xml")
 public class MyWebApp implements WebApp {

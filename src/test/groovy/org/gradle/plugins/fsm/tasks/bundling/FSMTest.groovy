@@ -15,20 +15,13 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
-import com.espirit.moddev.components.annotations.WebAppComponent
-import com.espirit.moddev.components.annotations.WebResource
+
 import de.espirit.firstspirit.server.module.ModuleInfo
 import org.apache.commons.io.IOUtils
-import org.assertj.core.api.AssertDelegateTarget
 import org.gradle.api.Project
-import org.gradle.api.logging.LogLevel
-import org.gradle.api.logging.StandardOutputListener
 import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.plugins.fsm.FSMPluginExtension
-import org.gradle.plugins.fsm.util.BaseConfiguration
-import org.gradle.plugins.fsm.util.BaseWebApp
 import org.gradle.testfixtures.ProjectBuilder
-import org.gradle.testkit.runner.GradleRunner
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
