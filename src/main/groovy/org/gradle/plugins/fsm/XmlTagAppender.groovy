@@ -19,6 +19,7 @@ import de.espirit.firstspirit.module.descriptor.WebAppDescriptor
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
 import de.espirit.firstspirit.server.module.ModuleInfo
 import groovy.io.FileType
+import groovy.text.SimpleTemplateEngine
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ConfigurationContainer
@@ -27,8 +28,8 @@ import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
-import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
+import org.gradle.api.plugins.JavaPlugin
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 
 import java.lang.annotation.Annotation
@@ -63,7 +64,7 @@ class XmlTagAppender {
 
         appendServiceTags(classLoader, scan.getNamesOfClassesImplementing(Service), result)
 
-        appendProjectAppTags(classLoader, scan.getNamesOfClassesImplementing(ProjectApp), result)
+        appendProjectAppTags(project, classLoader, scan.getNamesOfClassesImplementing(ProjectApp), result)
 
         return appendWebAppTags(project, classLoader, scan.getNamesOfClassesImplementing(WebApp), result, appendDefaultMinVersion, project.plugins.getPlugin(FSMConfigurationsPlugin).dependencyConfigurations, isolated)
     }
@@ -268,7 +269,7 @@ class XmlTagAppender {
             <web-xml>${ webXmlPath}</web-xml>
             <web-resources>
                 <resource name="${getJarFilename(project)}" version="${project.version}">lib/${getJarFilename(project)}</resource>
-                ${evaluateResources(annotation, webResourceIndent)}${webResources.toString()}
+                <resource>${evaluateAnnotation(annotation, "webXml").toString()}</resource>${evaluateResources(annotation, webResourceIndent, project)}${webResources.toString()}
             </web-resources>
         </web-app>
 """)
@@ -287,19 +288,19 @@ class XmlTagAppender {
     }
 
     @CompileStatic
-    static void appendProjectAppTags(URLClassLoader cl, List<String> projectAppClasses, StringBuilder result) {
+    static void appendProjectAppTags(Project project, URLClassLoader cl, List<String> projectAppClasses, StringBuilder result) {
         def loadedClasses = projectAppClasses.findAll { !PROJECT_APP_BLACKLIST.contains(it) }.collect { cl.loadClass(it) }
 
-        appendProjectAppTagsOfClasses(loadedClasses, result)
+        appendProjectAppTagsOfClasses(loadedClasses, result, project)
     }
 
-    static appendProjectAppTagsOfClasses(List<Class<?>> loadedClasses, result) {
+    static appendProjectAppTagsOfClasses(List<Class<?>> loadedClasses, result, Project project) {
         def resourceIndent = INDENT_WS_16
         loadedClasses.forEach { projectAppClass ->
             Arrays.asList(projectAppClass.annotations)
                 .findAll { it.annotationType() == ProjectAppComponent }
                 .forEach { annotation ->
-                    final String resources = evaluateResources(annotation, resourceIndent)
+                    final String resources = evaluateResources(annotation, resourceIndent, project)
                     final String configurable = annotation.configurable() == Configuration.class ? "" : "\n" + INDENT_WS_12 + "<configurable>${annotation.configurable().name}</configurable>"
                     final String resourcesTag = resources.isEmpty() ? "" : """\n${INDENT_WS_12}<resources>
 ${resources}
@@ -379,7 +380,7 @@ ${resources}
         annotation.annotationType().getDeclaredMethod(methodName, null).invoke(annotation, null)
     }
 
-    private static String evaluateResources(final Annotation annotation, final String indent) {
+    protected static String evaluateResources(final Annotation annotation, final String indent, Project project) {
         final StringBuilder sb = new StringBuilder()
 
         if (annotation instanceof ProjectAppComponent) {
@@ -398,11 +399,60 @@ ${resources}
                 final String maxVersion = it.maxVersion().isEmpty() ? "" : """ maxVersion="${it.maxVersion()}\""""
                 final String end = (index == count-1) ? "" : "\n"
                 final String target = it.targetPath().isEmpty() ? "" : """ target="${it.targetPath()}\""""
-                sb.append("""${start}${indent}<resource name="${it.name()}" version="${it.version()}"${minVersion}${maxVersion}${target}>${it.path()}</resource>${end}""")
+                def nameFromAnnotation = it.name()
+                nameFromAnnotation = expand(nameFromAnnotation, [project:project])
+
+                def dependencyForNameOrNull = project.configurations.findAll { config ->
+                    [JavaPlugin.COMPILE_CONFIGURATION_NAME, FSMPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, FSMPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME].contains(config.name)
+                }.collectMany { org.gradle.api.artifacts.Configuration config ->
+                    config.getResolvedConfiguration().getResolvedArtifacts().asList()
+                }.find { ResolvedArtifact dependency ->
+                    def splitName = dependency.id.componentIdentifier.displayName.split(":")
+                    def groupId = splitName[0]
+                    def name = splitName[1]
+                    nameFromAnnotation == "${groupId}:${name}"
+                }
+
+                String versionFromAnnotation = it.version()
+                def context = [project: project]
+                if(dependencyForNameOrNull != null) {
+                    dependencyForNameOrNull?.properties?.each { prop ->
+                        context.put(prop.key, prop.value)
+                    }
+                    context.put("path", getPathInFsmForDependency(dependencyForNameOrNull))
+                    context.put("version", dependencyForNameOrNull.moduleVersion.id.version)
+                }
+                try {
+                    versionFromAnnotation = expand(versionFromAnnotation, context)
+                } catch(MissingPropertyException e) {
+                    WebAppComponent webAppComponent = annotation as WebAppComponent
+                    throw new RuntimeException("No property found for placeholder in version attribute of resource '$nameFromAnnotation' in component ${webAppComponent.name()}.\n" +
+                            "Template is '$versionFromAnnotation'.\n" +
+                            "Resource not declared as compile dependency in project?\n" +
+                            "For project version property, use '\${project.version}'.", e)
+                }
+
+                String pathFromAnnotation = it.path()
+                pathFromAnnotation = expand(pathFromAnnotation, context)
+
+                sb.append("""${start}${indent}<resource name="${nameFromAnnotation}" version="${versionFromAnnotation}"${minVersion}${maxVersion}${target}>${
+                    pathFromAnnotation
+                }</resource>${end}""")
             }
         }
 
         sb.toString()
+    }
+    private static String getPathInFsmForDependency(ResolvedArtifact artifact) {
+        return "lib/${artifact.name}-${artifact.moduleVersion.id.version}${artifact.classifier ?: ""}.${artifact.extension}"
+    }
+
+    static String expand(String template, Map<String, Object> context) {
+        Binding b = new Binding()
+        context.forEach { key, value ->
+            b.setVariable(key, value)
+        }
+        return new SimpleTemplateEngine().createTemplate(template).make(context).toString()
     }
 
     private static void addResourceTagsForDependencies(String indent, Set<ResolvedArtifact> dependencies, Set<ResolvedArtifact> providedCompileDependencies, StringBuilder projectResources, String scope, ModuleInfo.Mode mode, boolean appendDefaultMinVersion, Set<FSMConfigurationsPlugin.MinMaxVersion> minMaxVersionDefinitions = new HashSet<>()) {

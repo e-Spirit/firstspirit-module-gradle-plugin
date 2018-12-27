@@ -1,1 +1,8 @@
 apply plugin: 'java'
+
+
+dependencies {
+    compile 'de.espirit.firstspirit:fs-isolated-runtime:5.2.181007'
+    compile 'io.github.lukehutch:fast-classpath-scanner:2.6.2'
+    compile 'com.espirit.moddev.components:annotations:1.9.1'
+}

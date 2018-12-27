@@ -20,6 +20,7 @@ import com.espirit.moddev.components.annotations.ModuleComponent
 import de.espirit.firstspirit.agency.SpecialistsBroker
 import de.espirit.firstspirit.module.Configuration
 import de.espirit.firstspirit.module.ServerEnvironment
+import de.espirit.firstspirit.module.descriptor.WebAppDescriptor
 import de.espirit.firstspirit.scheduling.ScheduleTaskForm
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
 import de.espirit.firstspirit.server.module.ModuleInfo
@@ -42,6 +43,7 @@ import org.junit.Test
 import javax.swing.JComponent
 import java.awt.Frame
 import java.nio.file.Files
+import java.lang.annotation.Annotation
 
 import static org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME
 import static org.mockito.Mockito.mock
@@ -389,7 +391,7 @@ ${INDENT_WS_8}</web-app>
     @Test
     void appendProjectAppTags() throws Exception {
         StringBuilder result = new StringBuilder()
-        XmlTagAppender.appendProjectAppTags( new URLClassLoader(new URL[0], getClass().getClassLoader()), validAndInvalidProjectAppClasses, result)
+        XmlTagAppender.appendProjectAppTags(project, new URLClassLoader(new URL[0], getClass().getClassLoader()), validAndInvalidProjectAppClasses, result)
 
         Assert.assertEquals("""
 ${INDENT_WS_8}<project-app>
@@ -415,7 +417,7 @@ ${INDENT_WS_8}</project-app>
     @Test
     void project_app_output_should_have_no_configurable_tag_if_no_config_class_was_set() {
         StringBuilder result = new StringBuilder()
-        XmlTagAppender.appendProjectAppTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestProjectAppComponentWithoutConfigurable.name], result)
+        XmlTagAppender.appendProjectAppTags(project, new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestProjectAppComponentWithoutConfigurable.name], result)
 
         Assert.assertEquals("""
 ${INDENT_WS_8}<project-app>
@@ -519,6 +521,114 @@ ${INDENT_WS_8}</public>
         Assert.assertEquals("""${INDENT_WS_8}<resource name="${XmlTagAppender.getJarFilename(project)}" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>""".toString(), result)
     }
 
+    @Test
+    void testProjectPropertyInterpolationInWebappResources() {
+        WebAppComponent annotation = new CustomWebAppComponent() {
+            @Override
+            WebResource[] webResources() {
+                return [create("/abc/nonexistent.txt", "\${project.group}-\${project.name}", "\${project.myCustomVersionPropertyString}"),
+                        create("/abc/nonexistent2.txt", "\${project.group}-\${project.name}", "\${project.version}")]
+            }
+        }
+        project.group = "myGroup"
+        project.version = "1.0.2"
+        project.ext.myCustomVersionPropertyString = "5"
+        project.ext.myCustomVersionPropertyInt = 4
+
+        String webAppComponentTagString = XmlTagAppender.evaluateResources(annotation,"", project)
+        Assert.assertNotNull(webAppComponentTagString)
+        Assert.assertEquals("""
+<resource name="myGroup-webapps-test-project" version="5" minVersion="myMinVersion" maxVersion="myMaxVersion" target="myTargetPath">/abc/nonexistent.txt</resource>
+<resource name="myGroup-webapps-test-project" version="1.0.2" minVersion="myMinVersion" maxVersion="myMaxVersion" target="myTargetPath">/abc/nonexistent2.txt</resource>""", webAppComponentTagString)
+    }
+
+    @Test
+    void testResourcePropertyInterpolationInWebappResources() {
+        WebAppComponent annotation = new CustomWebAppComponent() {
+            @Override
+            WebResource[] webResources() {
+                return [create("\${path}", "org.joda:joda-convert", "\$version")]
+            }
+        }
+
+        project.dependencies.add(FSMPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
+
+        String webAppComponentTagString = XmlTagAppender.evaluateResources(annotation,"", project)
+        Assert.assertNotNull(webAppComponentTagString)
+        Assert.assertEquals("""
+<resource name="org.joda:joda-convert" version="2.1.1" minVersion="myMinVersion" maxVersion="myMaxVersion" target="myTargetPath">lib/joda-convert-2.1.1.jar</resource>""", webAppComponentTagString)
+    }
+
+    static class CustomWebAppComponent implements WebAppComponent {
+        @Override String name() { return "MyWebApp" }
+
+        @Override String displayName() { return "MyWebApp" }
+
+        @Override String description() { return "MyDescription" }
+
+        @Override Class<? extends Configuration> configurable() { return null }
+
+        @Override String webXml() { return "web.xml" }
+
+        @Override WebAppDescriptor.WebAppScope[] scope() { return new WebAppDescriptor.WebAppScope[0] }
+
+        @Override
+        WebResource[] webResources() {
+            return []
+        }
+
+        @Override Class<? extends Annotation> annotationType() { return WebAppComponent }
+    }
+
+    private WebResource create(String path, String name, String version) {
+        return new WebResource() {
+
+            @Override
+            String path() {
+                return path
+            }
+
+            @Override
+            String name() {
+                return name
+            }
+
+            @Override
+            String version() {
+                return version
+            }
+
+            @Override
+            String minVersion() {
+                return "myMinVersion"
+            }
+
+            @Override
+            String maxVersion() {
+                return "myMaxVersion"
+            }
+
+            @Override
+            String targetPath() {
+                return "myTargetPath"
+            }
+
+            @Override
+            ModuleInfo.Scope scope() {
+                return ModuleInfo.Scope.MODULE
+            }
+
+            @Override
+            ModuleInfo.Mode mode() {
+                return ModuleInfo.Mode.ISOLATED
+            }
+
+            @Override
+            Class<? extends Annotation> annotationType() {
+                return WebResource
+            }
+        }
+    }
 
     @Test
     void getFsmDependencyTags() {
