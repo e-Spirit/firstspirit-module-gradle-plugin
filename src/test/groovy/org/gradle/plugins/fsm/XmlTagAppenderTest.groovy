@@ -551,7 +551,7 @@ ${INDENT_WS_8}</public>
             }
         }
 
-        project.dependencies.add(FSMPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
+        project.dependencies.add(FSMConfigurationsPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
 
         String webAppComponentTagString = XmlTagAppender.evaluateResources(annotation,"", project)
         Assert.assertNotNull(webAppComponentTagString)

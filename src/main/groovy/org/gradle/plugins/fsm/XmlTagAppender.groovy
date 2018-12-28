@@ -3,6 +3,7 @@ package org.gradle.plugins.fsm
 import com.espirit.moddev.components.annotations.ModuleComponent
 import com.espirit.moddev.components.annotations.ProjectAppComponent
 import com.espirit.moddev.components.annotations.PublicComponent
+import com.espirit.moddev.components.annotations.Resource
 import com.espirit.moddev.components.annotations.ScheduleTaskComponent
 import com.espirit.moddev.components.annotations.ServiceComponent
 import com.espirit.moddev.components.annotations.UrlFactoryComponent
@@ -269,7 +270,7 @@ class XmlTagAppender {
             <web-xml>${ webXmlPath}</web-xml>
             <web-resources>
                 <resource name="${getJarFilename(project)}" version="${project.version}">lib/${getJarFilename(project)}</resource>
-                <resource>${evaluateAnnotation(annotation, "webXml").toString()}</resource>${evaluateResources(annotation, webResourceIndent, project)}${webResources.toString()}
+                ${evaluateResources(annotation, webResourceIndent, project)}${webResources.toString()}
             </web-resources>
         </web-app>
 """)
@@ -384,56 +385,36 @@ ${resources}
         final StringBuilder sb = new StringBuilder()
 
         if (annotation instanceof ProjectAppComponent) {
-            annotation.resources().each {
-                final String minVersion = it.minVersion().isEmpty() ? "" : """ minVersion="${it.minVersion()}\""""
-                final String maxVersion = it.maxVersion().isEmpty() ? "" : """ maxVersion="${it.maxVersion()}\""""
+            annotation.resources().each { Resource resource ->
+                final String minVersion = resource.minVersion().isEmpty() ? "" : """ minVersion="${resource.minVersion()}\""""
+                final String maxVersion = resource.maxVersion().isEmpty() ? "" : """ maxVersion="${resource.maxVersion()}\""""
+                def nameFromAnnotation = expand(resource.name(), [project:project])
 
-                sb.append("""${indent}<resource name="${it.name()}" version="${it.version()}"${minVersion}${maxVersion} scope="${it.scope()}" mode="${it.mode()}">${it.path()}</resource>""")
+                ResolvedArtifact dependencyForNameOrNull = getCompileDependencyForNameOrNull(project, nameFromAnnotation)
+                Map<String, Project> context = getContextForCurrentResource(project, dependencyForNameOrNull)
+
+                def versionFromAnnotation = expandVersion(resource.version(), context, nameFromAnnotation, (annotation as ProjectAppComponent).name())
+
+                sb.append("""${indent}<resource name="${nameFromAnnotation}" version="${versionFromAnnotation}"${minVersion}${maxVersion} scope="${resource.scope()}" mode="${resource.mode()}">${resource.path()}</resource>""")
             }
         } else if (annotation instanceof WebAppComponent) {
             def resources = annotation.webResources()
             def count = resources.length
-            resources.eachWithIndex { WebResource it, int index ->
+            resources.eachWithIndex { WebResource webResource, int index ->
                 final String start = (index == 0) ? "\n" : ""
-                final String minVersion = it.minVersion().isEmpty() ? "" : """ minVersion="${it.minVersion()}\""""
-                final String maxVersion = it.maxVersion().isEmpty() ? "" : """ maxVersion="${it.maxVersion()}\""""
+                final String minVersion = webResource.minVersion().isEmpty() ? "" : """ minVersion="${webResource.minVersion()}\""""
+                final String maxVersion = webResource.maxVersion().isEmpty() ? "" : """ maxVersion="${webResource.maxVersion()}\""""
                 final String end = (index == count-1) ? "" : "\n"
-                final String target = it.targetPath().isEmpty() ? "" : """ target="${it.targetPath()}\""""
-                def nameFromAnnotation = it.name()
+                final String target = webResource.targetPath().isEmpty() ? "" : """ target="${webResource.targetPath()}\""""
+                def nameFromAnnotation = webResource.name()
                 nameFromAnnotation = expand(nameFromAnnotation, [project:project])
 
-                def dependencyForNameOrNull = project.configurations.findAll { config ->
-                    [JavaPlugin.COMPILE_CONFIGURATION_NAME, FSMPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, FSMPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME].contains(config.name)
-                }.collectMany { org.gradle.api.artifacts.Configuration config ->
-                    config.getResolvedConfiguration().getResolvedArtifacts().asList()
-                }.find { ResolvedArtifact dependency ->
-                    def splitName = dependency.id.componentIdentifier.displayName.split(":")
-                    def groupId = splitName[0]
-                    def name = splitName[1]
-                    nameFromAnnotation == "${groupId}:${name}"
-                }
+                ResolvedArtifact dependencyForNameOrNull = getCompileDependencyForNameOrNull(project, nameFromAnnotation)
+                Map<String, Project> context = getContextForCurrentResource(project, dependencyForNameOrNull)
 
-                String versionFromAnnotation = it.version()
-                def context = [project: project]
-                if(dependencyForNameOrNull != null) {
-                    dependencyForNameOrNull?.properties?.each { prop ->
-                        context.put(prop.key, prop.value)
-                    }
-                    context.put("path", getPathInFsmForDependency(dependencyForNameOrNull))
-                    context.put("version", dependencyForNameOrNull.moduleVersion.id.version)
-                }
-                try {
-                    versionFromAnnotation = expand(versionFromAnnotation, context)
-                } catch(MissingPropertyException e) {
-                    WebAppComponent webAppComponent = annotation as WebAppComponent
-                    throw new RuntimeException("No property found for placeholder in version attribute of resource '$nameFromAnnotation' in component ${webAppComponent.name()}.\n" +
-                            "Template is '$versionFromAnnotation'.\n" +
-                            "Resource not declared as compile dependency in project?\n" +
-                            "For project version property, use '\${project.version}'.", e)
-                }
+                String versionFromAnnotation = expandVersion(webResource.version(), context, nameFromAnnotation, (annotation as WebAppComponent).name())
 
-                String pathFromAnnotation = it.path()
-                pathFromAnnotation = expand(pathFromAnnotation, context)
+                String pathFromAnnotation = expand(webResource.path(), context)
 
                 sb.append("""${start}${indent}<resource name="${nameFromAnnotation}" version="${versionFromAnnotation}"${minVersion}${maxVersion}${target}>${
                     pathFromAnnotation
@@ -443,15 +424,50 @@ ${resources}
 
         sb.toString()
     }
+
+    private static String expandVersion(String versionFromAnnotation, Map<String, Project> context, String nameFromAnnotation, String componentName) {
+        try {
+            versionFromAnnotation = expand(versionFromAnnotation, context)
+        } catch (MissingPropertyException e) {
+            throw new RuntimeException("No property found for placeholder in version attribute of resource '$nameFromAnnotation' in component ${componentName}.\n" +
+                    "Template is '$versionFromAnnotation'.\n" +
+                    "Resource not declared as compile dependency in project?\n" +
+                    "For project version property, use '\${project.version}'.", e)
+        }
+        versionFromAnnotation
+    }
+
+    private static Map<String, Project> getContextForCurrentResource(Project project, ResolvedArtifact dependencyForNameOrNull) {
+        def context = [project: project]
+        if (dependencyForNameOrNull != null) {
+            dependencyForNameOrNull?.properties?.each { prop ->
+                context.put(prop.key, prop.value)
+            }
+            context.put("path", getPathInFsmForDependency(dependencyForNameOrNull))
+            context.put("version", dependencyForNameOrNull.moduleVersion.id.version)
+        }
+        context
+    }
+
+    private static ResolvedArtifact getCompileDependencyForNameOrNull(Project project, nameFromAnnotation) {
+        def dependencyForNameOrNull = project.configurations.findAll { config ->
+            [JavaPlugin.COMPILE_CONFIGURATION_NAME, FSMConfigurationsPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, FSMConfigurationsPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME].contains(config.name)
+        }.collectMany { org.gradle.api.artifacts.Configuration config ->
+            config.getResolvedConfiguration().getResolvedArtifacts().asList()
+        }.find { ResolvedArtifact dependency ->
+            def splitName = dependency.id.componentIdentifier.displayName.split(":")
+            def groupId = splitName[0]
+            def name = splitName[1]
+            nameFromAnnotation == "${groupId}:${name}"
+        }
+        dependencyForNameOrNull
+    }
+
     private static String getPathInFsmForDependency(ResolvedArtifact artifact) {
         return "lib/${artifact.name}-${artifact.moduleVersion.id.version}${artifact.classifier ?: ""}.${artifact.extension}"
     }
 
     static String expand(String template, Map<String, Object> context) {
-        Binding b = new Binding()
-        context.forEach { key, value ->
-            b.setVariable(key, value)
-        }
         return new SimpleTemplateEngine().createTemplate(template).make(context).toString()
     }
 
