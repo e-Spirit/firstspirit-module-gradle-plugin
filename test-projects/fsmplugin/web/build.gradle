@@ -1,1 +1,7 @@
-apply plugin: 'java'
+apply plugin: 'fsmconfigurationsgradleplugin'
+apply plugin: 'fsmannotationsgradleplugin'
+
+dependencies {
+    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.181007'
+    fsWebCompile fsDependency(dependency:'org.apache.commons:commons-lang3:3.8.1', skipInLegacy:true)
+}

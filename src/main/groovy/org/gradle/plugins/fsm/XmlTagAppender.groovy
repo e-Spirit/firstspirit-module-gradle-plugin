@@ -219,7 +219,7 @@ class XmlTagAppender {
         Set<ResolvedArtifact> webCompileDependencies = project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> providedCompileDependencies = project.configurations.getByName(PROVIDED_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()
         if(!isolated){
-            Set<ResolvedArtifact> skippedInLegacyDependencies = project.configurations.skippedInLegacy.getResolvedConfiguration().getResolvedArtifacts()
+            Set<ResolvedArtifact> skippedInLegacyDependencies = getAllSkippedInLegacyDependencies(project)
             webCompileDependencies.removeAll(skippedInLegacyDependencies)
             providedCompileDependencies.removeAll(skippedInLegacyDependencies)
         }
@@ -496,15 +496,7 @@ ${resources}
 
         boolean legacyMode = !isolationMode
         if(legacyMode) {
-            Set<ResolvedArtifact> skippedInLegacyDependencies = project.rootProject.allprojects.collectMany {
-                Set<ResolvedArtifact> result = new HashSet<>()
-                try {
-                    result = it.configurations.skippedInLegacy.getResolvedConfiguration().getResolvedArtifacts()
-                } catch(MissingPropertyException e) {
-                    Logging.getLogger(XmlTagAppender).trace("No skipInLegacy configuration found for project $it (probably not using fsm plugins at all)", e)
-                }
-                result
-            }
+            Set<ResolvedArtifact> skippedInLegacyDependencies = getAllSkippedInLegacyDependencies(project)
             compileDependenciesServerScoped.removeAll(skippedInLegacyDependencies)
             cleanedCompileDependenciesModuleScoped.removeAll(skippedInLegacyDependencies)
             providedCompileDependencies.removeAll(skippedInLegacyDependencies)
@@ -519,6 +511,18 @@ ${resources}
         projectResources + "\n"
         addResourceTagsForDependencies(indent, cleanedCompileDependenciesModuleScoped, providedCompileDependencies, projectResources, "module", globalResourcesMode, appendDefaultMinVersion, minMaxVersionConfigurations)
         return projectResources.toString()
+    }
+
+    private static List<ResolvedArtifact> getAllSkippedInLegacyDependencies(Project project) {
+        project.rootProject.allprojects.collectMany {
+            Set<ResolvedArtifact> result = new HashSet<>()
+            try {
+                result = it.configurations.skippedInLegacy.getResolvedConfiguration().getResolvedArtifacts()
+            } catch (MissingPropertyException e) {
+                Logging.getLogger(XmlTagAppender).trace("No skipInLegacy configuration found for project $it (probably not using fsm plugins at all)", e)
+            }
+            result
+        }
     }
 
     static def removeWebXmlEntriesFromResources(Map<String, String> resourceTags, WebXmlPaths webXmlPaths) {
