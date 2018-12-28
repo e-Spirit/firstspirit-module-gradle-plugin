@@ -3,6 +3,10 @@ String myGroupId = 'com.espirit.moddev.gradle'
 apply plugin: 'base'
 
 buildscript {
+    ext {
+        guavaProperty = 'com.google.guava:guava'
+        guavaVersionProperty = '24.0-jre'
+    }
     repositories {
         maven {
             url 'https://artifactory.e-spirit.de/artifactory/repo'

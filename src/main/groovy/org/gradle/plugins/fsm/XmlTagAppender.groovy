@@ -395,7 +395,7 @@ ${resources}
 
                 def versionFromAnnotation = expandVersion(resource.version(), context, nameFromAnnotation, (annotation as ProjectAppComponent).name())
 
-                sb.append("""${indent}<resource name="${nameFromAnnotation}" version="${versionFromAnnotation}"${minVersion}${maxVersion} scope="${resource.scope()}" mode="${resource.mode()}">${resource.path()}</resource>""")
+                sb.append("""${indent}<resource name="${nameFromAnnotation}" version="${versionFromAnnotation}"${minVersion}${maxVersion} scope="${resource.scope().toString().toLowerCase()}" mode="${resource.mode().toString().toLowerCase()}">${resource.path()}</resource>""")
             }
         } else if (annotation instanceof WebAppComponent) {
             def resources = annotation.webResources()

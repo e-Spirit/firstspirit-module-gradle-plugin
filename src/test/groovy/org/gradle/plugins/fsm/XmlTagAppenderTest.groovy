@@ -810,7 +810,6 @@ ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated
     }
 
 
-
     @ServiceComponent(name = "TestServiceComponentName",
             displayName = "TestDisplayName",
             description = "TestDescription",
