@@ -20,7 +20,7 @@ The fsmannotationsgradleplugin and fsmconfigurationsgradleplugin can be used to 
 ### fsmgradleplugin
 
 This is the most important plugin.
-It applies the fsmannotationsgradleplugin and the fsmannotationsgradleplugin as well on application.
+It applies the fsmannotationsgradleplugin and the fsmconfigurationsgradleplugin as well on application.
 Additionally to the other two plugin's capabilities, it adds an `assembleFSM` task to your project.
 This task assembles a FirstSpirit module file, based on the components in your project.
 For further information, please read the sections below.
@@ -45,14 +45,14 @@ To use the plugin, include the following snippet on top of your build script:
 apply plugin: 'fsmannotationsgradleplugin'
 ```
 
-### fsmannotationsgradleplugin
+### fsmconfigurationsgradleplugin
 
 This plugin adds gradle configurations to your project.
 They enable you to configure FirstSpirit scopes (module or server) and other aspects (for example FirstSpirit isolation) for your dependencies.
 Please take a loot at #dependency-management for a detailed description of the available scopes and when to use them.
 
 ```groovy
-apply plugin: 'fsmannotationsgradleplugin'
+apply plugin: 'fsmconfigurationsgradleplugin'
 ```
 
 Keep in mind, that you have to add a repository where the plugin can be found.

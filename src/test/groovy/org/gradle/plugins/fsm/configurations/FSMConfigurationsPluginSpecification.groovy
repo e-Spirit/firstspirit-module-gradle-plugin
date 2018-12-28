@@ -1,6 +1,7 @@
 package org.gradle.plugins.fsm.configurations
 
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Dependency
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.testfixtures.ProjectBuilder
@@ -63,9 +64,9 @@ class FSMConfigurationsPluginSpecification extends Specification {
     def 'fsProvidedRuntime configuration extends compile configuration'() {
         when:
         project.apply plugin: FSMConfigurationsPlugin.NAME
+        def providedRuntimeConfig = project.configurations.getByName(FSMConfigurationsPlugin.PROVIDED_RUNTIME_CONFIGURATION_NAME)
 
         then:
-        def providedRuntimeConfig = project.configurations.getByName(FSMConfigurationsPlugin.PROVIDED_RUNTIME_CONFIGURATION_NAME)
         providedRuntimeConfig.extendsFrom.collect { it.name } == [FSMConfigurationsPlugin.PROVIDED_COMPILE_CONFIGURATION_NAME]
         !providedRuntimeConfig.visible
         providedRuntimeConfig.transitive
@@ -77,13 +78,14 @@ class FSMConfigurationsPluginSpecification extends Specification {
         project.repositories.add(project.getRepositories().mavenCentral())
         def resultingDependency = project.fsDependency("com.google.guava:guava:24.0-jre", true)
         def skippedInLegacyDependencies = project.configurations.getByName(FSMConfigurationsPlugin.FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME).dependencies.collect { it }
+        def skippedDependency = skippedInLegacyDependencies.get(0)
 
         then:
         resultingDependency == "com.google.guava:guava:24.0-jre"
         skippedInLegacyDependencies.size() == 1
-        skippedInLegacyDependencies.get(0).group == "com.google.guava"
-        skippedInLegacyDependencies.get(0).name == "guava"
-        skippedInLegacyDependencies.get(0).version == "24.0-jre"
+        skippedDependency.group == "com.google.guava"
+        skippedDependency.name == "guava"
+        skippedDependency.version == "24.0-jre"
     }
 
 
