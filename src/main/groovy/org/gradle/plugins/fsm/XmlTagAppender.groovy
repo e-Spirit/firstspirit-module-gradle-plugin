@@ -496,10 +496,22 @@ ${resources}
 
         boolean legacyMode = !isolationMode
         if(legacyMode) {
-            Set<ResolvedArtifact> skippedInLegacyDependencies = configurations.skippedInLegacy.getResolvedConfiguration().getResolvedArtifacts()
+            Set<ResolvedArtifact> skippedInLegacyDependencies = project.rootProject.allprojects.collectMany {
+                Set<ResolvedArtifact> result = new HashSet<>()
+                try {
+                    result = it.configurations.skippedInLegacy.getResolvedConfiguration().getResolvedArtifacts()
+                } catch(MissingPropertyException e) {
+                    Logging.getLogger(XmlTagAppender).trace("No skipInLegacy configuration found for project $it (probably not using fsm plugins at all)", e)
+                }
+                result
+            }
             compileDependenciesServerScoped.removeAll(skippedInLegacyDependencies)
             cleanedCompileDependenciesModuleScoped.removeAll(skippedInLegacyDependencies)
             providedCompileDependencies.removeAll(skippedInLegacyDependencies)
+            Logging.getLogger(XmlTagAppender).debug("Dependencies skipped for (legacy) module.xml:")
+            skippedInLegacyDependencies.each {
+                Logging.getLogger(XmlTagAppender).debug(it.toString())
+            }
         }
         def minMaxVersionConfigurations = project.getPlugins().getPlugin(FSMConfigurationsPlugin.class).getDependencyConfigurations()
 

@@ -70,6 +70,7 @@ class FSMConfigurationsPlugin implements Plugin<Project> {
         }
 
         if(skipInLegacy) {
+            Logging.getLogger(FSMConfigurationsPlugin).debug("Adding dependency $dependency as skippedInLegacy for project $project")
             project.dependencies.add(FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME, dependency)
         }
 
