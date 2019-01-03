@@ -42,7 +42,6 @@ import org.junit.Test
 
 import javax.swing.JComponent
 import java.awt.Frame
-import java.nio.file.Files
 import java.lang.annotation.Annotation
 
 import static org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME
@@ -526,8 +525,8 @@ ${INDENT_WS_8}</public>
         WebAppComponent annotation = new CustomWebAppComponent() {
             @Override
             WebResource[] webResources() {
-                return [create("/abc/nonexistent.txt", "\${project.group}-\${project.name}", "\${project.myCustomVersionPropertyString}"),
-                        create("/abc/nonexistent2.txt", "\${project.group}-\${project.name}", "\${project.version}")]
+                return [createWebResource("/abc/nonexistent.txt", "\${project.group}-\${project.name}", "\${project.myCustomVersionPropertyString}"),
+                        createWebResource("/abc/nonexistent2.txt", "\${project.group}-\${project.name}", "\${project.version}")]
             }
         }
         project.group = "myGroup"
@@ -547,7 +546,7 @@ ${INDENT_WS_8}</public>
         WebAppComponent annotation = new CustomWebAppComponent() {
             @Override
             WebResource[] webResources() {
-                return [create("\${path}", "org.joda:joda-convert", "\$version")]
+                return [createWebResource("\${path}", "org.joda:joda-convert", "\$version")]
             }
         }
 
@@ -580,7 +579,7 @@ ${INDENT_WS_8}</public>
         @Override Class<? extends Annotation> annotationType() { return WebAppComponent }
     }
 
-    private WebResource create(String path, String name, String version) {
+    private WebResource createWebResource(String path, String name, String version) {
         return new WebResource() {
 
             @Override
@@ -629,6 +628,103 @@ ${INDENT_WS_8}</public>
             }
         }
     }
+
+
+    @Test
+    void testResourcePropertyInterpolationInProjectAppResources() {
+        ProjectAppComponent annotation = new CustomProjectAppComponent() {
+            @Override
+            Resource[] resources() {
+                return [createResource("\$path", "\${project.jodaConvertDependency}", "\$version")]
+            }
+        }
+
+        project.ext.jodaConvertDependency = "org.joda:joda-convert"
+
+        project.dependencies.add(FSMConfigurationsPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
+
+        String projectAppComponentTagString = XmlTagAppender.evaluateResources(annotation,"", project)
+        Assert.assertNotNull(projectAppComponentTagString)
+        Assert.assertEquals("""
+<resource name="org.joda:joda-convert" version="2.1.1" minVersion="myMinVersion" maxVersion="myMaxVersion" scope="module" mode="isolated">lib/joda-convert-2.1.1.jar</resource>""", projectAppComponentTagString)
+    }
+
+    Resource createResource(String path, String name, String version) {
+        return new Resource() {
+            @Override
+            String path() {
+                return path
+            }
+
+            @Override
+            String name() {
+                return name
+            }
+
+            @Override
+            String version() {
+                return version
+            }
+
+            @Override
+            String minVersion() {
+                return "myMinVersion"
+            }
+
+            @Override
+            String maxVersion() {
+                return "myMaxVersion"
+            }
+
+            @Override
+            ModuleInfo.Scope scope() {
+                return ModuleInfo.Scope.MODULE
+            }
+
+            @Override
+            ModuleInfo.Mode mode() {
+                return ModuleInfo.Mode.ISOLATED
+            }
+
+            @Override
+            Class<? extends Annotation> annotationType() {
+                return Resource.class
+            }
+        }
+    }
+
+    static class CustomProjectAppComponent implements ProjectAppComponent {
+        @Override
+        String name() {
+            return "CustomProjectAppComponent"
+        }
+
+        @Override
+        String displayName() {
+            return "CustomProjectAppComponent"
+        }
+
+        @Override
+        String description() {
+            return "CustomProjectAppComponent"
+        }
+
+        @Override
+        Class<? extends Configuration> configurable() {
+            return null
+        }
+
+        @Override
+        Resource[] resources() {
+            return new Resource[0]
+        }
+
+        @Override
+        Class<? extends Annotation> annotationType() {
+            return ProjectAppComponent
+        }
+    }
+
 
     @Test
     void getFsmDependencyTags() {

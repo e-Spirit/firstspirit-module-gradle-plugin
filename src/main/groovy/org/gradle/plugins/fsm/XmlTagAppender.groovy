@@ -385,7 +385,11 @@ ${resources}
         final StringBuilder sb = new StringBuilder()
 
         if (annotation instanceof ProjectAppComponent) {
-            annotation.resources().each { Resource resource ->
+            def resources = annotation.resources()
+            def count = resources.length
+            resources.eachWithIndex { Resource resource, int index ->
+                final String start = (index == 0) ? "\n" : ""
+                final String end = (index == count-1) ? "" : "\n"
                 final String minVersion = resource.minVersion().isEmpty() ? "" : """ minVersion="${resource.minVersion()}\""""
                 final String maxVersion = resource.maxVersion().isEmpty() ? "" : """ maxVersion="${resource.maxVersion()}\""""
                 def nameFromAnnotation = expand(resource.name(), [project:project])
@@ -395,26 +399,27 @@ ${resources}
 
                 def versionFromAnnotation = expandVersion(resource.version(), context, nameFromAnnotation, (annotation as ProjectAppComponent).name())
 
-                sb.append("""${indent}<resource name="${nameFromAnnotation}" version="${versionFromAnnotation}"${minVersion}${maxVersion} scope="${resource.scope().toString().toLowerCase()}" mode="${resource.mode().toString().toLowerCase()}">${resource.path()}</resource>""")
+                def pathFromAnnotation = expand(resource.path(), context)
+                sb.append("""${start}${indent}<resource name="${nameFromAnnotation}" version="${versionFromAnnotation}"${minVersion}${maxVersion} scope="${resource.scope().toString().toLowerCase()}" mode="${resource.mode().toString().toLowerCase()}">${pathFromAnnotation}</resource>${end}""")
             }
         } else if (annotation instanceof WebAppComponent) {
             def resources = annotation.webResources()
             def count = resources.length
-            resources.eachWithIndex { WebResource webResource, int index ->
+            resources.eachWithIndex { WebResource resource, int index ->
                 final String start = (index == 0) ? "\n" : ""
-                final String minVersion = webResource.minVersion().isEmpty() ? "" : """ minVersion="${webResource.minVersion()}\""""
-                final String maxVersion = webResource.maxVersion().isEmpty() ? "" : """ maxVersion="${webResource.maxVersion()}\""""
+                final String minVersion = resource.minVersion().isEmpty() ? "" : """ minVersion="${resource.minVersion()}\""""
+                final String maxVersion = resource.maxVersion().isEmpty() ? "" : """ maxVersion="${resource.maxVersion()}\""""
                 final String end = (index == count-1) ? "" : "\n"
-                final String target = webResource.targetPath().isEmpty() ? "" : """ target="${webResource.targetPath()}\""""
-                def nameFromAnnotation = webResource.name()
+                final String target = resource.targetPath().isEmpty() ? "" : """ target="${resource.targetPath()}\""""
+                def nameFromAnnotation = resource.name()
                 nameFromAnnotation = expand(nameFromAnnotation, [project:project])
 
                 ResolvedArtifact dependencyForNameOrNull = getCompileDependencyForNameOrNull(project, nameFromAnnotation)
                 Map<String, Project> context = getContextForCurrentResource(project, dependencyForNameOrNull)
 
-                String versionFromAnnotation = expandVersion(webResource.version(), context, nameFromAnnotation, (annotation as WebAppComponent).name())
+                String versionFromAnnotation = expandVersion(resource.version(), context, nameFromAnnotation, (annotation as WebAppComponent).name())
 
-                String pathFromAnnotation = expand(webResource.path(), context)
+                String pathFromAnnotation = expand(resource.path(), context)
 
                 sb.append("""${start}${indent}<resource name="${nameFromAnnotation}" version="${versionFromAnnotation}"${minVersion}${maxVersion}${target}>${
                     pathFromAnnotation

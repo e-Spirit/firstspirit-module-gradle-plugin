@@ -1,5 +1,5 @@
 apply plugin: 'java'
-
+apply plugin: 'fsmannotationsgradleplugin'
 
 dependencies {
     compile 'de.espirit.firstspirit:fs-isolated-runtime:5.2.181007'
