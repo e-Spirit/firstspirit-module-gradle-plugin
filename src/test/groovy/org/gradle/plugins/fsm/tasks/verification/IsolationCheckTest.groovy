@@ -1,10 +1,10 @@
 package org.gradle.plugins.fsm.tasks.verification
 
-
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.plugins.fsm.FSMPlugin
+import org.gradle.plugins.fsm.tasks.bundling.FSM
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Before
 import org.junit.Rule
@@ -22,6 +22,7 @@ import java.util.zip.ZipOutputStream
 import static de.espirit.mavenplugins.fsmchecker.ComplianceLevel.*
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown
+import static org.gradle.plugins.fsm.ComponentHelper.addTestModulesToBlacklist
 import static org.gradle.plugins.fsm.util.TestProjectUtils.defineArtifactoryForProject
 import static org.gradle.plugins.fsm.util.TestProjectUtils.setArtifactoryCredentialsFromLocalProperties
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC
@@ -88,7 +89,8 @@ class IsolationCheckTest {
 
     @Test
     void emptyFsmWithMinimalCompliance() {
-        Task fsmTask = project.tasks[FSMPlugin.FSM_TASK_NAME]
+        FSM fsmTask = project.tasks[FSMPlugin.FSM_TASK_NAME] as FSM
+        addTestModulesToBlacklist(fsmTask)
         fsmTask.execute()
 
         try {

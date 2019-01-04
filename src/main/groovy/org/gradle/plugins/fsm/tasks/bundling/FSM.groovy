@@ -25,7 +25,6 @@ import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
-import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.classloader.JarClassLoader
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
@@ -54,6 +53,10 @@ class FSM extends Jar {
     private FileCollection classpath
 
     public FSMPluginExtension pluginExtension
+    private final List<String> moduleBlacklist = new ArrayList<>()
+    protected List<String> getModuleBlacklist() {
+        return moduleBlacklist
+    }
 
     FSM() {
 
@@ -161,12 +164,12 @@ class FSM extends Jar {
                 boolean isolated
                 legacy: {
                     isolated = false
-                    XMLData moduleXml = getXMLTagsFromAppender(archive, pluginExtension.appendDefaultMinVersion, isolated)
+                    XMLData moduleXml = getXMLTagsFromAppender(archive, pluginExtension.appendDefaultMinVersion, isolated, moduleBlacklist)
                     writeModuleDescriptorToBuildDirAndZipFile(fs, getUnfilteredModuleXml(zipFile, isolated), moduleXml)
                 }
                 isolated: {
                     isolated = true
-                    XMLData moduleIsolatedXml = getXMLTagsFromAppender(archive, pluginExtension.appendDefaultMinVersion, isolated)
+                    XMLData moduleIsolatedXml = getXMLTagsFromAppender(archive, pluginExtension.appendDefaultMinVersion, isolated, moduleBlacklist)
                     writeModuleDescriptorToBuildDirAndZipFile(fs, getUnfilteredModuleXml(zipFile, isolated), moduleIsolatedXml)
                 }
 			}
@@ -212,7 +215,7 @@ class FSM extends Jar {
         unfilteredModuleXml
     }
 
-    XMLData getXMLTagsFromAppender(File archive, boolean appendDefaultMinVersion, boolean isolated){
+    XMLData getXMLTagsFromAppender(File archive, boolean appendDefaultMinVersion, boolean isolated, List<String> moduleBlacklist = new ArrayList<String>()) {
         File tempDir = unzipFsmToNewTempDir(archive)
         def moduleXml = new XMLData(isolated: isolated)
 
@@ -230,7 +233,7 @@ class FSM extends Jar {
 
                 moduleAnnotation: {
                     StringBuilder result = new StringBuilder()
-                    appendModuleAnnotationTags(classLoader, new ClassScannerResultDelegate(scan), result)
+                    appendModuleAnnotationTags(classLoader, new ClassScannerResultDelegate(scan), result, moduleBlacklist)
                     moduleXml.moduleTags = result.toString()
                 }
 

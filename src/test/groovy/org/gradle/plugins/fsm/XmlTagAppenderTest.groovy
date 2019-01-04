@@ -1,49 +1,19 @@
 package org.gradle.plugins.fsm
 
-import de.espirit.firstspirit.access.Language
-import de.espirit.firstspirit.access.project.Resolution
-import de.espirit.firstspirit.access.project.TemplateSet
-import de.espirit.firstspirit.access.store.ContentProducer
-import de.espirit.firstspirit.access.store.PageParams
-import de.espirit.firstspirit.access.store.mediastore.Media
-import de.espirit.firstspirit.generate.PathLookup
-import de.espirit.firstspirit.generate.UrlFactory
-import com.espirit.moddev.components.annotations.ProjectAppComponent
-import com.espirit.moddev.components.annotations.PublicComponent
-import com.espirit.moddev.components.annotations.ServiceComponent
-import com.espirit.moddev.components.annotations.Resource
-import com.espirit.moddev.components.annotations.WebResource
-import com.espirit.moddev.components.annotations.ScheduleTaskComponent
-import com.espirit.moddev.components.annotations.UrlFactoryComponent
-import com.espirit.moddev.components.annotations.WebAppComponent
-import com.espirit.moddev.components.annotations.ModuleComponent
-import de.espirit.firstspirit.agency.SpecialistsBroker
-import de.espirit.firstspirit.module.Configuration
-import de.espirit.firstspirit.module.ServerEnvironment
-import de.espirit.firstspirit.module.descriptor.WebAppDescriptor
-import de.espirit.firstspirit.scheduling.ScheduleTaskForm
-import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
+import com.espirit.moddev.components.annotations.*
 import de.espirit.firstspirit.server.module.ModuleInfo
-import de.espirit.firstspirit.module.Module
-import de.espirit.firstspirit.module.descriptor.ModuleDescriptor
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.tasks.bundling.FSM
-import org.gradle.plugins.fsm.util.BaseConfiguration
-import org.gradle.plugins.fsm.util.BaseProjectApp
-import org.gradle.plugins.fsm.util.BaseService
-import org.gradle.plugins.fsm.util.BaseWebApp
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 
-import javax.swing.JComponent
-import java.awt.Frame
-import java.lang.annotation.Annotation
-
+import static org.gradle.plugins.fsm.ComponentHelper.createResource
+import static org.gradle.plugins.fsm.ComponentHelper.createWebResource
 import static org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when
@@ -54,6 +24,10 @@ class XmlTagAppenderTest {
     static final String INDENT_WS_8 = XmlTagAppender.INDENT_WS_8
     static final String INDENT_WS_12___ = XmlTagAppender.INDENT_WS_12
     static final String INDENT_WS_16_______ = XmlTagAppender.INDENT_WS_16
+
+    //blacklist contains test classes because of the restriction of allowing only 1 class to implement module
+    static final List<String> MODULE_BLACKLIST = [TestModuleImplWithConfiguration.class.name,
+                                                  TestModuleImpl.class.name]
 
     final List<String> componentImplementingClasses = [TestPublicComponent.getName(), TestScheduleTaskComponentWithConfigurable.getName(),
                                                        TestPublicComponentWithConfiguration.getName(), TestWebAppComponent.getName(),
@@ -121,22 +95,22 @@ class XmlTagAppenderTest {
 ${INDENT_WS_8}<public>
 ${INDENT_WS_12___}<name>TestPublicComponentName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
-${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestPublicComponent</class>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestPublicComponent</class>
 ${INDENT_WS_8}</public>
 ${INDENT_WS_8}<public>
 ${INDENT_WS_12___}<name>TestPublicComponentWithConfigName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
-${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestPublicComponentWithConfiguration</class>
-${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestPublicComponentWithConfiguration</class>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.TestConfigurable</configurable>
 ${INDENT_WS_8}</public>
 ${INDENT_WS_8}<public>
 ${INDENT_WS_12___}<name>Test task</name>
 ${INDENT_WS_12___}<description>A task for test purpose</description>
 ${INDENT_WS_12___}<class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
 ${INDENT_WS_12___}<configuration>
-${INDENT_WS_16_______}<application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithConfigurable</application>
+${INDENT_WS_16_______}<application>org.gradle.plugins.fsm.TestScheduleTaskComponentWithConfigurable</application>
 ${INDENT_WS_12___}</configuration>
-${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.TestConfigurable</configurable>
 ${INDENT_WS_8}</public>
 ${INDENT_WS_8}<public>
 ${INDENT_WS_12___}<name>TestUrlFactoryComponentName</name>
@@ -144,7 +118,7 @@ ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
 ${INDENT_WS_12___}<class>de.espirit.firstspirit.generate.UrlCreatorSpecification</class>
 ${INDENT_WS_12___}<configuration>
-${INDENT_WS_16_______}<UrlFactory>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestUrlFactoryComponent</UrlFactory>
+${INDENT_WS_16_______}<UrlFactory>org.gradle.plugins.fsm.TestUrlFactoryComponent</UrlFactory>
 ${INDENT_WS_16_______}<UseRegistry>true</UseRegistry>
 ${INDENT_WS_12___}</configuration>
 ${INDENT_WS_8}</public>
@@ -153,23 +127,23 @@ ${INDENT_WS_8}<service>
 ${INDENT_WS_12___}<name>TestServiceComponentName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
-${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestServiceComponent</class>
-${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestServiceComponent\$TestConfigurable</configurable>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestServiceComponent</class>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.TestServiceComponent\$TestConfigurable</configurable>
 ${INDENT_WS_8}</service>
 
 ${INDENT_WS_8}<service>
 ${INDENT_WS_12___}<name>TestServiceComponentWithoutConfigurableName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
-${INDENT_WS_12___}<class>${getClass().name}\$TestServiceComponentWithoutConfigurable</class>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestServiceComponentWithoutConfigurable</class>
 ${INDENT_WS_8}</service>
 
 ${INDENT_WS_8}<project-app>
 ${INDENT_WS_12___}<name>TestProjectAppComponentName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
-${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent</class>
-${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent\$TestConfigurable</configurable>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestProjectAppComponent</class>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.TestProjectAppComponent\$TestConfigurable</configurable>
 ${INDENT_WS_12___}<resources>
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0" scope="module" mode="legacy">lib/guava-24.0.jar</resource>
 ${INDENT_WS_12___}</resources>
@@ -179,15 +153,15 @@ ${INDENT_WS_8}<project-app>
 ${INDENT_WS_12___}<name>TestProjectAppComponentWithoutConfigurableName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
-${INDENT_WS_12___}<class>${getClass().name}\$TestProjectAppComponentWithoutConfigurable</class>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestProjectAppComponentWithoutConfigurable</class>
 ${INDENT_WS_8}</project-app>
 
 ${INDENT_WS_8}<web-app scopes="project,global">
 ${INDENT_WS_12___}<name>TestWebAppComponentName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
-${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent</class>
-${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent\$TestConfigurable</configurable>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestWebAppComponent</class>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.TestWebAppComponent\$TestConfigurable</configurable>
 ${INDENT_WS_12___}<web-xml>/web.xml</web-xml>
 ${INDENT_WS_12___}<web-resources>
 ${INDENT_WS_16_______}<resource name="webapps-test-project-1.2.jar" version="1.2">lib/webapps-test-project-1.2.jar</resource>
@@ -215,7 +189,7 @@ ${INDENT_WS_8}</web-app>
                 return []
             }
         }
-        XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result)
+        XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result, XmlTagAppenderTest.MODULE_BLACKLIST)
     }
 
     @Test(expected = IllegalStateException)
@@ -232,7 +206,7 @@ ${INDENT_WS_8}</web-app>
                 return ["org.some.class.implementing.module", "org.some.other.class.definitely.not.the.same.as.the.one.on.the.left"]
             }
         }
-        XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result)
+        XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result, XmlTagAppenderTest.MODULE_BLACKLIST)
     }
 
     @Test
@@ -241,7 +215,7 @@ ${INDENT_WS_8}</web-app>
 
         XmlTagAppender.appendModuleClassAndConfigTags(TestModuleImpl, result)
 
-        Assert.assertEquals("""${INDENT_WS_4}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleImpl</class>""".toString(), result.toString())
+        Assert.assertEquals("""${INDENT_WS_4}<class>org.gradle.plugins.fsm.TestModuleImpl</class>""".toString(), result.toString())
     }
 
 
@@ -250,8 +224,8 @@ ${INDENT_WS_8}</web-app>
         StringBuilder result = new StringBuilder()
 
         XmlTagAppender.appendModuleClassAndConfigTags(TestModuleImplWithConfiguration, result)
-        Assert.assertEquals("""${INDENT_WS_4}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleImplWithConfiguration</class>
-${INDENT_WS_4}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>""".toString(), result.toString())
+        Assert.assertEquals("""${INDENT_WS_4}<class>org.gradle.plugins.fsm.TestModuleImplWithConfiguration</class>
+${INDENT_WS_4}<configurable>org.gradle.plugins.fsm.TestConfigurable</configurable>""".toString(), result.toString())
     }
 
     @Test
@@ -263,7 +237,7 @@ ${INDENT_WS_4}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfi
 ${INDENT_WS_8}<public>
 ${INDENT_WS_12___}<name>TestPublicComponentName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
-${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestPublicComponent</class>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestPublicComponent</class>
 ${INDENT_WS_8}</public>""".toString(), result.toString())
     }
 
@@ -277,8 +251,8 @@ ${INDENT_WS_8}</public>""".toString(), result.toString())
 ${INDENT_WS_8}<public>
 ${INDENT_WS_12___}<name>TestPublicComponentWithConfigName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
-${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestPublicComponentWithConfiguration</class>
-${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestPublicComponentWithConfiguration</class>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.TestConfigurable</configurable>
 ${INDENT_WS_8}</public>""".toString(), result.toString())
     }
 
@@ -293,8 +267,8 @@ ${INDENT_WS_12___}<name>Test task</name>
 ${INDENT_WS_12___}<description>A task for test purpose</description>
 ${INDENT_WS_12___}<class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
 ${INDENT_WS_12___}<configuration>
-${INDENT_WS_16_______}<application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithForm</application>
-${INDENT_WS_16_______}<form>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskFormFactory</form>
+${INDENT_WS_16_______}<application>org.gradle.plugins.fsm.TestScheduleTaskComponentWithForm</application>
+${INDENT_WS_16_______}<form>org.gradle.plugins.fsm.TestScheduleTaskFormFactory</form>
 ${INDENT_WS_12___}</configuration>
 ${INDENT_WS_8}</public>""".toString(), result.toString())
     }
@@ -312,9 +286,9 @@ ${INDENT_WS_12___}<name>Test task</name>
 ${INDENT_WS_12___}<description>A task for test purpose</description>
 ${INDENT_WS_12___}<class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
 ${INDENT_WS_12___}<configuration>
-${INDENT_WS_16_______}<application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithConfigurable</application>
+${INDENT_WS_16_______}<application>org.gradle.plugins.fsm.TestScheduleTaskComponentWithConfigurable</application>
 ${INDENT_WS_12___}</configuration>
-${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestConfigurable</configurable>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.TestConfigurable</configurable>
 ${INDENT_WS_8}</public>""".toString(), result.toString())
     }
 
@@ -329,7 +303,7 @@ ${INDENT_WS_12___}<name>Test task</name>
 ${INDENT_WS_12___}<description>A task for test purpose</description>
 ${INDENT_WS_12___}<class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
 ${INDENT_WS_12___}<configuration>
-${INDENT_WS_16_______}<application>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestScheduleTaskComponentWithoutForm</application>
+${INDENT_WS_16_______}<application>org.gradle.plugins.fsm.TestScheduleTaskComponentWithoutForm</application>
 ${INDENT_WS_12___}</configuration>
 ${INDENT_WS_8}</public>""".toString(), result.toString())
     }
@@ -347,8 +321,8 @@ ${INDENT_WS_8}<web-app scopes="project,global">
 ${INDENT_WS_12___}<name>TestWebAppComponentName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
-${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent</class>
-${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponent\$TestConfigurable</configurable>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestWebAppComponent</class>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.TestWebAppComponent\$TestConfigurable</configurable>
 ${INDENT_WS_12___}<web-xml>/web.xml</web-xml>
 ${INDENT_WS_12___}<web-resources>
 ${INDENT_WS_16_______}<resource name="${XmlTagAppender.getJarFilename(project)}" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
@@ -372,7 +346,7 @@ ${INDENT_WS_8}<web-app scopes="project,global">
 ${INDENT_WS_12___}<name>TestWebAppComponentName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
-${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppComponentWithoutConfiguration</class>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestWebAppComponentWithoutConfiguration</class>
 ${INDENT_WS_12___}<web-xml>web0.xml</web-xml>
 ${INDENT_WS_12___}<web-resources>
 ${INDENT_WS_16_______}<resource name="${XmlTagAppender.getJarFilename(project)}" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
@@ -397,8 +371,8 @@ ${INDENT_WS_8}<project-app>
 ${INDENT_WS_12___}<name>TestProjectAppComponentName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
-${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent</class>
-${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent\$TestConfigurable</configurable>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestProjectAppComponent</class>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.TestProjectAppComponent\$TestConfigurable</configurable>
 ${INDENT_WS_12___}<resources>
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0" scope="module" mode="legacy">lib/guava-24.0.jar</resource>
 ${INDENT_WS_12___}</resources>
@@ -408,7 +382,7 @@ ${INDENT_WS_8}<project-app>
 ${INDENT_WS_12___}<name>TestProjectAppComponentWithoutConfigurableName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
-${INDENT_WS_12___}<class>${getClass().name}\$TestProjectAppComponentWithoutConfigurable</class>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestProjectAppComponentWithoutConfigurable</class>
 ${INDENT_WS_8}</project-app>
 """.toString(), result.toString())
     }
@@ -423,7 +397,7 @@ ${INDENT_WS_8}<project-app>
 ${INDENT_WS_12___}<name>TestProjectAppComponentWithoutConfigurableName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
-${INDENT_WS_12___}<class>${getClass().name}\$TestProjectAppComponentWithoutConfigurable</class>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestProjectAppComponentWithoutConfigurable</class>
 ${INDENT_WS_8}</project-app>
 """.toString(), result.toString())
     }
@@ -438,8 +412,8 @@ ${INDENT_WS_8}<service>
 ${INDENT_WS_12___}<name>TestServiceComponentName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
-${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestServiceComponent</class>
-${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestServiceComponent\$TestConfigurable</configurable>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestServiceComponent</class>
+${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.TestServiceComponent\$TestConfigurable</configurable>
 ${INDENT_WS_8}</service>
 """.toString(), result.toString())
     }
@@ -455,7 +429,7 @@ ${INDENT_WS_8}<service>
 ${INDENT_WS_12___}<name>TestServiceComponentWithoutConfigurableName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
-${INDENT_WS_12___}<class>${getClass().name}\$TestServiceComponentWithoutConfigurable</class>
+${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestServiceComponentWithoutConfigurable</class>
 ${INDENT_WS_8}</service>
 """.toString(), result.toString())
     }
@@ -473,7 +447,7 @@ ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
 ${INDENT_WS_12___}<description>TestDescription</description>
 ${INDENT_WS_12___}<class>de.espirit.firstspirit.generate.UrlCreatorSpecification</class>
 ${INDENT_WS_12___}<configuration>
-${INDENT_WS_16_______}<UrlFactory>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestUrlFactoryComponent</UrlFactory>
+${INDENT_WS_16_______}<UrlFactory>org.gradle.plugins.fsm.TestUrlFactoryComponent</UrlFactory>
 ${INDENT_WS_16_______}<UseRegistry>true</UseRegistry>
 ${INDENT_WS_12___}</configuration>
 ${INDENT_WS_8}</public>
@@ -545,88 +519,17 @@ ${INDENT_WS_8}</public>
         WebAppComponent annotation = new CustomWebAppComponent() {
             @Override
             WebResource[] webResources() {
-                return [createWebResource("\${path}", "org.joda:joda-convert", "\$version")]
+                return [createWebResource("\${path}", "\${project.jodaConvertDependency}", "\$version")]
             }
         }
 
+        project.ext.jodaConvertDependency = "org.joda:joda-convert"
         project.dependencies.add(FSMConfigurationsPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
 
         String webAppComponentTagString = XmlTagAppender.evaluateResources(annotation,"", project)
         Assert.assertNotNull(webAppComponentTagString)
         Assert.assertEquals("""<resource name="org.joda:joda-convert" version="2.1.1" minVersion="myMinVersion" maxVersion="myMaxVersion" target="myTargetPath">lib/joda-convert-2.1.1.jar</resource>""", webAppComponentTagString)
     }
-
-    static class CustomWebAppComponent implements WebAppComponent {
-        @Override String name() { return "MyWebApp" }
-
-        @Override String displayName() { return "MyWebApp" }
-
-        @Override String description() { return "MyDescription" }
-
-        @Override Class<? extends Configuration> configurable() { return null }
-
-        @Override String webXml() { return "web.xml" }
-
-        @Override WebAppDescriptor.WebAppScope[] scope() { return new WebAppDescriptor.WebAppScope[0] }
-
-        @Override
-        WebResource[] webResources() {
-            return []
-        }
-
-        @Override Class<? extends Annotation> annotationType() { return WebAppComponent }
-    }
-
-    private WebResource createWebResource(String path, String name, String version) {
-        return new WebResource() {
-
-            @Override
-            String path() {
-                return path
-            }
-
-            @Override
-            String name() {
-                return name
-            }
-
-            @Override
-            String version() {
-                return version
-            }
-
-            @Override
-            String minVersion() {
-                return "myMinVersion"
-            }
-
-            @Override
-            String maxVersion() {
-                return "myMaxVersion"
-            }
-
-            @Override
-            String targetPath() {
-                return "myTargetPath"
-            }
-
-            @Override
-            ModuleInfo.Scope scope() {
-                return ModuleInfo.Scope.MODULE
-            }
-
-            @Override
-            ModuleInfo.Mode mode() {
-                return ModuleInfo.Mode.ISOLATED
-            }
-
-            @Override
-            Class<? extends Annotation> annotationType() {
-                return WebResource
-            }
-        }
-    }
-
 
     @Test
     void testResourcePropertyInterpolationInProjectAppResources() {
@@ -645,83 +548,6 @@ ${INDENT_WS_8}</public>
         Assert.assertNotNull(projectAppComponentTagString)
         Assert.assertEquals("""<resource name="org.joda:joda-convert" version="2.1.1" minVersion="myMinVersion" maxVersion="myMaxVersion" scope="module" mode="isolated">lib/joda-convert-2.1.1.jar</resource>""", projectAppComponentTagString)
     }
-
-    Resource createResource(String path, String name, String version) {
-        return new Resource() {
-            @Override
-            String path() {
-                return path
-            }
-
-            @Override
-            String name() {
-                return name
-            }
-
-            @Override
-            String version() {
-                return version
-            }
-
-            @Override
-            String minVersion() {
-                return "myMinVersion"
-            }
-
-            @Override
-            String maxVersion() {
-                return "myMaxVersion"
-            }
-
-            @Override
-            ModuleInfo.Scope scope() {
-                return ModuleInfo.Scope.MODULE
-            }
-
-            @Override
-            ModuleInfo.Mode mode() {
-                return ModuleInfo.Mode.ISOLATED
-            }
-
-            @Override
-            Class<? extends Annotation> annotationType() {
-                return Resource.class
-            }
-        }
-    }
-
-    static class CustomProjectAppComponent implements ProjectAppComponent {
-        @Override
-        String name() {
-            return "CustomProjectAppComponent"
-        }
-
-        @Override
-        String displayName() {
-            return "CustomProjectAppComponent"
-        }
-
-        @Override
-        String description() {
-            return "CustomProjectAppComponent"
-        }
-
-        @Override
-        Class<? extends Configuration> configurable() {
-            return null
-        }
-
-        @Override
-        Resource[] resources() {
-            return new Resource[0]
-        }
-
-        @Override
-        Class<? extends Annotation> annotationType() {
-            return ProjectAppComponent
-        }
-    }
-
 
     @Test
     void getFsmDependencyTags() {
@@ -744,202 +570,6 @@ ${INDENT_WS_8}</public>
         Assert.assertEquals("""${INDENT_WS_8}<resource name="${XmlTagAppender.getJarFilename(project)}" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>
 ${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="server" mode="isolated" version="2.1.1">lib/joda-convert-2.1.1.jar</resource>
 ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated" version="1.7.25">lib/slf4j-api-1.7.25.jar</resource>""".toString(), result)
-    }
-
-    @ModuleComponent
-    class TestModuleImpl implements Module {
-
-        @Override
-        void init(ModuleDescriptor moduleDescriptor, ServerEnvironment serverEnvironment) {
-
-        }
-
-        @Override
-        void installed() {
-
-        }
-
-        @Override
-        void uninstalling() {
-
-        }
-
-        @Override
-        void updated(String s) {
-
-        }
-
-    }
-    @ModuleComponent(configurable = TestConfigurable.class)
-    static class TestModuleImplWithConfiguration implements Module {
-        @Override
-        void init(ModuleDescriptor moduleDescriptor, ServerEnvironment serverEnvironment) {
-
-        }
-
-        @Override
-        void installed() {
-
-        }
-
-        @Override
-        void uninstalling() {
-
-        }
-
-        @Override
-        void updated(String s) {
-
-        }
-    }
-
-    @ProjectAppComponent(name = "TestProjectAppComponentName",
-            displayName = "TestDisplayName",
-            description = "TestDescription",
-            configurable = TestConfigurable,
-            resources = [@Resource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0")])
-    static class TestProjectAppComponent extends BaseProjectApp {
-        static class TestConfigurable extends BaseConfiguration { }
-    }
-
-    @ProjectAppComponent(name = "TestProjectAppComponentWithoutConfigurableName",
-            displayName = "TestDisplayName",
-            description = "TestDescription")
-    static class TestProjectAppComponentWithoutConfigurable extends BaseProjectApp {
-
-    }
-
-    @WebAppComponent(name = "TestWebAppComponentName",
-            displayName = "TestDisplayName",
-            description = "TestDescription",
-            configurable = TestConfigurable,
-            webXml = "/web.xml",
-            webResources = [@WebResource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0"),
-                            @WebResource(targetPath = "targetPath", path = "lib/commons-lang-3.0.jar", name = "org.apache.commons:commons-lang3", version = "3.0", minVersion = "2.9", maxVersion = "3.1")])
-    static class TestWebAppComponent extends BaseWebApp {
-        static class TestConfigurable extends BaseConfiguration { }
-    }
-
-    @WebAppComponent(name = "TestWebAppComponentName",
-            displayName = "TestDisplayName",
-            description = "TestDescription",
-            webXml = "web0.xml",  // Please don't add leading slash, we want to test web.xml file handling without leading slash as well
-            webResources = [@WebResource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0"),
-                            @WebResource(path = "lib/commons-lang-3.0.jar", name = "org.apache.commons:commons-lang3", version = "3.0", minVersion = "2.9", maxVersion = "3.1")])
-    static class TestWebAppComponentWithoutConfiguration extends BaseWebApp {
-        static class TestConfigurable extends BaseConfiguration { }
-    }
-
-    @PublicComponent(name = "TestPublicComponentName", displayName = "TestDisplayName")
-    static class TestPublicComponent {
-    }
-
-    @PublicComponent(name = "TestPublicComponentWithConfigName", displayName = "TestDisplayName", configurable = TestConfigurable.class)
-    static class TestPublicComponentWithConfiguration {
-    }
-
-    @ScheduleTaskComponent(taskName = "Test task", description = "A task for test purpose")
-    static class TestScheduleTaskComponentWithoutForm {
-    }
-
-    @ScheduleTaskComponent(taskName = "Test task", description = "A task for test purpose", configurable = TestConfigurable.class)
-    static class TestScheduleTaskComponentWithConfigurable {
-    }
-
-    @ScheduleTaskComponent(taskName = "Test task", description = "A task for test purpose", formClass = TestScheduleTaskFormFactory.class )
-    static class TestScheduleTaskComponentWithForm {
-
-    }
-
-    static class TestScheduleTaskFormFactory implements ScheduleTaskFormFactory {
-
-        @Override
-        ScheduleTaskForm createForm(final SpecialistsBroker specialistsBroker) {
-            return null
-        }
-    }
-
-    static class TestConfigurable implements Configuration<ServerEnvironment> {
-
-        @Override
-        boolean hasGui() {
-            return false
-        }
-
-        @Override
-        JComponent getGui(Frame applicationFrame) {
-            return null
-        }
-
-        @Override
-        void load() {
-
-        }
-
-        @Override
-        void store() {
-
-        }
-
-        @Override
-        Set<String> getParameterNames() {
-            return null
-        }
-
-        @Override
-        String getParameter(String s) {
-            return null
-        }
-
-        @Override
-        void init(String moduleName, String componentName, ServerEnvironment env) {
-
-        }
-
-        @Override
-        ServerEnvironment getEnvironment() {
-            return null
-        }
-    }
-
-
-    @ServiceComponent(name = "TestServiceComponentName",
-            displayName = "TestDisplayName",
-            description = "TestDescription",
-            configurable = TestConfigurable)
-    static class TestServiceComponent extends BaseService {
-        static class TestConfigurable extends BaseConfiguration { }
-
-        static class ServiceResource {}
-    }
-
-
-    @ServiceComponent(name = "TestServiceComponentWithoutConfigurableName",
-            displayName = "TestDisplayName",
-            description = "TestDescription")
-    static class TestServiceComponentWithoutConfigurable extends BaseService {
-
-    }
-
-    @UrlFactoryComponent(name = "TestUrlFactoryComponentName",
-                          displayName = "TestDisplayName",
-                          description = "TestDescription",
-                          useRegistry = true)
-    static class TestUrlFactoryComponent implements UrlFactory {
-        @Override
-        void init(Map<String, String> map, PathLookup pathLookup) {
-
-        }
-
-        @Override
-        String getUrl(ContentProducer contentProducer, TemplateSet templateSet, Language language, PageParams pageParams) {
-            return null
-        }
-
-        @Override
-        String getUrl(Media media, Language language, Resolution resolution) {
-            return null
-        }
     }
 
 

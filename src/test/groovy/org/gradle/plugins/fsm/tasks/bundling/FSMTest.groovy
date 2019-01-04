@@ -36,6 +36,7 @@ import java.util.zip.ZipFile
 
 import static junit.framework.Assert.assertNotNull
 import static org.assertj.core.api.Assertions.assertThat
+import static org.gradle.plugins.fsm.ComponentHelper.addTestModulesToBlacklist
 import static org.gradle.plugins.fsm.util.TestProjectUtils.defineArtifactoryForProject
 import static org.gradle.plugins.fsm.util.TestProjectUtils.setArtifactoryCredentialsFromLocalProperties
 import static org.mockito.Mockito.spy
@@ -65,6 +66,8 @@ class FSMTest {
 		fsm.baseName = 'testbasename'
 		fsm.appendix = 'testappendix'
 		fsm.version = '1.0'
+
+		addTestModulesToBlacklist(fsm)
 	}
 
 	@Test

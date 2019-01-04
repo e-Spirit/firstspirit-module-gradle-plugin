@@ -42,10 +42,6 @@ class XmlTagAppender {
 
     static final List<String> PROJECT_APP_BLACKLIST = ["de.espirit.firstspirit.feature.ContentTransportProjectApp"]
 
-    //blacklist contains test classes because of the restriction of allowing only 1 class to implement module
-    static final List<String> MODULE_BLACKLIST = ["org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleImplWithConfiguration",
-                                                  "org.gradle.plugins.fsm.XmlTagAppenderTest\$TestModuleImpl"]
-
     static final String INDENT_WS_4 = "    "
     static final String INDENT_WS_8 = "        "
     static final String INDENT_WS_12 = "            "
@@ -85,9 +81,10 @@ class XmlTagAppender {
     }
 
     @CompileStatic
-    static void appendModuleAnnotationTags(URLClassLoader cl, FSM.ClassScannerResultProvider scan, StringBuilder result) {
-        def moduleAnnotatedClasses = scan.getNamesOfClassesWithAnnotation(ModuleComponent).findAll{!MODULE_BLACKLIST.contains(it)}
-        def moduleImplClasses = scan.getNamesOfClassesImplementing(Module).findAll{!MODULE_BLACKLIST.contains(it)}
+    static void appendModuleAnnotationTags(URLClassLoader cl, FSM.ClassScannerResultProvider scan, StringBuilder result, List<String> moduleBlacklist = new ArrayList<>()) {
+
+        def moduleAnnotatedClasses = scan.getNamesOfClassesWithAnnotation(ModuleComponent).findAll{!moduleBlacklist.contains(it)}
+        def moduleImplClasses = scan.getNamesOfClassesImplementing(Module).findAll{!moduleBlacklist.contains(it)}
         def logger = Logging.getLogger(XmlTagAppender.class)
 
         handleModuleComponentAnnotations(moduleAnnotatedClasses, moduleImplClasses, logger, cl, result)
