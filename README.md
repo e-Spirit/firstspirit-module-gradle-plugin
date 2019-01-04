@@ -169,6 +169,42 @@ declarations in the resulting module.xml. This is because web.xml files are a sp
 in your fsm file but not be treated as a runtime resource for the application. web.xml files you place in a subfolder
 of the fsm-resources directory, are not excluded in any way.
 
+### Property Filtering in resource annotations for webapp and projectapp components
+The build script with subprojects is the preferred tool for managing resources and dependencies.
+However, if the project demands more flexibility, in addition to the build dependency mechanism with our custom configuration scopes,
+one can declare resources within the @ProjectAppComponent and @WebAppComponent annotation usages.
+
+Within those resources, the name, path and version properties are filtered, which means they can use properties from the global gradle project context,
+as well as properties defined by the resource itself, if a proper corresponding resource can be found.
+
+For example, one can add a regular compile dependency (that is not a fsWebCompile dependency) and get dependency version and path
+via properties injected. Or one can use properties to declare fsm-resource entries from other subprojects as web resources for
+a webapp component in another subproject.
+
+```java
+// in a build.gradle
+
+rootProject.ext {
+    webappIconName = 'com.espirit.moddev.example.icon.png'
+    commonsIOWebDependencyName = 'commons-io:commons-io'
+}
+...
+compile "$commonsIOWebDependencyName:2.6"
+
+// within a @WebComponent usage
+webResources = {
+    @WebResource(path = "someResources/icon.png", name = "${project.webappIconName}", version = "${project.version}", targetPath = "img"),
+    @WebResource(path = "$path", name = "${project.commonsIOWebDependencyName}", version = "${version}", targetPath = "lib")
+}
+
+```
+
+For regular build dependencies, the version property can be used, whereas for file resources, this wouldn't make sense, hence it's not supported.
+Please note that `$project` always refers to the root project of the build.
+This way, the complete project context can be retrieved, if really necessary.
+
+
+
 ### Examples
 
 #### module.xml example

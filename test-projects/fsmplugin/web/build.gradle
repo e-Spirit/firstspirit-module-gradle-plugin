@@ -1,7 +1,13 @@
 apply plugin: 'fsmconfigurationsgradleplugin'
 apply plugin: 'fsmannotationsgradleplugin'
 
+rootProject.ext {
+    webappIconName = 'com.espirit.moddev.example.icon.png'
+    commonsIOWebDependencyName = 'commons-io:commons-io'
+}
+
 dependencies {
     compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.181007'
     fsWebCompile fsDependency(dependency:'org.apache.commons:commons-lang3:3.8.1', skipInLegacy:true)
+    compile "$commonsIOWebDependencyName:2.6"
 }

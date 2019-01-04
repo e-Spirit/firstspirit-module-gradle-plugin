@@ -1,24 +1,25 @@
-package org.example;
+package com.espirit.moddev;
 
 import com.espirit.moddev.components.annotations.WebAppComponent;
+import com.espirit.moddev.components.annotations.WebResource;
 import de.espirit.firstspirit.module.AbstractWebApp;
 import de.espirit.firstspirit.module.*;
+import de.espirit.firstspirit.server.module.ModuleInfo;
 
 import javax.swing.*;
 import java.awt.*;
+import java.lang.annotation.Annotation;
 import java.util.Set;
 
 @WebAppComponent(name = "SimpleWebApp",
         displayName = "SimpleWebApp",
         description = "This is a simple WebApp",
         configurable = SimpleWebApp.WebAppConfigurable.class,
-        webXml = "/web.xml"
-//        TODO: This doesn't work out currently
-//        webResources = "<resource>web/abtesting.tld</resource>\n" +
-//            "<resource target=\"web/images/\">web/images/abtest_icon_selected.png</resource>\n" +
-//            "<resource target=\"web/images/\">web/images/abtest_icon.png</resource>\n" +
-//            "<resource target=\"web/images/\">web/images/client_abtest_icon_selected.png</resource>\n" +
-//            "<resource target=\"web/images/\">web/images/client_abtest_icon.png</resource>\n"
+        webXml = "/web.xml",
+        webResources = {
+            @WebResource(path = "someResources/icon.png", name = "${project.webappIconName}", version = "${project.version}", targetPath = "img"),
+            @WebResource(path = "$path", name = "${project.commonsIOWebDependencyName}", version = "${version}", targetPath = "lib")
+        }
 )
 public class SimpleWebApp extends AbstractWebApp {
     public static class WebAppConfigurable implements Configuration<ServerEnvironment> {
@@ -62,4 +63,5 @@ public class SimpleWebApp extends AbstractWebApp {
             return null;
         }
     }
+
 }
