@@ -171,7 +171,7 @@ ${INDENT_WS_12___}<description>TestDescription</description>
 ${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent</class>
 ${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent\$TestConfigurable</configurable>
 ${INDENT_WS_12___}<resources>
-${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0" scope="MODULE" mode="LEGACY">lib/guava-24.0.jar</resource>
+${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0" scope="module" mode="legacy">lib/guava-24.0.jar</resource>
 ${INDENT_WS_12___}</resources>
 ${INDENT_WS_8}</project-app>
 
@@ -191,7 +191,7 @@ ${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestW
 ${INDENT_WS_12___}<web-xml>/web.xml</web-xml>
 ${INDENT_WS_12___}<web-resources>
 ${INDENT_WS_16_______}<resource name="webapps-test-project-1.2.jar" version="1.2">lib/webapps-test-project-1.2.jar</resource>
-${INDENT_WS_16_______}
+
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
 ${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1" target="targetPath">lib/commons-lang-3.0.jar</resource>
 
@@ -352,7 +352,7 @@ ${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestW
 ${INDENT_WS_12___}<web-xml>/web.xml</web-xml>
 ${INDENT_WS_12___}<web-resources>
 ${INDENT_WS_16_______}<resource name="${XmlTagAppender.getJarFilename(project)}" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
-${INDENT_WS_16_______}
+
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
 ${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1" target="${targetPathValue}">lib/commons-lang-3.0.jar</resource>
 
@@ -376,7 +376,7 @@ ${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestWebAppCo
 ${INDENT_WS_12___}<web-xml>web0.xml</web-xml>
 ${INDENT_WS_12___}<web-resources>
 ${INDENT_WS_16_______}<resource name="${XmlTagAppender.getJarFilename(project)}" version="${VERSION}">lib/$NAME-${VERSION}.jar</resource>
-${INDENT_WS_16_______}
+
 ${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0">lib/guava-24.0.jar</resource>
 ${INDENT_WS_16_______}<resource name="org.apache.commons:commons-lang3" version="3.0" minVersion="2.9" maxVersion="3.1">lib/commons-lang-3.0.jar</resource>
 
@@ -400,7 +400,7 @@ ${INDENT_WS_12___}<description>TestDescription</description>
 ${INDENT_WS_12___}<class>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent</class>
 ${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.XmlTagAppenderTest\$TestProjectAppComponent\$TestConfigurable</configurable>
 ${INDENT_WS_12___}<resources>
-${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0" scope="MODULE" mode="LEGACY">lib/guava-24.0.jar</resource>
+${INDENT_WS_16_______}<resource name="com.google.guava:guava" version="24.0" scope="module" mode="legacy">lib/guava-24.0.jar</resource>
 ${INDENT_WS_12___}</resources>
 ${INDENT_WS_8}</project-app>
 
@@ -536,8 +536,7 @@ ${INDENT_WS_8}</public>
 
         String webAppComponentTagString = XmlTagAppender.evaluateResources(annotation,"", project)
         Assert.assertNotNull(webAppComponentTagString)
-        Assert.assertEquals("""
-<resource name="myGroup-webapps-test-project" version="5" minVersion="myMinVersion" maxVersion="myMaxVersion" target="myTargetPath">/abc/nonexistent.txt</resource>
+        Assert.assertEquals("""<resource name="myGroup-webapps-test-project" version="5" minVersion="myMinVersion" maxVersion="myMaxVersion" target="myTargetPath">/abc/nonexistent.txt</resource>
 <resource name="myGroup-webapps-test-project" version="1.0.2" minVersion="myMinVersion" maxVersion="myMaxVersion" target="myTargetPath">/abc/nonexistent2.txt</resource>""", webAppComponentTagString)
     }
 
@@ -554,8 +553,7 @@ ${INDENT_WS_8}</public>
 
         String webAppComponentTagString = XmlTagAppender.evaluateResources(annotation,"", project)
         Assert.assertNotNull(webAppComponentTagString)
-        Assert.assertEquals("""
-<resource name="org.joda:joda-convert" version="2.1.1" minVersion="myMinVersion" maxVersion="myMaxVersion" target="myTargetPath">lib/joda-convert-2.1.1.jar</resource>""", webAppComponentTagString)
+        Assert.assertEquals("""<resource name="org.joda:joda-convert" version="2.1.1" minVersion="myMinVersion" maxVersion="myMaxVersion" target="myTargetPath">lib/joda-convert-2.1.1.jar</resource>""", webAppComponentTagString)
     }
 
     static class CustomWebAppComponent implements WebAppComponent {
@@ -645,8 +643,7 @@ ${INDENT_WS_8}</public>
 
         String projectAppComponentTagString = XmlTagAppender.evaluateResources(annotation,"", project)
         Assert.assertNotNull(projectAppComponentTagString)
-        Assert.assertEquals("""
-<resource name="org.joda:joda-convert" version="2.1.1" minVersion="myMinVersion" maxVersion="myMaxVersion" scope="module" mode="isolated">lib/joda-convert-2.1.1.jar</resource>""", projectAppComponentTagString)
+        Assert.assertEquals("""<resource name="org.joda:joda-convert" version="2.1.1" minVersion="myMinVersion" maxVersion="myMaxVersion" scope="module" mode="isolated">lib/joda-convert-2.1.1.jar</resource>""", projectAppComponentTagString)
     }
 
     Resource createResource(String path, String name, String version) {
