@@ -1,21 +1,10 @@
 package org.gradle.plugins.fsm
 
-import com.espirit.moddev.components.annotations.ModuleComponent
-import com.espirit.moddev.components.annotations.ProjectAppComponent
-import com.espirit.moddev.components.annotations.PublicComponent
-import com.espirit.moddev.components.annotations.Resource
-import com.espirit.moddev.components.annotations.ScheduleTaskComponent
-import com.espirit.moddev.components.annotations.ServiceComponent
-import com.espirit.moddev.components.annotations.UrlFactoryComponent
-import com.espirit.moddev.components.annotations.WebAppComponent
-import com.espirit.moddev.components.annotations.WebResource
+import com.espirit.moddev.components.annotations.*
+import com.espirit.moddev.components.annotations.params.gadget.Scope
+import de.espirit.firstspirit.client.access.editor.ValueEngineerFactory
 import de.espirit.firstspirit.generate.UrlFactory
-import de.espirit.firstspirit.module.Configuration
-import de.espirit.firstspirit.module.Module
-import de.espirit.firstspirit.module.ProjectApp
-import de.espirit.firstspirit.module.ScheduleTaskSpecification
-import de.espirit.firstspirit.module.Service
-import de.espirit.firstspirit.module.WebApp
+import de.espirit.firstspirit.module.*
 import de.espirit.firstspirit.module.descriptor.WebAppDescriptor
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
 import de.espirit.firstspirit.server.module.ModuleInfo
@@ -29,12 +18,13 @@ import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
-import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 
 import java.lang.annotation.Annotation
 
+import static de.espirit.firstspirit.module.GadgetComponent.GadgetFactory
 import static org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME
 import static org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.PROVIDED_COMPILE_CONFIGURATION_NAME
 
@@ -50,12 +40,13 @@ class XmlTagAppender {
     /*
      * Append components tag to given result StringBuilder
      */
-    @CompileStatic
     static WebXmlPaths appendComponentsTag(Project project, URLClassLoader classLoader, FSM.ClassScannerResultProvider scan, final boolean appendDefaultMinVersion, final StringBuilder result, boolean isolated) {
 
         appendPublicComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(PublicComponent), result)
 
-        appendScheduleTaskComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(ScheduleTaskComponent), result)
+        appendComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(ScheduleTaskComponent), result, ScheduleTaskComponent)
+
+        appendComponentTags(classLoader, scan.getNamesOfClassesWithAnnotation(GadgetComponent), result, GadgetComponent)
 
         appendUrlCreatorTags(classLoader, scan.getNamesOfClassesWithAnnotation(UrlFactoryComponent), result)
 
@@ -134,7 +125,6 @@ class XmlTagAppender {
         result.append("${INDENT_WS_4}<class>${module.getName()}</class>${configurable}")
     }
 
-    @CompileStatic
     static void appendPublicComponentTags(URLClassLoader cl, List<String> publicComponentClasses, StringBuilder result) {
         def loadedClasses = publicComponentClasses.collect { cl.loadClass(it) }
 
@@ -163,9 +153,18 @@ class XmlTagAppender {
 
 
     @CompileStatic
-    static void appendScheduleTaskComponentTags(URLClassLoader cl, List<String> scheduleTaskComponentClasses, StringBuilder result) {
-        def loadedClasses = scheduleTaskComponentClasses.collect { cl.loadClass(it) }
-        appendScheduleTaskComponentTagsOfClasses(loadedClasses, result)
+    static void appendComponentTags(URLClassLoader cl, List<String> classes, StringBuilder result, Class<?> type) {
+        def loadedClasses = classes.collect { cl.loadClass(it) }
+        switch(type) {
+            case ScheduleTaskComponent.class:
+                appendScheduleTaskComponentTagsOfClasses(loadedClasses, result)
+                break
+            case GadgetComponent.class:
+                appendGadgetComponentTagsOfClasses(loadedClasses, result)
+                break;
+            default:
+                throw new UnsupportedOperationException("Handling of type " + type.getName() + " is not supported yet")
+        }
     }
 
     private static appendScheduleTaskComponentTagsOfClasses(List<Class<?>> loadedClasses, StringBuilder result) {
@@ -202,6 +201,69 @@ class XmlTagAppender {
                 }
         }
     }
+
+
+    /**
+     * This method appends all the necessary tags for all the gadget components that were found.
+     *
+     * @param loadedClasses The loaded classes
+     * @param resultBuilder The StringBuilder in which the result should be written.
+     */
+    private static appendGadgetComponentTagsOfClasses(List<Class<?>> loadedClasses, StringBuilder resultBuilder) {
+        loadedClasses.forEach {
+            gadgetComponent ->
+                Arrays.asList(gadgetComponent.annotations)
+                        .findAll { it instanceof GadgetComponent }
+                        .forEach { annotation ->
+                    def indent = INDENT_WS_12
+                    final String configurable = annotation.configurable() == Configuration.class ? "" : "\n" + indent + "<configurable>${annotation.configurable().name}</configurable>"
+
+// keep indent (2 tabs / 8 whitespaces) --> 3rd level <module><components><public>
+                    resultBuilder.append("""
+        <public>
+            <name>${evaluateAnnotation(annotation, "name")}</name>
+            <description>${evaluateAnnotation(annotation, "description")}</description>
+            <class>${GadgetSpecification.getName()}</class>
+            <configuration>
+                <gom>${gadgetComponent.getName()}</gom>""")
+
+                    Class<GadgetFactory>[] objects = evaluateAnnotation(annotation, "factories") as Class<GadgetFactory>[]
+                    /*
+                    The default interface GadgetFactory should
+                    not be written in the xml so it gets filtered.
+                     */
+                    for(Class<GadgetFactory> o : objects) {
+                        if(o != GadgetFactory) {
+                            resultBuilder.append("""
+                <factory>${o.getName()}</factory>""")
+                        }
+                    }
+
+                    Object value = evaluateAnnotation(annotation, "valueEngineerFactory")
+                    if(value != null && value != ValueEngineerFactory.class) {
+                        resultBuilder.append("""
+                <value>${value.getName()}</value>""")
+                    }
+
+
+                    List<Scope> scopes = ((Object[])evaluateAnnotation(annotation, "scopes")).toList() as List<Scope>
+                    if(scopes.contains(Scope.UNRESTRICTED)) {
+                        resultBuilder.append("""
+                <scope ${Scope.UNRESTRICTED.name().toLowerCase()}=\"yes\" />""")
+                    } else {
+                        resultBuilder.append("""
+                <scope """)
+                        scopes.forEach {s -> resultBuilder.append(s.name().toLowerCase() + '=\"yes\" ')}
+                        resultBuilder.append('/>')
+                    }
+                    resultBuilder.append("""
+            </configuration>$configurable
+        </public>""")
+
+                }
+        }
+    }
+
 
     static class WebXmlPaths extends ArrayList<String> { }
 

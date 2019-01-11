@@ -1,24 +1,23 @@
 package org.gradle.plugins.fsm
 
-import com.espirit.moddev.components.annotations.ModuleComponent
-import com.espirit.moddev.components.annotations.ProjectAppComponent
-import com.espirit.moddev.components.annotations.PublicComponent
-import com.espirit.moddev.components.annotations.Resource
-import com.espirit.moddev.components.annotations.ScheduleTaskComponent
-import com.espirit.moddev.components.annotations.ServiceComponent
-import com.espirit.moddev.components.annotations.UrlFactoryComponent
-import com.espirit.moddev.components.annotations.WebAppComponent
-import com.espirit.moddev.components.annotations.WebResource
+import com.espirit.moddev.components.annotations.*
+import com.espirit.moddev.components.annotations.params.gadget.Scope
+import de.espirit.common.base.ui.Gadget
 import de.espirit.firstspirit.access.Language
 import de.espirit.firstspirit.access.project.Resolution
 import de.espirit.firstspirit.access.project.TemplateSet
 import de.espirit.firstspirit.access.store.ContentProducer
 import de.espirit.firstspirit.access.store.PageParams
 import de.espirit.firstspirit.access.store.mediastore.Media
+import de.espirit.firstspirit.access.store.templatestore.gom.GomElement
 import de.espirit.firstspirit.agency.SpecialistsBroker
+import de.espirit.firstspirit.client.access.editor.ValueEngineer
+import de.espirit.firstspirit.client.access.editor.ValueEngineerContext
+import de.espirit.firstspirit.client.access.editor.ValueEngineerFactory
 import de.espirit.firstspirit.generate.PathLookup
 import de.espirit.firstspirit.generate.UrlFactory
 import de.espirit.firstspirit.module.Configuration
+import de.espirit.firstspirit.module.GadgetContext
 import de.espirit.firstspirit.module.Module
 import de.espirit.firstspirit.module.ServerEnvironment
 import de.espirit.firstspirit.module.descriptor.ModuleDescriptor
@@ -32,9 +31,11 @@ import org.gradle.plugins.fsm.util.BaseProjectApp
 import org.gradle.plugins.fsm.util.BaseService
 import org.gradle.plugins.fsm.util.BaseWebApp
 
-import javax.swing.JComponent
-import java.awt.Frame
+import javax.swing.*
+import java.awt.*
 import java.lang.annotation.Annotation
+
+import static de.espirit.firstspirit.module.GadgetComponent.*
 
 class ComponentHelper {
     static Resource createResource(String path, String name, String version) {
@@ -333,6 +334,61 @@ class TestScheduleTaskComponentWithConfigurable {
 
 @ScheduleTaskComponent(taskName = "Test task", description = "A task for test purpose", formClass = TestScheduleTaskFormFactory.class )
 class TestScheduleTaskComponentWithForm {
+
+}
+
+@GadgetComponent(name = "Test gadget")
+class TestMinimalGadgetComponent {
+
+}
+
+class TestGadgetFactoryOne implements GadgetFactory<Gadget, GomElement, GadgetContext> {
+
+    @Override
+    Gadget create(final GadgetContext gadgetContext) {
+        return null
+    }
+}
+
+class TestGadgetFactoryTwo implements GadgetFactory<Gadget, GomElement, GadgetContext> {
+
+    @Override
+    Gadget create(final GadgetContext gadgetContext) {
+        return null
+    }
+}
+
+class TestValueEngineerFactory implements ValueEngineerFactory {
+
+    @Override
+    Class getType() {
+        return null
+    }
+
+    @Override
+    ValueEngineer create(final ValueEngineerContext valueEngineerContext) {
+        return null
+    }
+}
+
+@GadgetComponent(name = "Test gadget with unimplemented factory", factories = [GadgetFactory.class])
+class TestGadgetComponentWithUnimplementedFactory {
+
+}
+
+@GadgetComponent(name = "Test gadget with one factory", factories = [TestGadgetFactoryOne.class])
+class TestGadgetComponentWithOneFactory {
+
+}
+
+@GadgetComponent(name = "Test gadget with more than one factory", factories = [TestGadgetFactoryOne.class, TestGadgetFactoryTwo.class])
+class TestGadgetComponentWithMoreThanOneFactory {
+
+}
+
+@GadgetComponent(name = "Test gadget", description = "The description", factories = [TestGadgetFactoryOne],
+        valueEngineerFactory = TestValueEngineerFactory.class, scopes = Scope.DATA)
+class TestGadgetComponentWithAllAttributes {
 
 }
 

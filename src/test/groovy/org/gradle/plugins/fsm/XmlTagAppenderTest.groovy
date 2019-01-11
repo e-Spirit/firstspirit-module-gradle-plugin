@@ -2,6 +2,8 @@ package org.gradle.plugins.fsm
 
 import com.espirit.moddev.components.annotations.*
 import de.espirit.firstspirit.server.module.ModuleInfo
+import org.apache.commons.lang3.StringUtils
+import org.assertj.core.api.SoftAssertions
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
@@ -12,6 +14,7 @@ import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 
+import static org.assertj.core.api.Assertions.assertThat
 import static org.gradle.plugins.fsm.ComponentHelper.createResource
 import static org.gradle.plugins.fsm.ComponentHelper.createWebResource
 import static org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME
@@ -33,7 +36,10 @@ class XmlTagAppenderTest {
                                                        TestPublicComponentWithConfiguration.getName(), TestWebAppComponent.getName(),
                                                        TestProjectAppComponent.getName(), TestProjectAppComponentWithoutConfigurable.getName(),
                                                        TestScheduleTaskComponentWithForm.getName(), TestScheduleTaskComponentWithoutForm.getName(),
-                                                       TestServiceComponent.getName(), TestServiceComponentWithoutConfigurable.getName()]
+                                                       TestServiceComponent.getName(), TestServiceComponentWithoutConfigurable.getName(),
+                                                       TestMinimalGadgetComponent.getName(), TestGadgetComponentWithOneFactory.getName(),
+                                                       TestGadgetComponentWithMoreThanOneFactory.getName(), TestGadgetComponentWithAllAttributes.getName(),
+                                                       TestGadgetComponentWithUnimplementedFactory.getName()]
     final List<String> validAndInvalidProjectAppClasses = [XmlTagAppender.PROJECT_APP_BLACKLIST, componentImplementingClasses].flatten()
 
     Project project
@@ -79,6 +85,9 @@ class XmlTagAppenderTest {
                 if (ScheduleTaskComponent.isAssignableFrom(annotation)) {
                     return [TestScheduleTaskComponentWithConfigurable.getName()]
                 }
+                if (GadgetComponent.isAssignableFrom(annotation)) {
+                    return [TestGadgetComponentWithAllAttributes.getName()]
+                }
                 println annotation
                 return []
             }
@@ -111,6 +120,17 @@ ${INDENT_WS_12___}<configuration>
 ${INDENT_WS_16_______}<application>org.gradle.plugins.fsm.TestScheduleTaskComponentWithConfigurable</application>
 ${INDENT_WS_12___}</configuration>
 ${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.TestConfigurable</configurable>
+${INDENT_WS_8}</public>
+${INDENT_WS_8}<public>
+${INDENT_WS_12___}<name>Test gadget</name>
+${INDENT_WS_12___}<description>The description</description>
+${INDENT_WS_12___}<class>de.espirit.firstspirit.module.GadgetSpecification</class>
+${INDENT_WS_12___}<configuration>
+${INDENT_WS_16_______}<gom>org.gradle.plugins.fsm.TestGadgetComponentWithAllAttributes</gom>
+${INDENT_WS_16_______}<factory>org.gradle.plugins.fsm.TestGadgetFactoryOne</factory>
+${INDENT_WS_16_______}<value>org.gradle.plugins.fsm.TestValueEngineerFactory</value>
+${INDENT_WS_16_______}<scope data="yes" />
+${INDENT_WS_12___}</configuration>
 ${INDENT_WS_8}</public>
 ${INDENT_WS_8}<public>
 ${INDENT_WS_12___}<name>TestUrlFactoryComponentName</name>
@@ -259,7 +279,7 @@ ${INDENT_WS_8}</public>""".toString(), result.toString())
     @Test
     void testScheduleTaskComponentTagAppendingWithForm() {
         StringBuilder result = new StringBuilder()
-        XmlTagAppender.appendScheduleTaskComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestScheduleTaskComponentWithForm.getName()], result)
+        XmlTagAppender.appendComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestScheduleTaskComponentWithForm.getName()], result, ScheduleTaskComponent)
 
         Assert.assertEquals("""
 ${INDENT_WS_8}<public>
@@ -278,7 +298,7 @@ ${INDENT_WS_8}</public>""".toString(), result.toString())
     @Test
     void testScheduleTaskComponentTagAppending_configurable() {
         StringBuilder result = new StringBuilder()
-        XmlTagAppender.appendScheduleTaskComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestScheduleTaskComponentWithConfigurable.getName()], result)
+        XmlTagAppender.appendComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestScheduleTaskComponentWithConfigurable.getName()], result, ScheduleTaskComponent)
 
         Assert.assertEquals("""
 ${INDENT_WS_8}<public>
@@ -295,7 +315,7 @@ ${INDENT_WS_8}</public>""".toString(), result.toString())
     @Test
     void testScheduleTaskComponentTagAppendingWithoutForm() {
         StringBuilder result = new StringBuilder()
-        XmlTagAppender.appendScheduleTaskComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()),[TestScheduleTaskComponentWithoutForm.getName()], result)
+        XmlTagAppender.appendComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()),[TestScheduleTaskComponentWithoutForm.getName()], result, ScheduleTaskComponent)
 
         Assert.assertEquals("""
 ${INDENT_WS_8}<public>
@@ -307,6 +327,103 @@ ${INDENT_WS_16_______}<application>org.gradle.plugins.fsm.TestScheduleTaskCompon
 ${INDENT_WS_12___}</configuration>
 ${INDENT_WS_8}</public>""".toString(), result.toString())
     }
+
+
+    @Test
+    void gadgetComponent_should_have_GadgetSpecification_as_class() {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestMinimalGadgetComponent.getName()], result, GadgetComponent)
+        assertThat(result.toString()).contains('<class>de.espirit.firstspirit.module.GadgetSpecification</class>')
+    }
+
+    @Test
+    void gadgetComponent_should_have_annotated_class_as_gom() {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestMinimalGadgetComponent.getName()], result, GadgetComponent)
+        assertThat(result.toString()).contains("<gom>${TestMinimalGadgetComponent.class.getName()}</gom>")
+    }
+
+
+    @Test
+    void gadgetComponent_should_have_GadgetScope_unrestricted_as_default() {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestMinimalGadgetComponent.getName()], result, GadgetComponent)
+        assertThat(result.toString()).contains("<scope unrestricted=\"yes\" />")
+    }
+
+
+    @Test
+    void gadgetComponent_should_have_a_factory_tag_if_factory_is_set() {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestGadgetComponentWithOneFactory.getName()], result, GadgetComponent)
+        SoftAssertions softly = new SoftAssertions()
+        softly.assertThat(result.toString()).contains('<factory>')
+        softly.assertThat(result.toString()).contains('</factory>')
+        softly.assertAll()
+    }
+
+
+    @Test
+    void gadgetComponent_should_have_a_value_tag_if_value_factory_is_set() {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestGadgetComponentWithAllAttributes.getName()], result, GadgetComponent)
+        SoftAssertions softly = new SoftAssertions()
+        softly.assertThat(result.toString()).contains('<value>')
+        softly.assertThat(result.toString()).contains('</value>')
+        softly.assertAll()
+    }
+
+
+    @Test
+    void gadgetComponent_should_have_full_qualified_class_as_factory() {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestGadgetComponentWithOneFactory.getName()], result, GadgetComponent)
+        assertThat(result.toString()).contains("<factory>${TestGadgetFactoryOne.class.getName()}</factory>")
+    }
+
+
+    @Test
+    void gadgetComponent_should_have_full_qualified_class_as_value() {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestGadgetComponentWithAllAttributes.getName()], result, GadgetComponent)
+        assertThat(result.toString()).contains("<value>${TestValueEngineerFactory.class.getName()}</value>")
+    }
+
+
+    @Test
+    void gadgetComponent_should_have_factory_tag_for_each_factory() {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestGadgetComponentWithMoreThanOneFactory.getName()], result, GadgetComponent)
+        SoftAssertions softly = new SoftAssertions()
+        int factoryOpenTags = StringUtils.countMatches(result.toString(), '<factory>')
+        int factoryCloseTags = StringUtils.countMatches(result.toString(), '</factory>')
+        softly.assertThat(factoryOpenTags).isEqualTo(2)
+        softly.assertThat(factoryCloseTags).isEqualTo(2)
+        softly.assertAll()
+    }
+
+
+    @Test
+    void gadgetComponent_should_not_include_unimplemented_factory_class() {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestGadgetComponentWithUnimplementedFactory.getName()], result, GadgetComponent)
+        assertThat(result.toString()).doesNotContain('<factory>', '/factory>')
+    }
+
+
+    @Test
+    void gadgetComponent_should_have_gom_factory_value_and_scope_within_configuration_tag() {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendComponentTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestGadgetComponentWithAllAttributes.getName()], result, GadgetComponent)
+        String resultString = result.toString()
+        String configString = resultString.substring(resultString.indexOf('<configuration>'), resultString.indexOf('</configuration>')+'</configuration>'.length())
+        StringBuilder regexBuilder = new StringBuilder();
+        regexBuilder.append("<configuration>\\s+")
+                .append("<gom>[\\w\\.]+</gom>\\s+").append("<factory>[\\w\\.]+</factory>\\s+")
+                .append("<value>[\\w\\.]+</value>\\s+").append("<scope data=\"yes\" />\\s+</configuration>")
+        assertThat(configString.matches(regexBuilder.toString())).isTrue()
+    }
+
 
     @Test
     void appendWebAppTags_with_target_path() throws Exception {

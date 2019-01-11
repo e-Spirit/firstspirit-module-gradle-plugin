@@ -1,5 +1,4 @@
 import java.nio.file.Files
-import java.nio.file.attribute.FileAttribute
 
 /*
  * Copyright 2013 the original author or authors.
@@ -17,7 +16,7 @@ import java.nio.file.attribute.FileAttribute
  * limitations under the License.
  */
 buildscript {
-    ext.fsmAnnotationsVersion = '1.9.1'
+    ext.fsmAnnotationsVersion = '1.9.2'
 
     repositories {
         maven {
@@ -49,19 +48,18 @@ repositories {
             password = "${artifactory_password}"
         }
     }
-    mavenCentral()
 }
 
 def fsRuntimeVersion = '5.2.181007' // FirstSpirit 2018-10
 
 dependencies {
-    compile gradleApi()
-    compile localGroovy()
-    compile 'io.github.lukehutch:fast-classpath-scanner:2.6.2'
-    compile "com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}"
-    compile 'de.espirit.mavenplugins:fsmchecker:0.9'
-    compileOnly "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}"
-    testCompile (
+    implementation gradleApi()
+    implementation localGroovy()
+    implementation 'io.github.lukehutch:fast-classpath-scanner:2.6.2'
+    implementation "com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}"
+    implementation 'de.espirit.mavenplugins:fsmchecker:0.9'
+    implementation "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}"
+    testImplementation (
         "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}",
 		'junit:junit:4.12',
         'org.assertj:assertj-core:3.9.0',
@@ -69,12 +67,12 @@ dependencies {
         'commons-io:commons-io:2.6'
     )
 
-    testCompile('org.spockframework:spock-core:1.2-groovy-2.4') {
+    testImplementation('org.spockframework:spock-core:1.2-groovy-2.4') {
         exclude group: 'org.codehaus.groovy'
     }
-    testCompile gradleTestKit()
-    testCompile 'org.mockito:mockito-core:2.15.0'
-    testCompile 'org.ow2.asm:asm:6.2'
+    testImplementation gradleTestKit()
+    testImplementation 'org.mockito:mockito-core:2.15.0'
+    testImplementation 'org.ow2.asm:asm:6.2'
 }
 
 sourceSets {
@@ -101,7 +99,7 @@ publishing {
             groupId 'com.espirit.moddev'
             artifactId artifactName
             from components.java
-
+            
             artifact sourceJar
             artifact packageJavadoc
 
