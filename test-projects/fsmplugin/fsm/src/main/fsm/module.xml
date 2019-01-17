@@ -16,6 +16,7 @@ $components
         <library>
             <resources>
             	<!-- production code  -->
+                <!-- only edit for tests, normally you'd have to use versions -->
                 <resource>lib/$artifact</resource>
                 
 $resources

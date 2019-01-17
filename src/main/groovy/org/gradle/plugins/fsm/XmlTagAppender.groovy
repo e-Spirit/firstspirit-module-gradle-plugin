@@ -121,7 +121,8 @@ class XmlTagAppender {
 
     static appendModuleClassAndConfigTags(Class<?> module, StringBuilder result){
         def annotation = module.annotations.find{ it instanceof ModuleComponent }
-        final String configurable = annotation.configurable() == Configuration.class ? "" : "\n${INDENT_WS_4}<configurable>${annotation.configurable().name}</configurable>"
+        final String configurableTag = "\n${INDENT_WS_4}<configurable>${annotation.configurable().name}</configurable>"
+        final String configurable = annotation.configurable() == Configuration.class ? "" : configurableTag
         result.append("${INDENT_WS_4}<class>${module.getName()}</class>${configurable}")
     }
 
@@ -161,7 +162,7 @@ class XmlTagAppender {
                 break
             case GadgetComponent.class:
                 appendGadgetComponentTagsOfClasses(loadedClasses, result)
-                break;
+                break
             default:
                 throw new UnsupportedOperationException("Handling of type " + type.getName() + " is not supported yet")
         }
@@ -324,7 +325,6 @@ class XmlTagAppender {
                 def resourcesString = evaluateResources(annotation, webResourceIndent, project)
                 if(!resourcesString.isEmpty()) { resourcesString = "\n" + resourcesString }
                 if(!webResourcesString.isEmpty()) { webResourcesString = "\n" + webResourcesString }
-
 // keep indent (2 tabs / 8 whitespaces) --> 3. level <module><components><web-app>
                 result.append("""
         <web-app${scopes}>
@@ -334,7 +334,7 @@ class XmlTagAppender {
             <class>${webAppClass.getName().toString()}</class>${configurable}
             <web-xml>${webXmlPath}</web-xml>
             <web-resources>
-                <resource name="${getJarFilename(project)}" version="${project.version}">lib/${getJarFilename(project)}</resource>
+                <resource name="${project.group}:${project.name}" version="${project.version}">lib/${getJarFilename(project)}</resource>
 ${resourcesString}${webResourcesString}
             </web-resources>
         </web-app>
@@ -473,7 +473,6 @@ ${resources}
 
             def pathFromAnnotation = expand(resource.path(), context)
 
-
             if(resource instanceof Resource) {
                 sb.append("""${indent}<resource name="${nameFromAnnotation}" version="${versionFromAnnotation}"${minVersion}${maxVersion} scope="${resource.scope().toString().toLowerCase()}" mode="${resource.mode().toString().toLowerCase()}">${pathFromAnnotation}</resource>${end}""")
             } else if(resource instanceof WebResource) {
@@ -552,7 +551,6 @@ ${resources}
 
         String minVersionString = minVersionAttribute ? """ minVersion="${minVersionAttribute}\"""" : ""
         String maxVersionString = optionalMinMaxVersion ? """ maxVersion="${optionalMinMaxVersion.maxVersion}\"""" : ""
-
         """${indent}<resource name="${dependencyId.group}:${dependencyId.name}"$scopeAttribute$modeAttribute version="${dependencyId.version}"${minVersionString}${maxVersionString}>lib/${dependencyId.name}-${dependencyId.version}$classifier.${artifact.extension}</resource>"""
     }
 
@@ -565,7 +563,7 @@ ${resources}
         def indent = INDENT_WS_8
         def projectResources = new StringBuilder()
         def modeAttribute = globalResourcesMode == null ? "" : """ mode="${globalResourcesMode.name().toLowerCase(Locale.ROOT)}\""""
-        projectResources.append("""${indent}<resource name="${getJarFilename(project)}" version="${project.version}" scope="module\"""" +
+        projectResources.append("""${indent}<resource name="${project.group}:${project.name}" version="${project.version}" scope="module\"""" +
                                 """${modeAttribute}>lib/${getJarFilename(project)}</resource>"""
         )
 
@@ -577,8 +575,7 @@ ${resources}
             if (fsmResourcesFolder.exists()) {
                 fsmResourcesFolder.eachFile(FileType.ANY) { file ->
                     def relPath = fsmResourcesFolder.toPath().relativize(file.toPath()).toFile()
-                    def resourceTag = """${indent}<resource name="${project.group}:${project.name}-${relPath}" version="${project.version}" scope="${scope}\"${modeAttribute}>${relPath}</resource>\n"""
-
+                    def resourceTag = """\n${indent}<resource name="${project.group}:${project.name}-${relPath}" version="${project.version}" scope="${scope}\"${modeAttribute}>${relPath}</resource>"""
                     if(!tempResourceTags.containsKey(relPath)) {
                         tempResourceTags.put(relPath.toString(), resourceTag.toString())
                     } else {
