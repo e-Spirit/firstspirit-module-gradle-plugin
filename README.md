@@ -9,7 +9,7 @@
 TLDR: Apply the fsmgradleplugin to your project, configure your components and use assembleFSM to build your module.
 
 There are three plugins you can use for slightly different purposes:
-fsmannotationsgradleplugin, fsmconfigurationsgradleplugin and fsmgradleplugin.
+[fsmannotationsgradleplugin](https://git.e-spirit.de/projects/DEVEX/repos/fsmannotations/), fsmconfigurationsgradleplugin and fsmgradleplugin.
 
 We ship all three plugins in a single dependency, so that it's easy for you to use all modules without version incompatibilities in your multi project build.
 If you only need a specific feature in one of your sub projects, you can only apply the corresponding plugin, instead of adding all features and capabilities to this project.
@@ -63,9 +63,22 @@ For example you can install it in your local Maven repo and add mavenLocal() to 
 All plugins also apply the [Java Plugin](http://www.gradle.org/docs/current/userguide/java_plugin.html), thus using the same layout as any standard Java project using Gradle.
 
 For a single project build, you can apply the fsmgradleplugin alone and place all your components into your source folders as usual.
+The fsmgradleplugin will create a .jar archive automatically for the project/subproject it is applied to, place the jar in the .fsm archive, and create a resource entry in the module.xml.
 
-For a multi project build, you only apply the fsmgradleplugin to the project that is responsible for assembling your module.
-The other projects can use the fsmannotationsgradleplugin and the fsmconfigurationsplugin, depending on what the project actually contains.
+For a multi-project build, just apply the fsmgradleplugin to the project/subproject that is responsible for assembling your module archive (.fsm). All other subprojects of the multiproject build should be referenced via the appropriate plugin configurations (fsWebCompile, fsServerCompile). This will assure the rendering of an appropriate resource entry for the dependent subprojects and their respective transitive dependencies.
+ 
+_Other subprojects may need to apply the fsmannotationsgradleplugin and/or the fsmconfigurationsplugin depending on their content._
+
+```groovy
+//Example: dataservie-fsm subproject includes dataservice-api and dataservice-web subprojects 
+dependencies {
+
+    fsWebCompile project(':dataservice-api')
+    fsWebCompile project(':dataservice-web')
+
+}
+```
+
 
 ## Tasks
 
@@ -76,6 +89,11 @@ Task | Depends on | Type | Description
 assembleFSM            | jar    | FSM             | Assembles an fsm archive containing the FirstSpirit module.
 checkIsolation | fsm    | IsolationCheck  | Checks if the FSM is compliant to the isolated runtime (requires access to a configured FSM Dependency Detector web service).
 
+###assembleFSM
+The assembleFSM task has the goal to create a FirstSprit module file (.fsm). The .fsm file contains the module libraries and their dependencies, the module.xml meta file, and possibly other module resources from the project directory.
+For the project that includes the fsmgradleplugin, a .jar is created that contains the compiled Java classes of the project/subproject. The name of this .jar file is composed by the name and version properties of the project/subproject ([project.name]-[project.version].jar). Furthermore a resource entry with the fsm-project-jar with scope="module" is created in the module resource block. Also, if the module contains a WebAppComponent, a WebResource entry is created for the WebApp to make the code available in the context of the web application.
+In order for further dependencies to have a resource entry in the module.xml, the plugin's own configurations (fsServerCompile, fsWebCompile etc.) must be used in the dependencies section.
+
 ## Extension properties
 
 The fsmgradleplugin defines the following extension properties in the `fsm` closure:
@@ -84,12 +102,12 @@ Property | Type | Default | Description
 :-------:|:----:|:-------:| -----------
 moduleName			 | String        | *unset* (project name)	|  The name of the module. If not set the project name is used
 displayName          | String        | *unset*             		|  Human-readable name of the module
-moduleDirName        | String        | src/main/resources  		|  The name of the directory containing the module.xml, relative to the project directory.
+moduleDirName        | String        | src/main/resources  		|  The name of the directory containing the module.xml (and/or module-isolated.xml), relative to the project directory.
 resourceMode         | Mode          | *unset*             		|  Resource mode (legacy, isolated) used for all resources
 isolationDetectorUrl | String        | *unset*             		|  If set, this URL is used to connect to the FSM Dependency Detector
 complianceLevel      | String        | DEFAULT                 |  Compliance level to check for if isolationDetectorUrl is set
 firstSpiritVersion   | String        | *unset*             		|  FirstSpirit version used in the isolation check
-appendDefaultMinVersion | boolean    | false                    |  If set to true, appends the artifact version as the minVersion attribute to all resource tags (except resources which were explicitly set within FS component annotations)
+appendDefaultMinVersion | boolean    | true                    |  If set to true, appends the artifact version as the minVersion attribute to all resource tags (except resources which were explicitly set within FS component annotations)
 
 ### Example
 
@@ -106,8 +124,10 @@ fsm {
 
 ## module.xml
 
-If you supply a module.xml resource in your project (as a standard resource that gets embedded into the fsm archive), it will be filtered by the plugin.
-The plugin adds tags to the xml file that depend on the module project.
+The _module.xml_ holds meta information about the FirstSpirit module archive, its components, resources, and dependencies.  
+When the plugin generates the .fsm archive it will always create a _module.xml_ in the META-INF/ directory within the archive.
+You may provide your custom _module.xml_ resource in your project by placing it in the directory defined by the _moduleDirName_ property. 
+Furthermore, the _module.xml_ is filtered by the plugin and predefined placeholders are replaced.
 The following placeholders in the _module.xml_ will be replaced at build time:
 
 Placeholder | Value | Description
@@ -121,22 +141,37 @@ $class | complex (see module example) | The class name of the class implementing
 $components | complex (see component example) | All FirstSpirit components that can be found in the FSM archive
 $resources | complex (see resource example) | All FirstSpirit resources that can be found in the FSM archive
 
-If no module.xml file can be found in the archive, a small generic template module.xml file is used by the plugin.
+If no module.xml file is provided within the project, a small generic template module.xml file is used by the plugin.
 This is useful, if you don't want to add any custom behaviour to your module.xml. 
 
 ### FirstSpirit components
 
-The configuration for your implemented FirstSpirit components has to be placed somewhere, so that the plugin can generate a module.xml file.
-Your project app, web app and other components can be annotated with our custom annotations that can be found in a separate project.
-In order to be able to use them, apply the fsmannotationsplugin to your project.
+Your module may include one or more FirstSpirit components. With the annotations from the fsmannotationsgradleplugin it is possible to annotate the components with their respective configuration. When assembling the fsm file, the fsmgradleplugin will evaluate the annotations and render the configurations into the module.xml.
 
-The annotations should be self explanatory. If a component doesn't provide annotations, it won't be treated for module.xml generation.
-You could add tags to your module.xml template by hand in this case. Please note, if you are using an @WebAppComponent annotation with 
-a webXml attribute, you need to have a matching file inside your project. Otherwise your .fsm cannot be installed on the FirstSpirit server.
+####Annotations
 
-#### Special case for server plugins
+#####com.espirit.moddev.components.annotations.@ModuleComponent
+A module developer may provide an implementation of the Module interface to participate in the lifecycle of the module. With the @ModuleComponent Annotation on the respective implementation, a Configuration Class may be specified to be used in the module configuration at runtime.
 
-If the <code>@ScheduleTaskComponent</code> annotation is used, some things need to be considered. For serialization purpose it is required to have the class which implements
+#####com.espirit.moddev.components.annotations.@ServiceComponent
+Should be added to a class implementing the Service interface in order to render the appropriate Service configuration into the module.xml.
+
+#####com.espirit.moddev.components.annotations.@ProjectAppComponent
+Should be added to a class implementing the ProjectApp interface in order to render the appropriate ProjectApp configuration into the module.xml.
+
+#####com.espirit.moddev.components.annotations.@WebAppComponent
+Should be added to a class implementing the WebApp interface in order to render the appropriate WebApp configuration into the module.xml.
+Please note, that if you configure a webXml attribute, you need to have a matching web.xml file inside your project in a subfolder of fsm-resources, or else the installation of the .fsm on the FirstSpirit server will fail.
+
+#####com.espirit.moddev.components.annotations.@WebResource
+The @WebResource annotation is used within a @WebAppComponent configuration to define one or more web resources (javascript, css, images etc. ) used by the web application. Resources referenced in a @WebResource should be placed in the fsm-resources folder.   
+
+#####com.espirit.moddev.components.annotations.@PublicComponent
+Should be added to a class implementing the Public interface in order to render the appropriate Public configuration into the module.xml.
+
+######com.espirit.moddev.components.annotations.@ScheduleTaskComponent
+Should be added to a class implementing the ScheduleTaskApplication in order to render the appropriate ScheduleTaskApplication configuration into the module.xml.
+When using the <code>@ScheduleTaskComponent</code> annotation, some things need to be considered. For serialization purpose it is required to have the class which implements
 the <code>ScheduleTaskData</code> interface in server scope. Most of the time this class is part of the project which uses the fsmgradleplugin and therefore part of the generated jar which
 is <u>NOT</u> in server scope. To make this work the following can be done.
 
@@ -147,6 +182,12 @@ is <u>NOT</u> in server scope. To make this work the following can be done.
 </ul>
 
 With this a <code>.fsm</code> file is generated which includes a jar with all the classes which are needed in server scope and the module.xml with the corresponding resource entry.
+
+######com.espirit.moddev.components.annotations.@UrlFactoryComponent
+Should be added to a class implementing the UrlFactory in order to render the appropriate UrlFactory configuration into the module.xml.
+
+######com.espirit.moddev.components.annotations.@GadgetComponent
+Should be added to a class implementing the GomElement in order to render the appropriate GomElement configuration into the module.xml.
 
 ### Resources by convention
 
@@ -265,7 +306,9 @@ fsProvidedRuntime | Same scope as the usual runtime dependency. Use if you want 
 
 Dependencies with other scopes than these (for example the regular compile scope) are not treated as a resource to be used for module.xml file generation.
 That means if you use compile scope, you can compile your source files against it like in any other project, but the resource won't be listed in the module.xml.
+   
 
+In a multiproject build make sure to only use the dependency configurations in the project that assembles the fsm. The dependencies of other subprojects should be defined without using the plugin dependency configurations. The resource entries of these dependencies are created depending on how the respective subproject is referenced from the project executing the assembleFSM task.  
 
 ### Example
 
@@ -312,7 +355,7 @@ server is started in "isolation mode".
 
 To declare all resource as legacy or isolated, use the `resourceMode` extension property.
 
-It is possible to perform and isolation check on the resulting module file to ensure a certain level of compliance to the isolated mode. This check requires access to an *FSM Depedency Detector* web service and can be configured using the extension properties as explained above. Valid values for the compliance level are:
+It is possible to perform an isolation check on the resulting module file to ensure a certain level of compliance to the isolated mode. This check requires access to an *FSM Depedency Detector* web service and can be configured using the extension properties as explained above. Valid values for the compliance level are:
 
 name | Description
 -----|------------
