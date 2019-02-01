@@ -50,14 +50,14 @@ repositories {
     }
 }
 
-def fsRuntimeVersion = '5.2.181007' // FirstSpirit 2018-10
+def fsRuntimeVersion = '5.2.190105' // FirstSpirit 2019-01
 
 dependencies {
     implementation gradleApi()
     implementation localGroovy()
     implementation 'io.github.lukehutch:fast-classpath-scanner:2.6.2'
     implementation "com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}"
-    implementation 'de.espirit.mavenplugins:fsmchecker:0.9'
+    implementation 'de.espirit.mavenplugins:fsmchecker:0.10'
     implementation "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}"
     testImplementation (
         "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}",

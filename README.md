@@ -100,14 +100,15 @@ The fsmgradleplugin defines the following extension properties in the `fsm` clos
 
 Property | Type | Default | Description
 :-------:|:----:|:-------:| -----------
-moduleName			 | String        | *unset* (project name)	|  The name of the module. If not set the project name is used
-displayName          | String        | *unset*             		|  Human-readable name of the module
-moduleDirName        | String        | src/main/resources  		|  The name of the directory containing the module.xml (and/or module-isolated.xml), relative to the project directory.
-resourceMode         | Mode          | *unset*             		|  Resource mode (legacy, isolated) used for all resources
-isolationDetectorUrl | String        | *unset*             		|  If set, this URL is used to connect to the FSM Dependency Detector
-complianceLevel      | String        | DEFAULT                 |  Compliance level to check for if isolationDetectorUrl is set
-firstSpiritVersion   | String        | *unset*             		|  FirstSpirit version used in the isolation check
-appendDefaultMinVersion | boolean    | true                    |  If set to true, appends the artifact version as the minVersion attribute to all resource tags (except resources which were explicitly set within FS component annotations)
+moduleName			        | String        | *unset* (project name)	|  The name of the module. If not set the project name is used
+displayName                 | String        | *unset*             		|  Human-readable name of the module
+moduleDirName               | String        | src/main/resources  		|  The name of the directory containing the module.xml (and/or module-isolated.xml), relative to the project directory.
+resourceMode                | Mode          | *unset*             		|  Resource mode (legacy, isolated) used for all resources
+isolationDetectorUrl        | String        | *unset*             		|  If set, this URL is used to connect to the FSM Dependency Detector
+isolationDetectorWhitelist  | String[]      | *unset*                   |  Contains all resources that should not be scanned for dependencies
+complianceLevel             | String        | DEFAULT                   |  Compliance level to check for if isolationDetectorUrl is set
+firstSpiritVersion          | String        | *unset*             		|  FirstSpirit version used in the isolation check
+appendDefaultMinVersion     | boolean       | true                      |  If set to true, appends the artifact version as the minVersion attribute to all resource tags (except resources which were explicitly set within FS component annotations)
 
 ### Example
 
@@ -117,7 +118,8 @@ fsm {
     moduleDirName = 'src/main/module'
     resourceMode = ISOLATED
     isolationDetectorUrl = 'https://...'
-    firstSpiritVersion = '5.2.181007'
+    isolationDetectorWhitelist = ['org.freemarker:freemarker:2.3.28']
+    firstSpiritVersion = '5.2.190306'
     complianceLevel = 'HIGHEST'
 }
 ```
@@ -409,10 +411,10 @@ You can use the following snippet as a starting point:
 ```groovy
 buildscript {
 	ext {
-		fsRuntimeVersion = '5.2.181007'
+		fsRuntimeVersion = '5.2.190306'
 	}
     dependencies {
-        classpath 'com.espirit.moddev:fsmgradleplugin:0.12.0'
+        classpath 'com.espirit.moddev:fsmgradleplugin:0.13.8'
         classpath "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}"
     }
 }

@@ -46,6 +46,10 @@ class IsolationCheck extends DefaultTask {
         def connector = new WebServiceConnector(uri, pluginExtension.firstSpiritVersion)
 
         def complianceCheck = new ComplianceCheckImpl(getComplianceLevel(), project.getBuildDir().toPath(), connector)
+        if (pluginExtension.isolationDetectorWhitelist != null) {
+            pluginExtension.isolationDetectorWhitelist.each { complianceCheck.addWhitelistedResource(it) }
+        }
+
         def checkResult = complianceCheck.check(pathList)
 
         if (!checkResult.isValid()) {
@@ -77,6 +81,14 @@ class IsolationCheck extends DefaultTask {
 
     void setComplianceLevel(ComplianceLevel complianceLevel) {
         pluginExtension.complianceLevel = complianceLevel
+    }
+
+    Collection<String> whitelistedResources() {
+        return pluginExtension.isolationDetectorWhitelist
+    }
+
+    void setWhitelistedResources(Collection<String> whitelistedResources) {
+        pluginExtension.isolationDetectorWhitelist = whitelistedResources
     }
 
     String getFirstSpiritVersion() {

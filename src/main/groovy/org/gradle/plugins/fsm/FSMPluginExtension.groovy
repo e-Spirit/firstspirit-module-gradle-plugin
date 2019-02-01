@@ -50,6 +50,12 @@ class FSMPluginExtension {
      */
     String isolationDetectorUrl
 
+    /**
+     * Resource identifiers of the form 'groupId:artifactId:version' of resources
+     * which should not be scanned for external dependencies
+     */
+    Collection<String> isolationDetectorWhitelist
+
 	/**
 	 * The compliance level to check for if {#link isolationDetectorUrl} is set. Defaults to
 	 * {@link ComplianceLevel#DEFAULT}

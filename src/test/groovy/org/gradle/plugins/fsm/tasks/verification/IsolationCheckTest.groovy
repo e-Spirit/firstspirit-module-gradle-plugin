@@ -51,7 +51,7 @@ class IsolationCheckTest {
         defineArtifactoryForProject(project)
         project.apply plugin: FSMPlugin.NAME
         isolationCheck = project.tasks[FSMPlugin.ISOLATION_CHECK_TASK_NAME] as IsolationCheck
-        isolationCheck.setFirstSpiritVersion("5.2.181007")
+        isolationCheck.setFirstSpiritVersion("5.2.190105")
         isolationCheck.setDetectorUrl("https://fsdev.e-spirit.de/FsmDependencyDetector/")
     }
 
@@ -277,6 +277,15 @@ class IsolationCheckTest {
         }
     }
 
+    @Test
+    void ignoreResource() {
+        writeSingleClassToFsmFile(IMPL_CLASS)
+
+        isolationCheck.setComplianceLevel(DEFAULT)
+        isolationCheck.whitelistedResources = ['de.espirit:test:1.0']
+        isolationCheck.execute()
+    }
+
 
     private void writeSingleClassToFsmFile(final String superClassName) throws IOException {
         final ClassWriter classWriter = new ClassWriter(0)
@@ -299,7 +308,7 @@ class IsolationCheckTest {
         zipOutputStream.putNextEntry(new ZipEntry("META-INF/module.xml"))
         zipOutputStream.write("<module><name>TestModule</name><version>0.1</version><components/>".getBytes())
         zipOutputStream.write("<resources>".getBytes())
-        zipOutputStream.write("""<resource scope="module">test.jar</resource>""".getBytes())
+        zipOutputStream.write("""<resource name="de.espirit:test" version="1.0" scope="module">test.jar</resource>""".getBytes())
         zipOutputStream.write("</resources></module>".getBytes())
         zipOutputStream.putNextEntry(new ZipEntry("test.jar"))
         zipOutputStream.write(Files.readAllBytes(jarFile))
