@@ -51,7 +51,7 @@ class IsolationCheckTest {
         defineArtifactoryForProject(project)
         project.apply plugin: FSMPlugin.NAME
         isolationCheck = project.tasks[FSMPlugin.ISOLATION_CHECK_TASK_NAME] as IsolationCheck
-        isolationCheck.setFirstSpiritVersion("5.2.190105")
+        isolationCheck.setFirstSpiritVersion("5.2.190507")
         isolationCheck.setDetectorUrl("https://fsdev.e-spirit.de/FsmDependencyDetector/")
     }
 

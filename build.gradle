@@ -1,4 +1,5 @@
 import java.nio.file.Files
+import java.util.regex.Pattern
 
 /*
  * Copyright 2013 the original author or authors.
@@ -15,42 +16,63 @@ import java.nio.file.Files
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-buildscript {
-    ext.fsmAnnotationsVersion = '1.9.2'
+plugins {
+    id 'groovy'
+    id 'maven-publish'
+    id 'idea'
+    id 'java-gradle-plugin'
+    id 'com.dorongold.task-tree' version '1.3.1'
+}
 
-    repositories {
-        maven {
-            url 'https://artifactory.e-spirit.de/artifactory/repo'
-            credentials {
-                username = "${artifactory_user}"
-                password = "${artifactory_password}"
-            }
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+ext {
+    fsmAnnotationsVersion = '1.9.2'
+
+    // set version to {{issue.key}}-SNAPSHOT for feature branches
+    try {
+        def branchName = "git rev-parse --abbrev-ref HEAD".execute().text.trim()
+        def matcher = Pattern.compile('(?:.*/)?[^A-Z]*([A-Z]+-[0-9]+).*').matcher(branchName)
+        if (matcher.matches()) {
+            project.version = "${matcher.group(1)}-SNAPSHOT"
         }
+    } catch (IOException e) {
+        println "Failure determining branch name: $e"
     }
 }
 
-apply plugin: 'groovy'
-apply plugin: 'maven-publish'
-apply plugin: 'idea'
-
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
-
 description = 'Gradle plugin to build FirstSpirit modules (FSMs).'
-group = 'com.espirit.moddev'
-ext.artifactName = 'fsmgradleplugin'
+group = 'de.espirit.gradle'
 
 repositories {
     maven {
         url 'https://artifactory.e-spirit.de/artifactory/repo'
         credentials {
-            username = "${artifactory_user}"
+            username = "${artifactory_username}"
             password = "${artifactory_password}"
         }
     }
 }
 
-def fsRuntimeVersion = '5.2.190105' // FirstSpirit 2019-01
+gradlePlugin {
+    plugins {
+        firstSpiritModule {
+            id = 'de.espirit.firstspirit-module'
+            implementationClass = 'org.gradle.plugins.fsm.FSMPlugin'
+        }
+        firstSpiritModuleAnnotations {
+            id = 'de.espirit.firstspirit-module-annotations'
+            implementationClass = 'org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin'
+        }
+        firstSpiritModuleConfigurations {
+            id = 'de.espirit.firstspirit-module-configurations'
+            implementationClass = 'org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin'
+        }
+    }
+}
+
+def fsRuntimeVersion = '5.2.190507' // FirstSpirit 2019-05
 
 dependencies {
     implementation gradleApi()
@@ -91,51 +113,6 @@ jar {
 				   'Built-JDK': System.getProperty('java.version'),
 				   'Built-Gradle': gradle.gradleVersion
 	}
-}
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            groupId 'com.espirit.moddev'
-            artifactId artifactName
-            from components.java
-            
-            artifact sourceJar
-            artifact packageJavadoc
-
-            pom.withXml {
-                def root = asNode()
-                root.appendNode('name', 'FSM Gradle plugin')
-                root.appendNode('description', 'Gradle plugin to build FirstSpirit modules (FSMs).')
-                root.appendNode('inceptionYear', '2013')
-
-                def license = root.appendNode('licenses').appendNode('license')
-                license.appendNode('name', 'The Apache Software License, Version 2.0')
-                license.appendNode('url', 'http://www.apache.org/licenses/LICENSE-2.0.txt')
-                license.appendNode('distribution', 'repo')
-
-                def developers = root.appendNode('developers')
-                def developer = developers.appendNode('developer')
-                developer.appendNode('id', 'moritzzimmer')
-                developer.appendNode('name', 'Moritz Zimmer')
-                developer.appendNode('email', 'moritz.zmmr@gmail.com')
-
-                developer = developers.appendNode('developer')
-                developer.appendNode('id', 'e-spirit')
-                developer.appendNode('name', 'E-Spirit AG')
-                developer.appendNode('email', 'produktmanagement@e-spirit.com')
-            }
-        }
-    }
-    repositories {
-        maven {
-            credentials {
-                username "${artifactory_user}"
-                password "${artifactory_password}"
-            }
-            url "https://artifactory.e-spirit.de/artifactory/${((version.endsWith("SNAPSHOT")) ? {'plugins-snapshot-local'} : {'plugins-release-local'})()}"
-        }
-    }
 }
 
 task sourceJar(type: Jar) {
@@ -195,6 +172,47 @@ task setVersion() {
         props.setProperty('version', System.getProperty("nextVersion"))
         props.store(propsFile.newWriter(), null)
         props.load(propsFile.newDataInputStream())
+    }
+}
+
+publishing {
+    publications {
+        pluginMaven(MavenPublication) {
+            artifact sourceJar
+            artifact packageJavadoc
+
+            pom.withXml {
+                def root = asNode()
+                root.appendNode('name', 'FSM Gradle plugin')
+                root.appendNode('description', 'Gradle plugin to build FirstSpirit modules (FSMs).')
+                root.appendNode('inceptionYear', '2013')
+
+                def license = root.appendNode('licenses').appendNode('license')
+                license.appendNode('name', 'The Apache Software License, Version 2.0')
+                license.appendNode('url', 'http://www.apache.org/licenses/LICENSE-2.0.txt')
+                license.appendNode('distribution', 'repo')
+
+                def developers = root.appendNode('developers')
+                def developer = developers.appendNode('developer')
+                developer.appendNode('id', 'moritzzimmer')
+                developer.appendNode('name', 'Moritz Zimmer')
+                developer.appendNode('email', 'moritz.zmmr@gmail.com')
+
+                developer = developers.appendNode('developer')
+                developer.appendNode('id', 'e-spirit')
+                developer.appendNode('name', 'E-Spirit AG')
+                developer.appendNode('email', 'produktmanagement@e-spirit.com')
+            }
+        }
+    }
+    repositories {
+        maven {
+            credentials {
+                username "${artifactory_username}"
+                password "${artifactory_password}"
+            }
+            url "https://artifactory.e-spirit.de/artifactory/${((version.endsWith("SNAPSHOT")) ? {'plugins-snapshot-local'} : {'plugins-release-local'})()}"
+        }
     }
 }
 

@@ -1,23 +1,17 @@
-String myGroupId = 'com.espirit.moddev.gradle'
-
-apply plugin: 'base'
-
 buildscript {
     repositories {
-        mavenLocal()
         maven {
             url 'https://artifactory.e-spirit.de/artifactory/repo'
             credentials {
-                username = "${artifactory_user}"
+                username = "${artifactory_username}"
                 password = "${artifactory_password}"
             }
         }
     }
+}
 
-    dependencies {
-        classpath 'com.espirit.moddev:fsmgradleplugin:0.12.7-SNAPSHOT'
-        classpath 'de.espirit.firstspirit:fs-isolated-runtime:5.2.181007'
-    }
+plugins {
+    id 'base'
 }
 
 subprojects {
@@ -28,7 +22,7 @@ subprojects {
         maven {
             url 'https://artifactory.e-spirit.de/artifactory/repo'
             credentials {
-                username = "${artifactory_user}"
+                username = "${artifactory_username}"
                 password = "${artifactory_password}"
             }
         }

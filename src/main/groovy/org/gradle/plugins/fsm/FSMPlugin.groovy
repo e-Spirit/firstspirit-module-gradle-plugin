@@ -40,8 +40,8 @@ import org.gradle.plugins.fsm.tasks.verification.IsolationCheck
  */
 class FSMPlugin implements Plugin<Project> {
 
-    public static final String NAME = "fsmgradleplugin"
-    public static final String FSM_EXTENSION_NAME = "fsm"
+    public static final String NAME = "de.espirit.firstspirit-module"
+    public static final String FSM_EXTENSION_NAME = "firstSpiritModule"
     public static final String FSM_TASK_NAME = "assembleFSM"
     public static final String ISOLATION_CHECK_TASK_NAME = "checkIsolation"
 

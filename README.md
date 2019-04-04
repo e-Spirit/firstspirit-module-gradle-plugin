@@ -1,26 +1,39 @@
 ![e-spirit logo](https://fbcdn-profile-a.akamaihd.net/hprofile-ak-ash3/s160x160/581307_346033565453595_1547840127_a.jpg)
 
-# Gradle FSM plugin
-
-[Gradle](http://www.gradle.org/) plugin to build [FirstSpirit](http://www.e-spirit.com/en/product/advantage/advantages.html) modules (FSMs).
+# [Gradle](http://www.gradle.org/) plugin to build [FirstSpirit](http://www.e-spirit.com/en/product/advantage/advantages.html) modules (FSMs)
 
 ## Usage
 
-TLDR: Apply the fsmgradleplugin to your project, configure your components and use assembleFSM to build your module.
+TLDR: Apply the _firstspirit-module_ plugin to your project, configure your components and use assembleFSM to build your module.
+
+Define a pluginManagement block in your settings.gradle using this snippet. Set the repository and your personal credentials:
+
+    pluginManagement {
+        repositories {
+            maven {
+                url = 'https://artifactory.e-spirit.de/artifactory/repo/'
+                credentials {
+                    username = artifactory_username
+                    password = artifactory_password
+                }
+            }
+            gradlePluginPortal()
+        }
+    }
 
 There are three plugins you can use for slightly different purposes:
-[fsmannotationsgradleplugin](https://git.e-spirit.de/projects/DEVEX/repos/fsmannotations/), fsmconfigurationsgradleplugin and fsmgradleplugin.
+[firstspirit-module-annotations](https://git.e-spirit.de/projects/DEVEX/repos/fsmannotations/), firstspirit-module-configurations and firstspirit-module.
 
 We ship all three plugins in a single dependency, so that it's easy for you to use all modules without version incompatibilities in your multi project build.
 If you only need a specific feature in one of your sub projects, you can only apply the corresponding plugin, instead of adding all features and capabilities to this project.
 The most important task of the plugins is to provide a task to bundle your application as a FirstSpirit module.
-The fsmannotationsgradleplugin and fsmconfigurationsgradleplugin can be used to configure FirstSpirit components and their scope and make them visible for the fsmgradleplugin, that contains the bundling task.
+The de.espirit.firstspirit-module-annotations plugin and de.espirit.firstspirit-module-configurations plugin can be used to configure FirstSpirit components and their scope and make them visible for the _de.espirit.firstspirit-module_ plugin, that contains the bundling task.
 
 
-### fsmgradleplugin
+### de.espirit.firstspirit-module plugin
 
 This is the most important plugin.
-It applies the fsmannotationsgradleplugin and the fsmconfigurationsgradleplugin as well on application.
+It applies the _de.espirit.firstspirit-module-annotations_ plugin and the _de.espirit.firstspirit-module-configurations_ plugin as well on application.
 Additionally to the other two plugin's capabilities, it adds an `assembleFSM` task to your project.
 This task assembles a FirstSpirit module file, based on the components in your project.
 For further information, please read the sections below.
@@ -28,31 +41,37 @@ For further information, please read the sections below.
 To use the plugin, include the following snippet on top of your build script:
 
 ```groovy
-apply plugin: 'fsmgradleplugin'
+plugins {
+    id 'de.espirit.firstspirit-module' version '{{version}}'
+}
 ```
 
-### fsmannotationsgradleplugin
+### de.espirit.firstspirit-module-annotations plugin
 
 This plugin applies a dependency to our annotations module to a project.
 Its version corresponds with the other gradle plugins in the bundle.
 The dependency is added as compileOnly so that you can use our component annotations at compile time, while the dependency is not shipped with your application.
-This is sufficient, because the fsmgradleplugin also comes with it's own runtime dependency on the annotation module.
+This is sufficient, because the _de.espirit.firstspirit-module_ plugin also comes with it's own runtime dependency on the annotation module.
 For more information about available annotations, please take a look at the `com.espirit.moddev.components.annotations` package.
 
 To use the plugin, include the following snippet on top of your build script:
 
 ```groovy
-apply plugin: 'fsmannotationsgradleplugin'
+plugins {
+    id 'de.espirit.firstspirit-module-annotations' version '{{version}}'
+}
 ```
 
-### fsmconfigurationsgradleplugin
+### de.espirit.firstspirit-module-configurations plugin
 
 This plugin adds gradle configurations to your project.
 They enable you to configure FirstSpirit scopes (module or server) and other aspects (for example FirstSpirit isolation) for your dependencies.
 Please take a loot at #dependency-management for a detailed description of the available scopes and when to use them.
 
 ```groovy
-apply plugin: 'fsmconfigurationsgradleplugin'
+plugins {
+    id 'de.espirit.firstspirit-module-configurations' version '{{version}}'
+}
 ```
 
 Keep in mind, that you have to add a repository where the plugin can be found.
@@ -62,15 +81,15 @@ For example you can install it in your local Maven repo and add mavenLocal() to 
 
 All plugins also apply the [Java Plugin](http://www.gradle.org/docs/current/userguide/java_plugin.html), thus using the same layout as any standard Java project using Gradle.
 
-For a single project build, you can apply the fsmgradleplugin alone and place all your components into your source folders as usual.
-The fsmgradleplugin will create a .jar archive automatically for the project/subproject it is applied to, place the jar in the .fsm archive, and create a resource entry in the module.xml.
+For a single project build, you can apply the _de.espirit.firstspirit-module_ plugin alone and place all your components into your source folders as usual.
+The _de.espirit.firstspirit-module_ plugin will create a .jar archive automatically for the project/subproject it is applied to, place the jar in the .fsm archive, and create a resource entry in the module.xml.
 
-For a multi-project build, just apply the fsmgradleplugin to the project/subproject that is responsible for assembling your module archive (.fsm). All other subprojects of the multiproject build should be referenced via the appropriate plugin configurations (fsWebCompile, fsServerCompile). This will assure the rendering of an appropriate resource entry for the dependent subprojects and their respective transitive dependencies.
+For a multi-project build, just apply the _de.espirit.firstspirit-module_ plugin to the project/subproject that is responsible for assembling your module archive (.fsm). All other subprojects of the multiproject build should be referenced via the appropriate plugin configurations (fsWebCompile, fsServerCompile). This will assure the rendering of an appropriate resource entry for the dependent subprojects and their respective transitive dependencies.
  
-_Other subprojects may need to apply the fsmannotationsgradleplugin and/or the fsmconfigurationsplugin depending on their content._
+_Other subprojects may need to apply the_ de.espirit.firstspirit-module-annotations _plugin and/or the firstspirit-module-configurations depending on their content._
 
 ```groovy
-//Example: dataservie-fsm subproject includes dataservice-api and dataservice-web subprojects 
+//Example: dataservice-fsm subproject includes dataservice-api and dataservice-web subprojects 
 dependencies {
 
     fsWebCompile project(':dataservice-api')
@@ -82,7 +101,7 @@ dependencies {
 
 ## Tasks
 
-The fsmgradleplugin defines the following tasks:
+The _de.espirit.firstspirit-module_ plugin defines the following tasks:
 
 Task | Depends on | Type | Description
 :---:|:----------:|:----:| -----------
@@ -91,12 +110,12 @@ checkIsolation | fsm    | IsolationCheck  | Checks if the FSM is compliant to th
 
 ###assembleFSM
 The assembleFSM task has the goal to create a FirstSprit module file (.fsm). The .fsm file contains the module libraries and their dependencies, the module.xml meta file, and possibly other module resources from the project directory.
-For the project that includes the fsmgradleplugin, a .jar is created that contains the compiled Java classes of the project/subproject. The name of this .jar file is composed by the name and version properties of the project/subproject ([project.name]-[project.version].jar). Furthermore a resource entry with the fsm-project-jar with scope="module" is created in the module resource block. Also, if the module contains a WebAppComponent, a WebResource entry is created for the WebApp to make the code available in the context of the web application.
+For the project that includes the _de.espirit.firstspirit-module_ plugin, a .jar is created that contains the compiled Java classes of the project/subproject. The name of this .jar file is composed by the name and version properties of the project/subproject ([project.name]-[project.version].jar). Furthermore a resource entry with the fsm-project-jar with scope="module" is created in the module resource block. Also, if the module contains a WebAppComponent, a WebResource entry is created for the WebApp to make the code available in the context of the web application.
 In order for further dependencies to have a resource entry in the module.xml, the plugin's own configurations (fsServerCompile, fsWebCompile etc.) must be used in the dependencies section.
 
 ## Extension properties
 
-The fsmgradleplugin defines the following extension properties in the `fsm` closure:
+The _de.espirit.firstspirit-module_ plugin defines the following extension properties in the `fsm` closure:
 
 Property | Type | Default | Description
 :-------:|:----:|:-------:| -----------
@@ -113,13 +132,13 @@ appendDefaultMinVersion     | boolean       | true                      |  If se
 ### Example
 
 ```groovy
-fsm {
+firstSpiritModule {
     // set a different directory containing the module.xml
     moduleDirName = 'src/main/module'
     resourceMode = ISOLATED
     isolationDetectorUrl = 'https://...'
     isolationDetectorWhitelist = ['org.freemarker:freemarker:2.3.28']
-    firstSpiritVersion = '5.2.190306'
+    firstSpiritVersion = '5.2.190507'
     complianceLevel = 'HIGHEST'
 }
 ```
@@ -148,7 +167,7 @@ This is useful, if you don't want to add any custom behaviour to your module.xml
 
 ### FirstSpirit components
 
-Your module may include one or more FirstSpirit components. With the annotations from the fsmannotationsgradleplugin it is possible to annotate the components with their respective configuration. When assembling the fsm file, the fsmgradleplugin will evaluate the annotations and render the configurations into the module.xml.
+Your module may include one or more FirstSpirit components. With the annotations from the _de.espirit.firstspirit-module-annotations_ plugin it is possible to annotate the components with their respective configuration. When assembling the fsm file, the _de.espirit.firstspirit-module_ plugin will evaluate the annotations and render the configurations into the module.xml.
 
 ####Annotations
 
@@ -174,7 +193,7 @@ Should be added to a class implementing the Public interface in order to render 
 ######com.espirit.moddev.components.annotations.@ScheduleTaskComponent
 Should be added to a class implementing the ScheduleTaskApplication in order to render the appropriate ScheduleTaskApplication configuration into the module.xml.
 When using the <code>@ScheduleTaskComponent</code> annotation, some things need to be considered. For serialization purpose it is required to have the class which implements
-the <code>ScheduleTaskData</code> interface in server scope. Most of the time this class is part of the project which uses the fsmgradleplugin and therefore part of the generated jar which
+the <code>ScheduleTaskData</code> interface in server scope. Most of the time this class is part of the project which uses the _de.espirit.firstspirit-module_ plugin and therefore part of the generated jar which
 is <u>NOT</u> in server scope. To make this work the following can be done.
 
 <ul>
@@ -409,18 +428,11 @@ eclipse {
 You can use the following snippet as a starting point:
 
 ```groovy
-buildscript {
-	ext {
-		fsRuntimeVersion = '5.2.190306'
-	}
-    dependencies {
-        classpath 'com.espirit.moddev:fsmgradleplugin:0.13.8'
-        classpath "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}"
-    }
+plugins {
+    id 'de.espirit.firstspirit-module' version '{{version}}'
+    id 'eclipse'
+    id 'idea'
 }
-apply plugin: 'fsmgradleplugin'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
 
 description = 'Example FSM Gradle build'
 version = '0.1.0'
@@ -437,7 +449,7 @@ dependencies {
     compile 'com.espirit.moddev.components:annotations:1.9.1'
 }
 
-fsm {
+firstSpiritModule {
     // example to set a different directory containing the module.xml
 	// moduleDirName = 'src/main/module'
 	// declare dependencies to other FSM's to be written to the module.xml

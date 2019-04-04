@@ -7,7 +7,7 @@ import org.gradle.api.plugins.JavaPlugin
 
 class FSMAnnotationsPlugin implements Plugin<Project> {
 
-    static final String NAME = "fsmannotationsgradleplugin"
+    static final String NAME = "de.espirit.firstspirit-module-annotations"
 
     Project project
 

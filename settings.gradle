@@ -1,2 +1,1 @@
-include 'fsmconfigurationsgradleplugin'
-
+rootProject.name = 'firstspirit-module-gradle-plugin'
