@@ -4,6 +4,7 @@
     <version>$version</version>
     <description>$description</description>
     <vendor>$vendor</vendor>
+    <licenses>$licensesFile</licenses>
     <custom-tag>custom-legacy</custom-tag>
     <components>
 

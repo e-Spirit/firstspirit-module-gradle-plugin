@@ -15,6 +15,7 @@
  */
 package org.gradle.plugins.fsm
 
+
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
@@ -29,8 +30,6 @@ import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Before
 import org.junit.Test
 
-import static junit.framework.TestCase.assertNotNull
-import static org.gradle.internal.impldep.junit.framework.TestCase.assertEquals
 import static org.gradle.plugins.fsm.util.Matchers.dependsOn
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
@@ -75,7 +74,7 @@ class FSMPluginTest {
 		project.apply plugin: FSMPlugin.NAME
 
 		Task fsm = project.tasks[FSMPlugin.FSM_TASK_NAME]
-		assertThat(fsm, dependsOn(JavaPlugin.JAR_TASK_NAME, JavaPlugin.CLASSES_TASK_NAME))
+		assertThat(fsm, dependsOn(JavaPlugin.JAR_TASK_NAME, JavaPlugin.CLASSES_TASK_NAME, FSMPlugin.GENERATE_LICENSE_REPORT_TASK_NAME))
 	}
 	
 	@Test

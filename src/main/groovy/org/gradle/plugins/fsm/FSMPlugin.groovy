@@ -15,6 +15,9 @@
  */
 package org.gradle.plugins.fsm
 
+
+import com.github.jk1.license.LicenseReportPlugin
+import com.github.jk1.license.render.CsvReportRenderer
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -44,6 +47,7 @@ class FSMPlugin implements Plugin<Project> {
     public static final String FSM_EXTENSION_NAME = "firstSpiritModule"
     public static final String FSM_TASK_NAME = "assembleFSM"
     public static final String ISOLATION_CHECK_TASK_NAME = "checkIsolation"
+    public static final String GENERATE_LICENSE_REPORT_TASK_NAME = "generateLicenseReport"
 
     private Project project
 
@@ -55,9 +59,10 @@ class FSMPlugin implements Plugin<Project> {
         project.getPlugins().apply(FSMConfigurationsPlugin)
         project.getPlugins().apply(FSMAnnotationsPlugin)
 
-        def fsmPluginExtension = project.getExtensions().create(FSM_EXTENSION_NAME, FSMPluginExtension)
+        project.getExtensions().create(FSM_EXTENSION_NAME, FSMPluginExtension)
 
         project.getPlugins().apply(JavaPlugin.class)
+        project.getPlugins().apply(LicenseReportPlugin.class)
 
         FSM fsmTask = configureFsmTask(project)
 
@@ -67,6 +72,23 @@ class FSMPlugin implements Plugin<Project> {
 
 
         configureJarTask(project)
+        configureLicenseReport(project)
+    }
+
+    void configureLicenseReport(Project project) {
+        project.licenseReport {
+            // Set output directory for the report data.
+            // Defaults to ${project.buildDir}/reports/dependency-license.
+            outputDir = "${project.buildDir}/${FSM.LICENSES_DIR_NAME}"
+
+            // Adjust the configurations to fetch dependencies, e.g. for Android projects. Default is 'runtimeClasspath'
+            configurations = ['compile']
+
+            // Don't include artifacts of project's own group into the report
+            excludeOwnGroup = true
+
+            renderers = [new CsvReportRenderer()]
+        }
     }
 
     private FSM configureFsmTask(final Project project) {
@@ -83,6 +105,8 @@ class FSMPlugin implements Plugin<Project> {
             .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
             .getRuntimeClasspath()
         })
+
+        fsmTask.dependsOn(project.getTasks().getByName(GENERATE_LICENSE_REPORT_TASK_NAME))
 
         fsmTask.dependsOn({ JavaPlugin.JAR_TASK_NAME})
 

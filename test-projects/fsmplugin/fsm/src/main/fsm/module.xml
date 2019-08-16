@@ -2,6 +2,7 @@
     <name>$name</name>
     <version>$version</version>
     <description>$description</description>
+    <licenses>$licensesFile</licenses>
 $class
     <custom-module-xml>This is a custom module.xml</custom-module-xml>
     <dependencies>

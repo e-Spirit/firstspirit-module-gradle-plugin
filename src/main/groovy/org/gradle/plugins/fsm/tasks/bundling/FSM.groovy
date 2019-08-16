@@ -45,6 +45,10 @@ class FSM extends Jar {
 
     static final String FSM_EXTENSION = 'fsm'
     static final String FSM_RESOURCES_PATH = 'src/main/fsm-resources'
+    /**
+     * Output dir name for license reports of license report plugin.
+     */
+    static final String LICENSES_DIR_NAME = 'licenses'
 
     /**
      * The fsm runtime classpath. All libraries in this
@@ -77,6 +81,13 @@ class FSM extends Jar {
                 }
             }
 
+            // include license file
+            into('META-INF') {
+                from("${project.buildDir}/${LICENSES_DIR_NAME}") {
+                    include "licenses.csv"
+                }
+            }
+
             FSMConfigurationsPlugin.FS_CONFIGURATIONS.forEach { configName ->
                 def config = project.configurations.getByName(configName)
                 def projectDependencies = config.getAllDependencies().withType(ProjectDependency)
@@ -89,30 +100,32 @@ class FSM extends Jar {
             configure {
                 metaInf {
                     if(pluginExtension.moduleDirName != null){
+                        // include module.xml's
                         String moduleDirPath = trimPathToDirectory(pluginExtension.moduleDirName)
 
-                        File moduleXml = project.file(moduleDirPath + "/module.xml")
-                        File moduleIsolatedXml = project.file(moduleDirPath + "/module-isolated.xml")
+                        def moduleXmlFileName = "module.xml"
+                        def isolatedModuleXmlFileName = "module-isolated.xml"
+                        File moduleXml = project.file(moduleDirPath + "/" + moduleXmlFileName)
+                        File moduleIsolatedXml = project.file(moduleDirPath + "/" + isolatedModuleXmlFileName)
 
                         from moduleDirPath
-
-                        if(!moduleXml.exists() && !moduleIsolatedXml.exists()){
+                        if (!moduleXml.exists() && !moduleIsolatedXml.exists()) {
                             throw new IllegalArgumentException("No module.xml or module-isolated.xml found in moduleDir " + pluginExtension.moduleDirName)
                         }
                         if(moduleXml.exists() && moduleIsolatedXml.exists()){
                             getLogger().info("Both xml files exist in moduleDir " + moduleDirPath)
-                            include "module.xml"
-                            include "module-isolated.xml"
+                            include moduleXmlFileName
+                            include isolatedModuleXmlFileName
                         }
                         else if(moduleXml.exists() && !moduleIsolatedXml.exists()){
                             getLogger().warn("Found only a module.xml in moduleDir " + moduleDirPath +
                                              ". Using the default template-module-isolated.xml to replace the missing module-isolated.xml")
-                            include "module.xml"
+                            include moduleXmlFileName
                         }
                         else if(!moduleXml.exists() && moduleIsolatedXml.exists()){
                             getLogger().warn("Found only a module-isolated.xml in moduleDir " + moduleDirPath +
                                              ". Using the default template-module.xml to replace the missing module.xml")
-                            include "module-isolated.xml"
+                            include isolatedModuleXmlFileName
                         }
                     }
                 }
@@ -150,6 +163,7 @@ class FSM extends Jar {
         String moduleTags = ""
         String componentTags = ""
         String resourcesTags = ""
+        String licenseTags = ""
         boolean isolated
     }
 
@@ -187,6 +201,7 @@ class FSM extends Jar {
             it.write(filteredModuleXml)
         }
     }
+
     String filterModuleXml(String unfilteredModuleXml, XMLData xmlData) {
         String filteredModuleXml = unfilteredModuleXml.replace('$name', pluginExtension.moduleName ?: project.name)
         filteredModuleXml = filteredModuleXml.replace('$displayName', pluginExtension.displayName?.toString() ?: project.name.toString())
@@ -198,6 +213,7 @@ class FSM extends Jar {
         filteredModuleXml = filteredModuleXml.replace('$dependencies', getFsmDependencyTags(project))
         filteredModuleXml = filteredModuleXml.replace('$resources', xmlData.resourcesTags)
         filteredModuleXml = filteredModuleXml.replace('$components', xmlData.componentTags)
+        filteredModuleXml = filteredModuleXml.replace('$licensesFile', xmlData.licenseTags)
         getLogger().info("Generated module.xml: \n$filteredModuleXml")
         filteredModuleXml
     }
@@ -219,6 +235,7 @@ class FSM extends Jar {
         File tempDir = unzipFsmToNewTempDir(archive)
         def moduleXml = new XMLData(isolated: isolated)
 
+
         def libDir = new File(Paths.get(tempDir.getPath(), "lib").toString())
         new JarClassLoader(libDir, getClass().getClassLoader()).withCloseable { classLoader ->
             try {
@@ -235,6 +252,11 @@ class FSM extends Jar {
                     StringBuilder result = new StringBuilder()
                     appendModuleAnnotationTags(classLoader, new ClassScannerResultDelegate(scan), result, moduleBlacklist)
                     moduleXml.moduleTags = result.toString()
+                }
+
+                licenses: {
+                    String result = "META-INF/licenses.csv"
+                    moduleXml.licenseTags = result
                 }
 
 
