@@ -4,12 +4,12 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.plugins.fsm.FSMPlugin
+import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 import org.gradle.testfixtures.ProjectBuilder
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.TemporaryFolder
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.objectweb.asm.ClassWriter
 
 import java.nio.file.Files
@@ -30,11 +30,9 @@ import static org.objectweb.asm.Opcodes.V1_8
 
 class IsolationCheckTest {
 
-    @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder()
-
     private Project project
     private File testDir
+    private Path jarDir
     private IsolationCheck isolationCheck
 
     private static final String JDK_CLASS = "java/lang/Object"
@@ -43,9 +41,10 @@ class IsolationCheckTest {
     private static final String RUNTIME_CLASS = "de/espirit/common/StringUtil"
     private static final String IMPL_CLASS = "de/espirit/common/impl/LegacyClassFactoryImpl"
 
-    @Before
-    void setup() {
-        testDir = temporaryFolder.newFolder()
+    @BeforeEach
+    void setup(@TempDir File tempDir, @TempDir Path jarDir) {
+        testDir = tempDir
+        this.jarDir = jarDir
         project = ProjectBuilder.builder().withProjectDir(testDir).build()
         setArtifactoryCredentialsFromLocalProperties(project)
         defineArtifactoryForProject(project)
@@ -53,6 +52,8 @@ class IsolationCheckTest {
         isolationCheck = project.tasks[FSMPlugin.ISOLATION_CHECK_TASK_NAME] as IsolationCheck
         isolationCheck.setFirstSpiritVersion("5.2.190507")
         isolationCheck.setDetectorUrl("https://fsdev.e-spirit.de/FsmDependencyDetector/")
+        FSM fsm = project.tasks[FSMPlugin.FSM_TASK_NAME] as FSM
+        addTestModulesToBlacklist(fsm)
     }
 
 
@@ -69,37 +70,40 @@ class IsolationCheckTest {
         assertThat(isolationCheck.getComplianceLevel()).isSameAs(DEFAULT)
     }
 
-    @Test(expected = GradleException.class)
+    @Test
     void emptyFsmWithHighestCompliance() {
+        FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
+        pluginExtension.moduleDirName = getClass().getClassLoader().getResource("empty").path
+
         Task fsmTask = project.tasks[FSMPlugin.FSM_TASK_NAME]
         fsmTask.execute()
 
         isolationCheck.setComplianceLevel(HIGHEST)
-        isolationCheck.execute()
+        isolationCheck.check()
     }
 
-    @Test(expected = GradleException.class)
+    @Test
     void emptyFsmWithDefaultCompliance() {
+        FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
+        pluginExtension.moduleDirName = getClass().getClassLoader().getResource("empty").path
+
         Task fsmTask = project.tasks[FSMPlugin.FSM_TASK_NAME]
         fsmTask.execute()
 
         isolationCheck.setComplianceLevel(DEFAULT)
-        isolationCheck.execute()
+        isolationCheck.check()
     }
 
     @Test
     void emptyFsmWithMinimalCompliance() {
+        FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
+        pluginExtension.moduleDirName = getClass().getClassLoader().getResource("empty").path
+
         FSM fsmTask = project.tasks[FSMPlugin.FSM_TASK_NAME] as FSM
-        addTestModulesToBlacklist(fsmTask)
         fsmTask.execute()
 
-        try {
-            isolationCheck.setComplianceLevel(MINIMAL)
-            isolationCheck.execute()
-            failBecauseExceptionWasNotThrown(GradleException.class)
-        } catch (final GradleException e) {
-            assertThat(e).hasCauseInstanceOf(GradleException.class)
-        }
+        isolationCheck.setComplianceLevel(MINIMAL)
+        isolationCheck.check()
     }
 
     @Test
@@ -107,7 +111,7 @@ class IsolationCheckTest {
         writeSingleClassToFsmFile(JDK_CLASS)
 
         isolationCheck.setComplianceLevel(HIGHEST)
-        isolationCheck.execute()
+        isolationCheck.check()
     }
 
     @Test
@@ -115,7 +119,7 @@ class IsolationCheckTest {
         writeSingleClassToFsmFile(JDK_CLASS)
 
         isolationCheck.setComplianceLevel(DEFAULT)
-        isolationCheck.execute()
+        isolationCheck.check()
     }
 
     @Test
@@ -123,7 +127,7 @@ class IsolationCheckTest {
         writeSingleClassToFsmFile(JDK_CLASS)
 
         isolationCheck.setComplianceLevel(MINIMAL)
-        isolationCheck.execute()
+        isolationCheck.check()
     }
 
     @Test
@@ -133,11 +137,10 @@ class IsolationCheckTest {
         isolationCheck.setComplianceLevel(HIGHEST)
 
         try {
-            isolationCheck.execute()
+            isolationCheck.check()
             failBecauseExceptionWasNotThrown(GradleException.class)
         } catch (final GradleException e) {
-            assertThat(e).hasCauseInstanceOf(GradleException.class)
-            assertThat(e.getCause()).hasMessageContaining(asQualified(DEPRECATED_API_CLASS) + " (1 usages)")
+            assertThat(e).hasMessageContaining(asQualified(DEPRECATED_API_CLASS) + " (1 usages)")
 
         }
     }
@@ -147,7 +150,7 @@ class IsolationCheckTest {
         writeSingleClassToFsmFile(DEPRECATED_API_CLASS)
 
         isolationCheck.setComplianceLevel(DEFAULT)
-        isolationCheck.execute()
+        isolationCheck.check()
     }
 
     @Test
@@ -155,7 +158,7 @@ class IsolationCheckTest {
         writeSingleClassToFsmFile(DEPRECATED_API_CLASS)
 
         isolationCheck.setComplianceLevel(MINIMAL)
-        isolationCheck.execute()
+        isolationCheck.check()
     }
 
     @Test
@@ -163,7 +166,7 @@ class IsolationCheckTest {
         writeSingleClassToFsmFile(API_CLASS)
 
         isolationCheck.setComplianceLevel(HIGHEST)
-        isolationCheck.execute()
+        isolationCheck.check()
     }
 
     @Test
@@ -171,7 +174,7 @@ class IsolationCheckTest {
         writeSingleClassToFsmFile(API_CLASS)
 
         isolationCheck.setComplianceLevel(DEFAULT)
-        isolationCheck.execute()
+        isolationCheck.check()
     }
 
     @Test
@@ -179,7 +182,7 @@ class IsolationCheckTest {
         writeSingleClassToFsmFile(API_CLASS)
 
         isolationCheck.setComplianceLevel(MINIMAL)
-        isolationCheck.execute()
+        isolationCheck.check()
     }
 
     @Test
@@ -189,11 +192,10 @@ class IsolationCheckTest {
         isolationCheck.setComplianceLevel(HIGHEST)
 
         try {
-            isolationCheck.execute()
+            isolationCheck.check()
             failBecauseExceptionWasNotThrown(GradleException.class)
         } catch (GradleException e) {
-            assertThat(e).hasCauseInstanceOf(GradleException.class)
-            assertThat(e.getCause()).hasMessageContaining(asQualified(RUNTIME_CLASS) + " (1 usages)")
+            assertThat(e).hasMessageContaining(asQualified(RUNTIME_CLASS) + " (1 usages)")
         }
     }
 
@@ -204,11 +206,10 @@ class IsolationCheckTest {
         isolationCheck.setComplianceLevel(DEFAULT)
 
         try {
-            isolationCheck.execute()
+            isolationCheck.check()
             failBecauseExceptionWasNotThrown(GradleException.class)
         } catch (GradleException e) {
-            assertThat(e).hasCauseInstanceOf(GradleException.class)
-            assertThat(e.getCause()).hasMessageContaining(asQualified(RUNTIME_CLASS) + " (1 usages)")
+            assertThat(e).hasMessageContaining(asQualified(RUNTIME_CLASS) + " (1 usages)")
         }
     }
 
@@ -217,7 +218,7 @@ class IsolationCheckTest {
         writeSingleClassToFsmFile(RUNTIME_CLASS)
 
         isolationCheck.setComplianceLevel(MINIMAL)
-        isolationCheck.execute()
+        isolationCheck.check()
     }
 
 
@@ -226,7 +227,7 @@ class IsolationCheckTest {
         writeSingleClassToFsmFile(IMPL_CLASS)
 
         isolationCheck.setDetectorUrl("")
-        isolationCheck.execute()
+        isolationCheck.check()
     }
 
 
@@ -236,11 +237,10 @@ class IsolationCheckTest {
 
         isolationCheck.setComplianceLevel(HIGHEST)
         try {
-            isolationCheck.execute()
+            isolationCheck.check()
             failBecauseExceptionWasNotThrown(GradleException.class)
         } catch (final GradleException e) {
-            assertThat(e).hasCauseInstanceOf(GradleException.class)
-            assertThat(e.getCause()).hasMessageContaining(asQualified(IMPL_CLASS) + " (1 usages)")
+            assertThat(e).hasMessageContaining(asQualified(IMPL_CLASS) + " (1 usages)")
         }
     }
 
@@ -250,11 +250,10 @@ class IsolationCheckTest {
 
         isolationCheck.setComplianceLevel(DEFAULT)
         try {
-            isolationCheck.execute()
+            isolationCheck.check()
             failBecauseExceptionWasNotThrown(GradleException.class)
         } catch (final GradleException e) {
-            assertThat(e).hasCauseInstanceOf(GradleException.class)
-            assertThat(e.getCause()).hasMessageContaining(asQualified(IMPL_CLASS) + " (1 usages)")
+            assertThat(e).hasMessageContaining(asQualified(IMPL_CLASS) + " (1 usages)")
         }
     }
 
@@ -268,11 +267,10 @@ class IsolationCheckTest {
 
         isolationCheck.setComplianceLevel(MINIMAL)
         try {
-            isolationCheck.execute()
+            isolationCheck.check()
             failBecauseExceptionWasNotThrown(GradleException.class)
         } catch (final GradleException e) {
-            assertThat(e).hasCauseInstanceOf(GradleException.class)
-            assertThat(e.getCause()).hasMessageContaining(asQualified(IMPL_CLASS) + " (1 usages)")
+            assertThat(e).hasMessageContaining(asQualified(IMPL_CLASS) + " (1 usages)")
 
         }
     }
@@ -283,7 +281,7 @@ class IsolationCheckTest {
 
         isolationCheck.setComplianceLevel(DEFAULT)
         isolationCheck.whitelistedResources = ['de.espirit:test:1.0']
-        isolationCheck.execute()
+        isolationCheck.check()
     }
 
 
@@ -292,7 +290,7 @@ class IsolationCheckTest {
         classWriter.visit(V1_8, ACC_PUBLIC, "com.example.module/Test", null, superClassName, null)
         final byte[] classContent = classWriter.toByteArray()
 
-        final Path jarFile = temporaryFolder.newFile(IsolationCheckTest.class.getSimpleName() + ".jar").toPath()
+        final Path jarFile = jarDir.resolve(IsolationCheckTest.class.getSimpleName() + ".jar")
 
         final JarOutputStream jarOutputStream = new JarOutputStream(new FileOutputStream(jarFile.toFile()))
         final JarEntry jarEntry = new JarEntry("Test.class")

@@ -23,10 +23,9 @@ import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.testfixtures.ProjectBuilder
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.TemporaryFolder
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -34,8 +33,8 @@ import java.nio.file.Path
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
-import static junit.framework.Assert.assertNotNull
 import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown
 import static org.gradle.plugins.fsm.ComponentHelper.addTestModulesToBlacklist
 import static org.gradle.plugins.fsm.util.TestProjectUtils.defineArtifactoryForProject
 import static org.gradle.plugins.fsm.util.TestProjectUtils.setArtifactoryCredentialsFromLocalProperties
@@ -43,17 +42,14 @@ import static org.mockito.Mockito.spy
 
 class FSMTest {
 
-    @Rule
-	public TemporaryFolder temporaryFolder = new TemporaryFolder()
-
 	private File testDir
 	private Project project
 
 	FSM fsm
 
-	@Before
-	void setUp() {
-        testDir = temporaryFolder.newFolder()
+	@BeforeEach
+	void setUp(@TempDir final File tempDir) {
+        testDir = tempDir
 
 		project = ProjectBuilder.builder().withProjectDir(testDir).build()
 		setArtifactoryCredentialsFromLocalProperties(project)
@@ -63,9 +59,9 @@ class FSMTest {
 
 		fsm = project.tasks[FSMPlugin.FSM_TASK_NAME] as FSM
 		
-		fsm.baseName = 'testbasename'
-		fsm.appendix = 'testappendix'
-		fsm.version = '1.0'
+		fsm.archiveBaseName.set('testbasename')
+		fsm.archiveAppendix.set('testappendix')
+		fsm.archiveVersion.set('1.0')
 
 		addTestModulesToBlacklist(fsm)
 	}
@@ -73,13 +69,13 @@ class FSMTest {
 	@Test
 	void testExecute() {
 		fsm.execute()
-		assertThat(fsm.destinationDir).isDirectory()
-		assertThat(fsm.archivePath).isFile()
+		assertThat(fsm.destinationDirectory.get().asFile).isDirectory()
+		assertThat(fsm.archiveFile.get().asFile).isFile()
 	}
 
 	@Test
 	void fsmExtensionUsed() {
-		assertThat(fsm.extension).isEqualTo(FSM.FSM_EXTENSION)
+		assertThat(fsm.archiveExtension.get()).isEqualTo(FSM.FSM_EXTENSION)
 	}
 
 
@@ -108,7 +104,7 @@ class FSMTest {
 
 	@Test
 	void archivePathUsed() {
-		assertThat(fsm.archivePath.toPath()).isEqualTo(project.buildDir.toPath().resolve("fsm").resolve(fsm.archiveName))
+		assertThat(fsm.archiveFile.get().asFile.toPath()).isEqualTo(project.buildDir.toPath().resolve("fsm").resolve(fsm.archiveFile.get().asFile.name))
 	}
 
 	@Test
@@ -131,12 +127,17 @@ class FSMTest {
 		assertThat(moduleXml()).contains("""<custom-tag>custom</custom-tag>""")
 	}
 
-	@Test(expected = IllegalArgumentException)
+	@Test
 	void moduleDirContainsNoRelevantFiles() {
 		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
 		pluginExtension.moduleDirName = "some/empty/dir"
 
-		fsm.execute()
+		try {
+			fsm.execute()
+			failBecauseExceptionWasNotThrown(IllegalArgumentException.class)
+		} catch(final IllegalArgumentException e) {
+			assertThat(e).hasMessage("No module.xml or module-isolated.xml found in moduleDir some/empty/dir")
+		}
 	}
 
     @Test
@@ -314,9 +315,9 @@ class FSMTest {
 		assertThat(moduleXml()).contains("<resource name=\"${project.group}:${project.name}-resourcesFolder\" version=\"1.0.0\" scope=\"module\" mode=\"isolated\">resourcesFolder</resource>")
 
 		withFsmFile { ZipFile fsm ->
-			assertNotNull(fsm.getEntry("testResource.txt"))
-			assertNotNull(fsm.getEntry("resourcesFolder/testNested0.txt"))
-			assertNotNull(fsm.getEntry("resourcesFolder/testNested1.txt"))
+			assertThat(fsm.getEntry("testResource.txt")).isNotNull()
+			assertThat(fsm.getEntry("resourcesFolder/testNested0.txt")).isNotNull()
+			assertThat(fsm.getEntry("resourcesFolder/testNested1.txt")).isNotNull()
 		}
 	}
 
@@ -343,16 +344,16 @@ class FSMTest {
 		assertThat(moduleXml).contains("<resource name=\"${project.group}:${project.name}-web1.xml\" version=\"1.0.0\" scope=\"module\" mode=\"isolated\">web1.xml</resource>")
 
 		withFsmFile { ZipFile fsm ->
-			assertNotNull(fsm.getEntry("web.xml"))
-			assertNotNull(fsm.getEntry("web0.xml"))
-			assertNotNull(fsm.getEntry("web1.xml"))
+			assertThat(fsm.getEntry("web.xml")).isNotNull()
+			assertThat(fsm.getEntry("web0.xml")).isNotNull()
+			assertThat(fsm.getEntry("web1.xml")).isNotNull()
 		}
 
 	}
 
     private String moduleXml(boolean isolated = false) {
 		String isolationMode = isolated ? "-isolated" : ""
-        final Path fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.archiveName)
+        final Path fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.archiveFile.get().asFile.name)
         assertThat(fsmFile).exists()
         final ZipFile zipFile = new ZipFile(fsmFile.toFile())
         zipFile.withCloseable {
@@ -366,7 +367,7 @@ class FSMTest {
     }
 
 	private void withFsmFile(Closure closure) {
-		final Path fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.archiveName)
+		final Path fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.archiveFile.get().asFile.name)
 		assertThat(fsmFile).exists()
 		final ZipFile zipFile = new ZipFile(fsmFile.toFile())
 		zipFile.withCloseable {

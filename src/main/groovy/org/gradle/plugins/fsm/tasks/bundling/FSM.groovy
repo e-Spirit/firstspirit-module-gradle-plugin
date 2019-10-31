@@ -16,12 +16,13 @@
 package org.gradle.plugins.fsm.tasks.bundling
 
 import groovy.xml.XmlUtil
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
-import io.github.lukehutch.fastclasspathscanner.scanner.ScanResult
+import io.github.classgraph.ClassGraph
+import io.github.classgraph.ScanResult
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
@@ -58,14 +59,16 @@ class FSM extends Jar {
 
     public FSMPluginExtension pluginExtension
     private final List<String> moduleBlacklist = new ArrayList<>()
+
+    @Internal
     protected List<String> getModuleBlacklist() {
         return moduleBlacklist
     }
 
     FSM() {
 
-        extension = FSM_EXTENSION
-        destinationDir = project.file('build/fsm')
+        archiveExtension.set(FSM_EXTENSION)
+        destinationDirectory.set(project.file('build/fsm'))
         pluginExtension = project.getExtensions().getByType(FSMPluginExtension)
 
 //        We're creating the fsm task and its config in the fsm plugin constructor, so the user's
@@ -167,10 +170,26 @@ class FSM extends Jar {
         boolean isolated
     }
 
+    /**
+     * Helper method for executing Unit tests
+     */
+    void execute() {
+        if (lazyConfiguration instanceof List) {
+            lazyConfiguration.each { configure it }
+        } else {
+            configure lazyConfiguration
+        }
+
+        Files.createDirectories(archiveFile.get().asFile.parentFile.toPath())
+        Files.createFile(archiveFile.get().asFile.toPath())
+        super.copy()
+        generateModuleXmls()
+    }
+
     @TaskAction
     protected void generateModuleXmls() {
         getLogger().info("Generating module.xml files")
-        File archive = getArchivePath()
+        File archive = archiveFile.get().asFile
         getLogger().info("Found archive ${archive.getPath()}")
         (FileSystems.newFileSystem(archive.toPath(), getClass().getClassLoader())).withCloseable { fs ->
             new ZipFile(archive).withCloseable { zipFile ->
@@ -194,7 +213,7 @@ class FSM extends Jar {
         String filteredModuleXml = XmlUtil.serialize(filterModuleXml(unfilteredModuleXml, moduleXML))
         String fileName = "module${moduleXML.isolated ? "-isolated" : ""}.xml"
 
-        Paths.get(destinationDir.toString(), fileName).toFile() << filteredModuleXml
+        Paths.get(destinationDirectory.get().toString(), fileName).toFile() << filteredModuleXml
 
         Path nf = fs.getPath("/META-INF/" + fileName)
         Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE).withCloseable {
@@ -238,35 +257,33 @@ class FSM extends Jar {
 
         def libDir = new File(Paths.get(tempDir.getPath(), "lib").toString())
         new JarClassLoader(libDir, getClass().getClassLoader()).withCloseable { classLoader ->
-            try {
-                def scan = new FastClasspathScanner().addClassLoader(classLoader).scan()
+            def classGraph = new ClassGraph()
+            classGraph.enableClassInfo()
+            classGraph.enableAnnotationInfo()
 
-                WebXmlPaths webXmlPaths
-                components: {
-                    StringBuilder result = new StringBuilder()
-                    webXmlPaths = appendComponentsTag(project, classLoader, new ClassScannerResultDelegate(scan), appendDefaultMinVersion, result, isolated)
-                    moduleXml.componentTags = result.toString()
-                }
+            def scan = classGraph.addClassLoader(classLoader).scan()
 
-                moduleAnnotation: {
-                    StringBuilder result = new StringBuilder()
-                    appendModuleAnnotationTags(classLoader, new ClassScannerResultDelegate(scan), result, moduleBlacklist)
-                    moduleXml.moduleTags = result.toString()
-                }
-
-                licenses: {
-                    String result = "META-INF/licenses.csv"
-                    moduleXml.licenseTags = result
-                }
-
-
-                moduleXml.resourcesTags = getResourcesTags(project, webXmlPaths, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion, isolated)
-
-            } catch (MalformedURLException e) {
-                getLogger().error("Passed URL is malformed", e)
-            } catch (ClassNotFoundException e) {
-                getLogger().error("Cannot find class", e)
+            WebXmlPaths webXmlPaths
+            components: {
+                StringBuilder result = new StringBuilder()
+                webXmlPaths = appendComponentsTag(project, classLoader, new ClassScannerResultDelegate(scan), appendDefaultMinVersion, result, isolated)
+                moduleXml.componentTags = result.toString()
             }
+
+            moduleAnnotation: {
+                StringBuilder result = new StringBuilder()
+                appendModuleAnnotationTags(classLoader, new ClassScannerResultDelegate(scan), result, moduleBlacklist)
+                moduleXml.moduleTags = result.toString()
+            }
+
+            licenses: {
+                String result = "META-INF/licenses.csv"
+                moduleXml.licenseTags = result
+            }
+
+
+            moduleXml.resourcesTags = getResourcesTags(project, webXmlPaths, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion, isolated)
+            scan.close()
         }
 
         return moduleXml
@@ -295,12 +312,12 @@ class FSM extends Jar {
 
         @Override
         List<String> getNamesOfClassesImplementing(final Class<?> implementedInterface) {
-            return scan.getNamesOfClassesImplementing(implementedInterface)
+            return scan.getClassesImplementing(implementedInterface.name).getNames()
         }
 
         @Override
         List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation) {
-            return scan.getNamesOfClassesWithAnnotation(annotation)
+            return scan.getClassesWithAnnotation(annotation.name).getNames()
         }
     }
 

@@ -1,38 +1,38 @@
 package org.gradle.plugins.fsm;
 
 import de.espirit.firstspirit.server.module.ModuleInfo;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import java.util.Collections;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FSMPluginExtensionTest {
 
     FSMPluginExtension testling;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         testling = new FSMPluginExtension();
     }
 
     @Test
-    public void testIsolatedModeIsDefault() {
-        assertThat(testling.getResourceMode(), is(ModuleInfo.Mode.ISOLATED));
+    void testIsolatedModeIsDefault() {
+        assertThat(testling.getResourceMode()).isEqualTo(ModuleInfo.Mode.ISOLATED);
     }
+
     @Test
-    public void testMinVersionIsDefault() {
-        assertThat(testling.getAppendDefaultMinVersion(), is(true));
+    void testMinVersionIsDefault() {
+        assertThat(testling.getAppendDefaultMinVersion()).isTrue();
     }
 
 
     @Test
-    public void testCanSetFsmDependencies() {
+    void testCanSetFsmDependencies() {
         final String fsmModuleName = "fsmModuleName";
-        testling.setFsmDependencies(asList(fsmModuleName));
-        assertThat(testling.getFsmDependencies(), containsInAnyOrder(fsmModuleName));
+        testling.setFsmDependencies(Collections.singletonList(fsmModuleName));
+        assertThat(testling.getFsmDependencies()).contains(fsmModuleName);
     }
 
 

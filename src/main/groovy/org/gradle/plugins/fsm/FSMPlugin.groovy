@@ -91,7 +91,7 @@ class FSMPlugin implements Plugin<Project> {
     private FSM configureFsmTask(final Project project) {
 
         FSM fsmTask = project.getTasks().create(FSM_TASK_NAME, FSM.class)
-        fsmTask.setDescription("Assembles a fsmTask archive containing the FirstSpirit module.")
+        fsmTask.setDescription("Assembles an fsmTask archive containing the FirstSpirit module.")
         fsmTask.setGroup(BasePlugin.BUILD_GROUP)
 
         addPublication(project, fsmTask)
@@ -106,6 +106,7 @@ class FSMPlugin implements Plugin<Project> {
         fsmTask.dependsOn(project.getTasks().getByName(GENERATE_LICENSE_REPORT_TASK_NAME))
 
         fsmTask.dependsOn({ JavaPlugin.JAR_TASK_NAME})
+        project.tasks.getByName("assemble").dependsOn(fsmTask)
 
         fsmTask.classpath({
             final FileCollection runtimeClasspath = project

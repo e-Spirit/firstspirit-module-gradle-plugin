@@ -7,14 +7,15 @@ import org.assertj.core.api.SoftAssertions
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
+import org.gradle.internal.impldep.org.junit.Assert
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 import org.gradle.testfixtures.ProjectBuilder
-import org.junit.Assert
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown
 import static org.gradle.plugins.fsm.ComponentHelper.createResource
 import static org.gradle.plugins.fsm.ComponentHelper.createWebResource
 import static org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME
@@ -48,7 +49,7 @@ class XmlTagAppenderTest {
     private static final String GROUP = "test"
     private static final String VERSION = "1.2"
 
-    @Before
+    @BeforeEach
     void setUp() {
 
         project = ProjectBuilder.builder().withName(NAME).build()
@@ -195,7 +196,7 @@ ${INDENT_WS_12___}</web-resources>
 ${INDENT_WS_8}</web-app>
 """.toString(), result.toString())
     }
-    @Test(expected = IllegalStateException)
+    @Test
     void testModuleTagWithTwoClassesImpl() {
         StringBuilder result = new StringBuilder()
         def scannerResultProvider = new FSM.ClassScannerResultProvider() {
@@ -209,10 +210,16 @@ ${INDENT_WS_8}</web-app>
                 return []
             }
         }
-        XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result, XmlTagAppenderTest.MODULE_BLACKLIST)
+
+        try {
+            XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result, XmlTagAppenderTest.MODULE_BLACKLIST)
+            failBecauseExceptionWasNotThrown(IllegalStateException.class)
+        } catch (final IllegalStateException e) {
+            assertThat(e).hasMessageStartingWith("The following classes implementing de.espirit.firstspirit.module.Module were found in your project:")
+        }
     }
 
-    @Test(expected = IllegalStateException)
+    @Test
     void testModuleTagWithTwoClassesAnnotated() {
         StringBuilder result = new StringBuilder()
         def scannerResultProvider = new FSM.ClassScannerResultProvider() {
@@ -226,7 +233,13 @@ ${INDENT_WS_8}</web-app>
                 return ["org.some.class.implementing.module", "org.some.other.class.definitely.not.the.same.as.the.one.on.the.left"]
             }
         }
-        XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result, XmlTagAppenderTest.MODULE_BLACKLIST)
+
+        try {
+            XmlTagAppender.appendModuleAnnotationTags(new URLClassLoader(new URL[0], getClass().getClassLoader()), scannerResultProvider, result, XmlTagAppenderTest.MODULE_BLACKLIST)
+            failBecauseExceptionWasNotThrown(IllegalStateException.class)
+        } catch (final IllegalStateException e) {
+            assertThat(e).hasMessageStartingWith("The following classes annotated with @ModuleComponent were found in your project:")
+        }
     }
 
     @Test

@@ -4,11 +4,7 @@ import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.testfixtures.ProjectBuilder
-import org.junit.Test
 import spock.lang.Specification
-
-import static junit.framework.TestCase.assertNotNull
-import static org.gradle.internal.impldep.junit.framework.TestCase.assertEquals
 
 class FSMAnnotationsPluginSpecification extends Specification {
 

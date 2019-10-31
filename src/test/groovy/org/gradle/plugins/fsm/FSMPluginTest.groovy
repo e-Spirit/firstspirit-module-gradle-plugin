@@ -15,7 +15,6 @@
  */
 package org.gradle.plugins.fsm
 
-
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
@@ -27,19 +26,18 @@ import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 import org.gradle.testfixtures.ProjectBuilder
-import org.junit.Before
-import org.junit.Test
+import org.junit.Assert
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 
+import static org.assertj.core.api.Assertions.assertThat
 import static org.gradle.plugins.fsm.util.Matchers.dependsOn
-import static org.hamcrest.Matchers.*
-import static org.junit.Assert.assertThat
-import static org.junit.Assert.assertTrue
 
 class FSMPluginTest {
 
 	Project project
 
-	@Before
+	@BeforeEach
 	void setUp() {
 		project = ProjectBuilder.builder().build()
 	}
@@ -47,18 +45,18 @@ class FSMPluginTest {
 	@Test
 	void fsmPluginApplied() {
 		project.apply plugin: FSMPlugin.NAME
-		assertTrue(project.plugins.hasPlugin(FSMPlugin))
+		assertThat(project.plugins.hasPlugin(FSMPlugin)).isTrue()
 	}
 
 	@Test
 	void fsmPluginAppliesConfigurationPlugin() {
 		project.apply plugin: FSMPlugin.NAME
-		assertTrue(project.plugins.hasPlugin(FSMConfigurationsPlugin))
+		assertThat(project.plugins.hasPlugin(FSMConfigurationsPlugin)).isTrue()
 	}
 	@Test
 	void fsmPluginAppliesAnnotationsPlugin() {
 		project.apply plugin: FSMPlugin.NAME
-		assertTrue(project.plugins.hasPlugin(FSMAnnotationsPlugin))
+		assertThat(project.plugins.hasPlugin(FSMAnnotationsPlugin)).isTrue()
 	}
 
 	@Test
@@ -66,7 +64,7 @@ class FSMPluginTest {
 		project.apply plugin: FSMPlugin.NAME
 
 		def task = project.tasks[FSMPlugin.FSM_TASK_NAME]
-		assertThat(task, instanceOf(FSM))
+		assertThat(task).isInstanceOf(FSM)
 	}
 
 	@Test
@@ -74,7 +72,7 @@ class FSMPluginTest {
 		project.apply plugin: FSMPlugin.NAME
 
 		Task fsm = project.tasks[FSMPlugin.FSM_TASK_NAME]
-		assertThat(fsm, dependsOn(JavaPlugin.JAR_TASK_NAME, JavaPlugin.CLASSES_TASK_NAME, FSMPlugin.GENERATE_LICENSE_REPORT_TASK_NAME))
+		Assert.assertThat(fsm, dependsOn ( JavaPlugin.JAR_TASK_NAME, JavaPlugin.CLASSES_TASK_NAME, FSMPlugin.GENERATE_LICENSE_REPORT_TASK_NAME))
 	}
 	
 	@Test
@@ -82,7 +80,7 @@ class FSMPluginTest {
 		project.apply plugin: FSMPlugin.NAME
 
 		Task assemble = project.tasks[BasePlugin.ASSEMBLE_TASK_NAME]
-		assertThat(assemble, dependsOn(FSMPlugin.FSM_TASK_NAME))
+		Assert.assertThat(assemble, dependsOn(FSMPlugin.FSM_TASK_NAME))
 	}
 
 	@Test
@@ -90,7 +88,7 @@ class FSMPluginTest {
 		project.apply plugin: FSMPlugin.NAME
 
 		Task check = project.tasks[JavaBasePlugin.CHECK_TASK_NAME]
-		assertThat(check, dependsOn(JavaPlugin.TEST_TASK_NAME, FSMPlugin.ISOLATION_CHECK_TASK_NAME))
+		Assert.assertThat(check, dependsOn(JavaPlugin.TEST_TASK_NAME, FSMPlugin.ISOLATION_CHECK_TASK_NAME))
 	}
 
     @Test
@@ -101,7 +99,7 @@ class FSMPluginTest {
         File jarFile = fsm.outputs.files.singleFile
         Task isolationCheck = project.tasks[FSMPlugin.ISOLATION_CHECK_TASK_NAME]
 
-        assertThat(isolationCheck.inputs.files.singleFile, equalTo(jarFile))
+        assertThat(isolationCheck.inputs.files.singleFile).isEqualTo(jarFile)
     }
 
 	@Test
@@ -111,16 +109,15 @@ class FSMPluginTest {
 		Task fsmTask = project.tasks[FSMPlugin.FSM_TASK_NAME]
 		Task checkIsolationTask = project.tasks[FSMPlugin.ISOLATION_CHECK_TASK_NAME]
 
-		assertThat(checkIsolationTask, dependsOn(fsmTask.name))
+		Assert.assertThat(checkIsolationTask, dependsOn(fsmTask.name))
 	}
 
 	@Test
-	void replacesJarAsPublication() {
+	void jarPublicationRemoved() {
 		project.apply plugin: FSMPlugin.NAME
 
 		Configuration archiveConfiguration = project.getConfigurations().getByName(Dependency.ARCHIVES_CONFIGURATION)
-		assertThat(archiveConfiguration.getAllArtifacts().size(), equalTo(1))
-		assertThat(archiveConfiguration.getAllArtifacts().iterator().next().getType(), equalTo("fsm"))
+		assertThat(archiveConfiguration.getAllArtifacts()).isEmpty()
 	}
 
 	
@@ -129,6 +126,6 @@ class FSMPluginTest {
 		new FSMPlugin().apply(project)
 		
 		Task jarTask = project.tasks[JavaPlugin.JAR_TASK_NAME]
-		assertThat(jarTask.excludes, contains("module.xml"))
+		assertThat(jarTask.excludes).contains("module.xml")
 	}
 }
