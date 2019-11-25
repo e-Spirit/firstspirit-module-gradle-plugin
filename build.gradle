@@ -21,14 +21,14 @@ plugins {
     id 'maven-publish'
     id 'idea'
     id 'java-gradle-plugin'
-    id 'com.dorongold.task-tree' version '1.3.1'
+    id 'com.dorongold.task-tree' version '1.4'
 }
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 ext {
-    fsmAnnotationsVersion = '1.9.2'
+    fsmAnnotationsVersion = '1.9.3'
 
     // set version to {{issue.key}}-SNAPSHOT for feature branches
     try {
@@ -72,12 +72,12 @@ gradlePlugin {
     }
 }
 
-def fsRuntimeVersion = '5.2.190507' // FirstSpirit 2019-05
+def fsRuntimeVersion = '5.2.191107' // FirstSpirit 2019-11
 
 dependencies {
     implementation gradleApi()
     implementation localGroovy()
-    implementation 'io.github.lukehutch:fast-classpath-scanner:2.6.2'
+    implementation 'io.github.lukehutch:fast-classpath-scanner:3.1.13'
     implementation 'com.github.jk1:gradle-license-report:1.11'
     implementation "com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}"
     implementation 'de.espirit.mavenplugins:fsmchecker:0.10'
@@ -85,7 +85,7 @@ dependencies {
     testImplementation (
         "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}",
 		'junit:junit:4.12',
-        'org.assertj:assertj-core:3.9.0',
+        'org.assertj:assertj-core:3.14.0',
 		'org.hamcrest:hamcrest-all:1.3',
         'commons-io:commons-io:2.6'
     )
@@ -94,7 +94,7 @@ dependencies {
         exclude group: 'org.codehaus.groovy'
     }
     testImplementation gradleTestKit()
-    testImplementation 'org.mockito:mockito-core:2.15.0'
+    testImplementation 'org.mockito:mockito-core:3.1.0'
     testImplementation 'org.ow2.asm:asm:6.2'
 }
 

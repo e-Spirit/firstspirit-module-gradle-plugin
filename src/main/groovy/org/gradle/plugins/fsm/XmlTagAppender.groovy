@@ -3,6 +3,7 @@ package org.gradle.plugins.fsm
 import com.espirit.moddev.components.annotations.*
 import com.espirit.moddev.components.annotations.params.gadget.Scope
 import de.espirit.firstspirit.client.access.editor.ValueEngineerFactory
+import de.espirit.firstspirit.generate.FilenameFactory
 import de.espirit.firstspirit.generate.UrlFactory
 import de.espirit.firstspirit.module.*
 import de.espirit.firstspirit.module.descriptor.WebAppDescriptor
@@ -426,7 +427,8 @@ ${resources}
             Arrays.asList(urlFactoryClass.annotations)
                     .findAll { it.annotationType() == UrlFactoryComponent }
                     .forEach { annotation ->
-                result.append("""
+                        final String fileNameFactory = annotation.filenameFactory() == FilenameFactory.class ? "" : "\n" + INDENT_WS_16 + "<FilenameFactory>${annotation.filenameFactory().name}</FilenameFactory>"
+                        result.append("""
         <public>
             <name>${evaluateAnnotation(annotation, "name")}</name>
             <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
@@ -434,7 +436,7 @@ ${resources}
             <class>de.espirit.firstspirit.generate.UrlCreatorSpecification</class>
             <configuration>
                 <UrlFactory>${urlFactoryClass.getName().toString()}</UrlFactory>
-                <UseRegistry>${evaluateAnnotation(annotation, "useRegistry")}</UseRegistry>
+                <UseRegistry>${evaluateAnnotation(annotation, "useRegistry")}</UseRegistry>${fileNameFactory}
             </configuration>
         </public>
 """)

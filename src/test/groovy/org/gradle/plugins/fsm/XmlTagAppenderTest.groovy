@@ -571,6 +571,27 @@ ${INDENT_WS_8}</public>
 """.toString(), result.toString())
     }
 
+
+     @Test
+    void appendUrlCreatorTagsWithFilenameFactory() throws Exception {
+        StringBuilder result = new StringBuilder()
+        XmlTagAppender.appendUrlCreatorTags( new URLClassLoader(new URL[0], getClass().getClassLoader()), [TestUrlFactoryWithFilenameFactory.getName()], result)
+
+        Assert.assertEquals("""
+${INDENT_WS_8}<public>
+${INDENT_WS_12___}<name>TestUrlFactoryWithFilenameFactoryComponentName</name>
+${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>TestDescription</description>
+${INDENT_WS_12___}<class>de.espirit.firstspirit.generate.UrlCreatorSpecification</class>
+${INDENT_WS_12___}<configuration>
+${INDENT_WS_16_______}<UrlFactory>org.gradle.plugins.fsm.TestUrlFactoryWithFilenameFactory</UrlFactory>
+${INDENT_WS_16_______}<UseRegistry>true</UseRegistry>
+${INDENT_WS_16_______}<FilenameFactory>org.gradle.plugins.fsm.TestFilenameFactory</FilenameFactory>
+${INDENT_WS_12___}</configuration>
+${INDENT_WS_8}</public>
+""".toString(), result.toString())
+    }
+
     @Test
     void getResourceTagForDependency() throws Exception {
         ResolvedArtifact resolvedArtifact = createArtifactMock()

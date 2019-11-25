@@ -14,6 +14,7 @@ import de.espirit.firstspirit.agency.SpecialistsBroker
 import de.espirit.firstspirit.client.access.editor.ValueEngineer
 import de.espirit.firstspirit.client.access.editor.ValueEngineerContext
 import de.espirit.firstspirit.client.access.editor.ValueEngineerFactory
+import de.espirit.firstspirit.generate.FilenameFactory
 import de.espirit.firstspirit.generate.PathLookup
 import de.espirit.firstspirit.generate.UrlFactory
 import de.espirit.firstspirit.module.Configuration
@@ -434,6 +435,41 @@ class TestUrlFactoryComponent implements UrlFactory {
 
     @Override
     String getUrl(Media media, Language language, Resolution resolution) {
+        return null
+    }
+}
+
+
+@UrlFactoryComponent(name = "TestUrlFactoryWithFilenameFactoryComponentName",
+        displayName = "TestDisplayName",
+        description = "TestDescription",
+        filenameFactory = TestFilenameFactory.class,
+        useRegistry = true)
+class TestUrlFactoryWithFilenameFactory implements UrlFactory {
+    @Override
+    void init(Map<String, String> map, PathLookup pathLookup) {
+
+    }
+
+    @Override
+    String getUrl(ContentProducer contentProducer, TemplateSet templateSet, Language language, PageParams pageParams) {
+        return null
+    }
+
+    @Override
+    String getUrl(Media media, Language language, Resolution resolution) {
+        return null
+    }
+}
+
+class TestFilenameFactory implements FilenameFactory {
+    @Override
+    String getFilename(final String s, final ContentProducer contentProducer, final TemplateSet templateSet, final Language language, final PageParams pageParams) {
+        return null
+    }
+
+    @Override
+    String getFilename(final String s, final Media media, final Language language, final Resolution resolution) {
         return null
     }
 }
