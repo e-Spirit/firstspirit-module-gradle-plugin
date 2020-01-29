@@ -57,6 +57,11 @@ class FSMPluginExtension {
     Collection<String> isolationDetectorWhitelist
 
 	/**
+	 * Names of web components to be deployed as part of a ContentCreator web-app.
+	 */
+	Collection<String> contentCreatorComponents
+
+	/**
 	 * The compliance level to check for if {#link isolationDetectorUrl} is set. Defaults to
 	 * {@link ComplianceLevel#DEFAULT}
 	 */

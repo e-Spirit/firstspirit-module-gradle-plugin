@@ -50,6 +50,9 @@ class IsolationCheck extends DefaultTask {
         if (pluginExtension.isolationDetectorWhitelist != null) {
             pluginExtension.isolationDetectorWhitelist.each { complianceCheck.addWhitelistedResource(it) }
         }
+        if (pluginExtension.contentCreatorComponents != null) {
+            pluginExtension.contentCreatorComponents.each { complianceCheck.addContentCreatorComponent(it) }
+        }
 
         def checkResult = complianceCheck.check(pathList)
 
@@ -92,6 +95,14 @@ class IsolationCheck extends DefaultTask {
 
     void setWhitelistedResources(Collection<String> whitelistedResources) {
         pluginExtension.isolationDetectorWhitelist = whitelistedResources
+    }
+
+    Collection<String> contentCreatorComponents() {
+        return pluginExtension.contentCreatorComponents
+    }
+
+    void setContentCreatorComponents(Collection<String> contentCreatorComponents) {
+        pluginExtension.contentCreatorComponents = contentCreatorComponents
     }
 
     @Input

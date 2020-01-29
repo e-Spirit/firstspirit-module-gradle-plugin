@@ -50,7 +50,7 @@ class IsolationCheckTest {
         defineArtifactoryForProject(project)
         project.apply plugin: FSMPlugin.NAME
         isolationCheck = project.tasks[FSMPlugin.ISOLATION_CHECK_TASK_NAME] as IsolationCheck
-        isolationCheck.setFirstSpiritVersion("5.2.190507")
+        isolationCheck.setFirstSpiritVersion("5.2.200105")
         isolationCheck.setDetectorUrl("https://fsdev.e-spirit.de/FsmDependencyDetector/")
         FSM fsm = project.tasks[FSMPlugin.FSM_TASK_NAME] as FSM
         addTestModulesToBlacklist(fsm)
@@ -285,15 +285,31 @@ class IsolationCheckTest {
     }
 
 
+    @Test
+    void contentCreatorConflict() {
+        writeSingleClassToFsmFile(IMPL_CLASS)
+
+        isolationCheck.setComplianceLevel(DEFAULT)
+        isolationCheck.contentCreatorComponents = ['contentCreatorComponent']
+
+        try {
+            isolationCheck.execute()
+        } catch (final GradleException e) {
+            assertThat(e).hasCauseInstanceOf(GradleException.class)
+            assertThat(e.getCause()).hasMessageContaining("com.fasterxml.jackson.annotation.JacksonAnnotation (1 usages)");
+        }
+    }
+
+
     private void writeSingleClassToFsmFile(final String superClassName) throws IOException {
         final ClassWriter classWriter = new ClassWriter(0)
-        classWriter.visit(V1_8, ACC_PUBLIC, "com.example.module/Test", null, superClassName, null)
+        classWriter.visit(V1_8, ACC_PUBLIC, "com.fasterxml.jackson.annotation/JacksonAnnotation", null, superClassName, null)
         final byte[] classContent = classWriter.toByteArray()
 
         final Path jarFile = jarDir.resolve(IsolationCheckTest.class.getSimpleName() + ".jar")
 
         final JarOutputStream jarOutputStream = new JarOutputStream(new FileOutputStream(jarFile.toFile()))
-        final JarEntry jarEntry = new JarEntry("Test.class")
+        final JarEntry jarEntry = new JarEntry("JacksonAnnotation.class")
         jarOutputStream.putNextEntry(jarEntry)
         jarOutputStream.write(classContent)
         jarOutputStream.close()
@@ -304,12 +320,23 @@ class IsolationCheckTest {
 
         final ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(fsmFile))
         zipOutputStream.putNextEntry(new ZipEntry("META-INF/module.xml"))
-        zipOutputStream.write("<module><name>TestModule</name><version>0.1</version><components/>".getBytes())
+        zipOutputStream.write("<module><name>TestModule</name><version>0.1</version>".getBytes())
+        zipOutputStream.write("<components>".getBytes());
+        zipOutputStream.write("<web-app>".getBytes());
+        zipOutputStream.write("<name>contentCreatorComponent</name>".getBytes());
+        zipOutputStream.write("<web-xml>web.xml</web-xml>".getBytes());
+        zipOutputStream.write("<web-resources>".getBytes());
+        zipOutputStream.write("""<resource name="de.espirit:test" version="1.0">test.jar</resource>""".getBytes())
+        zipOutputStream.write("</web-resources>".getBytes());
+        zipOutputStream.write("</web-app>".getBytes());
+        zipOutputStream.write("</components>".getBytes());
         zipOutputStream.write("<resources>".getBytes())
         zipOutputStream.write("""<resource name="de.espirit:test" version="1.0" scope="module">test.jar</resource>""".getBytes())
         zipOutputStream.write("</resources></module>".getBytes())
         zipOutputStream.putNextEntry(new ZipEntry("test.jar"))
         zipOutputStream.write(Files.readAllBytes(jarFile))
+        zipOutputStream.putNextEntry(new ZipEntry("web.xml"));
+        zipOutputStream.write("<web-app/>".getBytes());
         zipOutputStream.close()
     }
 

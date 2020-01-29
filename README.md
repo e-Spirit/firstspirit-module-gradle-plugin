@@ -1,5 +1,3 @@
-![e-spirit logo](https://fbcdn-profile-a.akamaihd.net/hprofile-ak-ash3/s160x160/581307_346033565453595_1547840127_a.jpg)
-
 # [Gradle](http://www.gradle.org/) plugin to build [FirstSpirit](http://www.e-spirit.com/en/product/advantage/advantages.html) modules (FSMs)
 
 ## Usage
@@ -125,6 +123,7 @@ moduleDirName               | String        | src/main/resources  		|  The name 
 resourceMode                | Mode          | *unset*             		|  Resource mode (legacy, isolated) used for all resources
 isolationDetectorUrl        | String        | *unset*             		|  If set, this URL is used to connect to the FSM Dependency Detector
 isolationDetectorWhitelist  | String[]      | *unset*                   |  Contains all resources that should not be scanned for dependencies
+contentCreatorComponents    | String[]      | *unset*                   |  Names of components which are meant to be installed with the ContentCreator.
 complianceLevel             | String        | DEFAULT                   |  Compliance level to check for if isolationDetectorUrl is set
 firstSpiritVersion          | String        | *unset*             		|  FirstSpirit version used in the isolation check
 appendDefaultMinVersion     | boolean       | true                      |  If set to true, appends the artifact version as the minVersion attribute to all resource tags (except resources which were explicitly set within FS component annotations)
@@ -169,28 +168,28 @@ This is useful, if you don't want to add any custom behaviour to your module.xml
 
 Your module may include one or more FirstSpirit components. With the annotations from the _de.espirit.firstspirit-module-annotations_ plugin it is possible to annotate the components with their respective configuration. When assembling the fsm file, the _de.espirit.firstspirit-module_ plugin will evaluate the annotations and render the configurations into the module.xml.
 
-####Annotations
+#### Annotations
 
-#####com.espirit.moddev.components.annotations.@ModuleComponent
+##### com.espirit.moddev.components.annotations.@ModuleComponent
 A module developer may provide an implementation of the Module interface to participate in the lifecycle of the module. With the @ModuleComponent Annotation on the respective implementation, a Configuration Class may be specified to be used in the module configuration at runtime.
 
-#####com.espirit.moddev.components.annotations.@ServiceComponent
+##### com.espirit.moddev.components.annotations.@ServiceComponent
 Should be added to a class implementing the Service interface in order to render the appropriate Service configuration into the module.xml.
 
-#####com.espirit.moddev.components.annotations.@ProjectAppComponent
+##### com.espirit.moddev.components.annotations.@ProjectAppComponent
 Should be added to a class implementing the ProjectApp interface in order to render the appropriate ProjectApp configuration into the module.xml.
 
-#####com.espirit.moddev.components.annotations.@WebAppComponent
+##### com.espirit.moddev.components.annotations.@WebAppComponent
 Should be added to a class implementing the WebApp interface in order to render the appropriate WebApp configuration into the module.xml.
 Please note, that if you configure a webXml attribute, you need to have a matching web.xml file inside your project in a subfolder of fsm-resources, or else the installation of the .fsm on the FirstSpirit server will fail.
 
-#####com.espirit.moddev.components.annotations.@WebResource
+##### com.espirit.moddev.components.annotations.@WebResource
 The @WebResource annotation is used within a @WebAppComponent configuration to define one or more web resources (javascript, css, images etc. ) used by the web application. Resources referenced in a @WebResource should be placed in the fsm-resources folder.   
 
-#####com.espirit.moddev.components.annotations.@PublicComponent
+##### com.espirit.moddev.components.annotations.@PublicComponent
 Should be added to a class implementing the Public interface in order to render the appropriate Public configuration into the module.xml.
 
-######com.espirit.moddev.components.annotations.@ScheduleTaskComponent
+###### com.espirit.moddev.components.annotations.@ScheduleTaskComponent
 Should be added to a class implementing the ScheduleTaskApplication in order to render the appropriate ScheduleTaskApplication configuration into the module.xml.
 When using the <code>@ScheduleTaskComponent</code> annotation, some things need to be considered. For serialization purpose it is required to have the class which implements
 the <code>ScheduleTaskData</code> interface in server scope. Most of the time this class is part of the project which uses the _de.espirit.firstspirit-module_ plugin and therefore part of the generated jar which
@@ -204,10 +203,10 @@ is <u>NOT</u> in server scope. To make this work the following can be done.
 
 With this a <code>.fsm</code> file is generated which includes a jar with all the classes which are needed in server scope and the module.xml with the corresponding resource entry.
 
-######com.espirit.moddev.components.annotations.@UrlFactoryComponent
+###### com.espirit.moddev.components.annotations.@UrlFactoryComponent
 Should be added to a class implementing the UrlFactory in order to render the appropriate UrlFactory configuration into the module.xml.
 
-######com.espirit.moddev.components.annotations.@GadgetComponent
+###### com.espirit.moddev.components.annotations.@GadgetComponent
 Should be added to a class implementing the GomElement in order to render the appropriate GomElement configuration into the module.xml.
 
 ### Resources by convention

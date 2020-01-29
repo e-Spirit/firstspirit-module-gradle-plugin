@@ -80,7 +80,7 @@ dependencies {
     implementation 'io.github.classgraph:classgraph:4.8.60'
     implementation 'com.github.jk1:gradle-license-report:1.13'
     implementation "com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}"
-    implementation 'de.espirit.mavenplugins:fsmchecker:0.10'
+    implementation 'de.espirit.mavenplugins:fsmchecker:0.11'
     implementation "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}"
     testImplementation "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}"
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
