@@ -84,9 +84,6 @@ class FSMPlugin implements Plugin<Project> {
             // Adjust the configurations to fetch dependencies, e.g. for Android projects. Default is 'runtimeClasspath'
             configurations = ['compile']
 
-            // Don't include artifacts of project's own group into the report
-            excludeOwnGroup = true
-
             renderers = [new CsvReportRenderer()]
         }
     }
