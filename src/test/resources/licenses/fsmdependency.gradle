@@ -1,0 +1,27 @@
+plugins {
+    id 'de.espirit.firstspirit-module'
+}
+
+group 'de.espirit'
+version '1.0-SNAPSHOT'
+
+repositories {
+    maven {
+        url 'https://artifactory.e-spirit.de/artifactory/repo'
+        credentials {
+            username = "${System.getProperty("artifactory_username")}"
+            password = "${System.getProperty("artifactory_password")}"
+        }
+    }
+}
+
+dependencies {
+    // Test dependency is irrelevant for licensing
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    // use one, real, dependency
+    // it needs:
+    // - license info
+    // - some transitive dependencies which also have license info
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.0'
+}

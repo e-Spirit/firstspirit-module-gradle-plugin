@@ -1,0 +1,11 @@
+plugins {
+    id 'de.espirit.firstspirit-module'
+}
+
+group 'de.espirit'
+version '1.0-SNAPSHOT'
+
+dependencies {
+    // Test dependency is irrelevant for licensing
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}

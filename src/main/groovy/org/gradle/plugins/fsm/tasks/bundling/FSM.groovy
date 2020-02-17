@@ -84,10 +84,29 @@ class FSM extends Jar {
                 }
             }
 
-            // include license file
+            // include licenses report
             into('META-INF') {
                 from("${project.buildDir}/${LICENSES_DIR_NAME}") {
                     include "licenses.csv"
+                }
+            }
+
+            // include license texts
+            into('/') {
+                from("${project.buildDir}/${LICENSES_DIR_NAME}") {
+                    includeEmptyDirs = false
+                    eachFile {
+                        // Set output path
+                        // - Remove "META-INF/" directory from collected licenses
+                        // - Add .txt if the file doesn't have an extension
+                        it.path = "META-INF/licenses/" + it.path.replaceAll("META-INF/", "/")
+                        def extIndex = it.name.lastIndexOf(".")
+                        if (extIndex == -1) {
+                            it.path += ".txt"
+                        }
+                    }
+                    exclude "licenses.csv"
+                    exclude "index.html"
                 }
             }
 

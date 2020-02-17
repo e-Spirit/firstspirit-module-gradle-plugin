@@ -58,7 +58,7 @@ class FSMTest {
 		project.apply plugin: FSMPlugin.NAME
 
 		fsm = project.tasks[FSMPlugin.FSM_TASK_NAME] as FSM
-		
+
 		fsm.archiveBaseName.set('testbasename')
 		fsm.archiveAppendix.set('testappendix')
 		fsm.archiveVersion.set('1.0')
@@ -297,6 +297,12 @@ class FSMTest {
 		assertThat(legacy).contains("<resource name=\"com.google.guava:guava\" version=\"24.0-jre\" minVersion=\"24.0-jre\">lib/guava-24.0-jre.jar</resource>")
 		assertThat(isolated).contains("<resource name=\"com.google.guava:guava\" version=\"24.0-jre\" minVersion=\"24.0-jre\">lib/guava-24.0-jre.jar</resource>")
 		assertThat(legacy).doesNotContain("<resource name=\"junit:junit\" version=\"4.12\" minVersion=\"4.12\">lib/junit-4.12.jar</resource>")
+	}
+
+	@Test
+	void testLicensesCsvIsPresent() {
+		fsm.execute()
+		assertThat(moduleXml()).contains("<licenses>META-INF/licenses.csv</licenses>")
 	}
 
 	@Test
