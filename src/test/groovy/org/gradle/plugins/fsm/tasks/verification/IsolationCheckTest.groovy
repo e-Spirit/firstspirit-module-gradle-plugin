@@ -293,10 +293,9 @@ class IsolationCheckTest {
         isolationCheck.contentCreatorComponents = ['contentCreatorComponent']
 
         try {
-            isolationCheck.execute()
+            isolationCheck.check()
         } catch (final GradleException e) {
-            assertThat(e).hasCauseInstanceOf(GradleException.class)
-            assertThat(e.getCause()).hasMessageContaining("com.fasterxml.jackson.annotation.JacksonAnnotation (1 usages)");
+            assertThat(e).hasMessageContaining("com.fasterxml.jackson.annotation.JacksonAnnotation (1 usages)");
         }
     }
 

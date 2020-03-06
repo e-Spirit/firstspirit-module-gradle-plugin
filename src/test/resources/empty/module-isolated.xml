@@ -4,7 +4,6 @@
     <version>$version</version>
     <description>$description</description>
     <vendor>$vendor</vendor>
-    <licenses>$licensesFile</licenses>
     <components>
     </components>
     <resources>
