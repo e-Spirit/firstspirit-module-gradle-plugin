@@ -61,6 +61,17 @@ class FSMConfigurationsPluginSpecification extends Specification {
         runtimeConfig.transitive
     }
 
+    def 'fsModuleCompile configuration extends fsServerCompile configuration'() {
+        when:
+        project.apply plugin: FSMConfigurationsPlugin.NAME
+        def fsModuleCompileConfig = project.configurations.getByName(FSMConfigurationsPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME)
+
+        then:
+        fsModuleCompileConfig.extendsFrom.collect { it.name } == [FSMConfigurationsPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME]
+        !fsModuleCompileConfig.visible
+        fsModuleCompileConfig.transitive
+    }
+
     def 'fsProvidedRuntime configuration extends compile configuration'() {
         when:
         project.apply plugin: FSMConfigurationsPlugin.NAME

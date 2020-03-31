@@ -118,6 +118,7 @@ class FSMConfigurationsPlugin implements Plugin<Project> {
 
 
     private void configureConfigurations(ConfigurationContainer configurationContainer) {
+
         Configuration fsServerCompileConfiguration = configurationContainer
                 .create(FS_SERVER_COMPILE_CONFIGURATION_NAME)
                 .setVisible(false)
@@ -125,6 +126,7 @@ class FSMConfigurationsPlugin implements Plugin<Project> {
 
         Configuration fsModuleCompileConfiguration = configurationContainer
                 .create(FS_MODULE_COMPILE_CONFIGURATION_NAME)
+                .extendsFrom(fsServerCompileConfiguration)
                 .setVisible(false)
                 .setDescription("Added automatically to module.xml with module scope")
 

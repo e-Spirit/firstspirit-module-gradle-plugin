@@ -613,8 +613,17 @@ ${resources}
         def fsServerCompileConfiguration = configurations.getByName("fsModuleCompile")
         fsServerCompileConfiguration.attributes.keySet().forEach { println it.toString() }
 
-        Set<ResolvedArtifact> compileDependenciesServerScoped = configurations.fsServerCompile.getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> uncleanedDependenciesModuleScoped = configurations.fsModuleCompile.getResolvedConfiguration().getResolvedArtifacts()
+        Set<ResolvedArtifact> resolvedServerScopeArtifacts = configurations.fsServerCompile.getResolvedConfiguration().getResolvedArtifacts()
+        Set<ResolvedArtifact> compileDependenciesServerScoped = uncleanedDependenciesModuleScoped.findAll { moduleScoped ->
+            resolvedServerScopeArtifacts.any {
+                it.moduleVersion.id.group == moduleScoped.moduleVersion.id.group &&
+                it.moduleVersion.id.name == moduleScoped.moduleVersion.id.name &&
+                it.classifier == moduleScoped.classifier &&
+                it.extension == moduleScoped.extension &&
+                it.type == moduleScoped.type
+            }
+        }
         Set<ResolvedArtifact> cleanedCompileDependenciesModuleScoped = uncleanedDependenciesModuleScoped - compileDependenciesServerScoped
         logIgnoredModuleScopeDependencies(logger, uncleanedDependenciesModuleScoped, cleanedCompileDependenciesModuleScoped)
         Set<ResolvedArtifact> providedCompileDependencies = configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()

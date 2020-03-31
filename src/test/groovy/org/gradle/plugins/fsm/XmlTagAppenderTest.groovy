@@ -723,6 +723,33 @@ ${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="server" mode="isolat
 ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated" version="1.7.25">lib/slf4j-api-1.7.25.jar</resource>""".toString(), result)
     }
 
+    @Test
+    void moduleScopeServerScopeResolutionWorksCorrectly() {
+        // Module and server scope should be resolved together, so the higher version wins, just like normal maven dependency resolution works.
+        // In the fsm, the dependency should then only be present on server scope. That's a bit unintuitive, but the right behaviour.
+
+        project.dependencies.add(FSMConfigurationsPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.1")
+        project.dependencies.add(FSMConfigurationsPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.0")
+        project.dependencies.add(FSMConfigurationsPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
+
+        String result = XmlTagAppender.getResourcesTags(project, new XmlTagAppender.WebXmlPaths(), ModuleInfo.Mode.ISOLATED, false)
+        Assert.assertEquals("""${INDENT_WS_8}<resource name="${GROUP}:${NAME}" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>
+${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated" version="1.7.1">lib/slf4j-api-1.7.1.jar</resource>
+${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="module" mode="isolated" version="2.1.1">lib/joda-convert-2.1.1.jar</resource>""".toString(), result)
+    }
+
+    @Test
+    void moduleScopeServerScopeResolutionWorksCorrectly_serverVersionHigher() {
+        project.dependencies.add(FSMConfigurationsPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.1")
+        project.dependencies.add(FSMConfigurationsPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.0")
+        project.dependencies.add(FSMConfigurationsPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
+
+        String result = XmlTagAppender.getResourcesTags(project, new XmlTagAppender.WebXmlPaths(), ModuleInfo.Mode.ISOLATED, false)
+        Assert.assertEquals("""${INDENT_WS_8}<resource name="${GROUP}:${NAME}" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>
+${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated" version="1.7.1">lib/slf4j-api-1.7.1.jar</resource>
+${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="module" mode="isolated" version="2.1.1">lib/joda-convert-2.1.1.jar</resource>""".toString(), result)
+    }
+
 
     private static ResolvedArtifact createArtifactMock() {
         def resolvedArtifact = mock(ResolvedArtifact)
