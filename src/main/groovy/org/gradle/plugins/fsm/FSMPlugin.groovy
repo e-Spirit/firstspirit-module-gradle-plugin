@@ -31,6 +31,7 @@ import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.SourceSet
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
@@ -66,7 +67,7 @@ class FSMPlugin implements Plugin<Project> {
 
         FSM fsmTask = configureFsmTask(project)
 
-        IsolationCheck isolationCheck = configureIsolationCheckTask(project, fsmTask)
+        TaskProvider<IsolationCheck> isolationCheck = configureIsolationCheckTask(project, fsmTask)
         Task checkTask = project.getTasksByName(JavaBasePlugin.CHECK_TASK_NAME, false).iterator().next()
         checkTask.dependsOn(isolationCheck)
 
@@ -149,12 +150,14 @@ class FSMPlugin implements Plugin<Project> {
         publicationSet.addCandidate(new ArchivePublishArtifact(fsm))
     }
 
-    private IsolationCheck configureIsolationCheckTask(final Project project, final FSM fsmTask) {
-        IsolationCheck isolationCheck = project.getTasks().create(ISOLATION_CHECK_TASK_NAME, IsolationCheck.class)
-        isolationCheck.setDescription("Verifies the isolation of resources in the FSM.")
-        isolationCheck.setGroup(LifecycleBasePlugin.VERIFICATION_GROUP)
-        isolationCheck.getInputs().file(fsmTask.getOutputs().getFiles().getSingleFile())
-        isolationCheck.dependsOn(fsmTask)
+    private TaskProvider<IsolationCheck> configureIsolationCheckTask(final Project project, final FSM fsmTask) {
+        def isolationCheck = project.getTasks().register(ISOLATION_CHECK_TASK_NAME, IsolationCheck.class)
+        isolationCheck.configure {
+            it.setDescription("Verifies the isolation of resources in the FSM.")
+            it.setGroup(LifecycleBasePlugin.VERIFICATION_GROUP)
+            it.getInputs().file(fsmTask.getOutputs().files.first())
+            it.dependsOn(fsmTask)
+        }
 
         Task checkTask = project.getTasksByName(JavaBasePlugin.CHECK_TASK_NAME, false).iterator().next()
         checkTask.dependsOn(isolationCheck)

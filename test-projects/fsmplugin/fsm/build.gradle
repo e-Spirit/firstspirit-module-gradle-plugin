@@ -19,6 +19,7 @@ dependencies {
     fsServerCompile project(':api')
     fsModuleCompile project(':impl')
     fsWebCompile project(':web')
+    fsModuleCompile project(':web')
     fsModuleCompile fsDependency(dependency: 'joda-time:joda-time:2.10', skipInLegacy: true)
     fsModuleCompile fsDependency('commons-logging:commons-logging:1.2', true, '1.0', '1.5')
     fsModuleCompile fsDependency('org.apache.activemq:activemq-all:5.14.2', true)
@@ -36,7 +37,8 @@ firstSpiritModule {
     moduleDirName = 'src/main/fsm'
     displayName = 'test-project displayName'
     resourceMode = ISOLATED
-    //isolationDetectorUrl = 'https://fsdev.e-spirit.de/FsmDependencyDetector/'
+    isolationDetectorUrl = 'https://fsdev.e-spirit.de/FsmDependencyDetector/'
+    complianceLevel = de.espirit.mavenplugins.fsmchecker.ComplianceLevel.MINIMAL
     firstSpiritVersion = '5.2.190507'
     vendor = "e-Spirit AG"
     fsmDependencies = ['otherModuleName', 'yetAnotherModule']

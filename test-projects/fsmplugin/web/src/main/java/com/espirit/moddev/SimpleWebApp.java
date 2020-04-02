@@ -15,7 +15,7 @@ import java.util.Set;
         displayName = "SimpleWebApp",
         description = "This is a simple WebApp",
         configurable = SimpleWebApp.WebAppConfigurable.class,
-        webXml = "/web.xml",
+        webXml = "webResourceFolder/web.xml",
         webResources = {
             @WebResource(path = "someResources/icon.png", name = "${project.webappIconName}", version = "${project.version}", targetPath = "img"),
             @WebResource(path = "$path", name = "${project.commonsIOWebDependencyName}", version = "${version}", targetPath = "lib")

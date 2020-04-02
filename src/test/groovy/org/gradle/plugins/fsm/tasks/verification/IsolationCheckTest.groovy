@@ -299,6 +299,13 @@ class IsolationCheckTest {
         }
     }
 
+    @Test
+    void hasFsmAsOnlyTaskInput() {
+        def isolationCheckInputs = isolationCheck.getInputs().files.toList()
+        assertThat(isolationCheckInputs).hasSize(1)
+        assertThat(isolationCheckInputs.first().name).isEqualTo("test.fsm")
+    }
+
 
     private void writeSingleClassToFsmFile(final String superClassName) throws IOException {
         final ClassWriter classWriter = new ClassWriter(0)

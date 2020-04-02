@@ -3,6 +3,10 @@ plugins {
     id 'de.espirit.firstspirit-module-annotations'
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+}
+
 rootProject.ext {
     webappIconName = 'com.espirit.moddev.example.icon.png'
     commonsIOWebDependencyName = 'commons-io:commons-io'
