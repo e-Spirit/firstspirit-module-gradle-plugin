@@ -214,7 +214,7 @@ publishing {
                 username "${artifactory_username}"
                 password "${artifactory_password}"
             }
-            url "https://artifactory.e-spirit.de/artifactory/${((version.endsWith("SNAPSHOT")) ? {'plugins-snapshot-local'} : {'plugins-release-local'})()}"
+            url "https://artifactory.e-spirit.de/artifactory/${((version.endsWith("SNAPSHOT")) ? {'core-platform-mvn-snapshot'} : {'core-platform-mvn-release'})()}"
         }
     }
 }
