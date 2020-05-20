@@ -7,6 +7,7 @@ import de.espirit.mavenplugins.fsmchecker.check.ComplianceCheckImpl
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.plugins.fsm.FSMPluginExtension
 
@@ -72,6 +73,7 @@ class IsolationCheck extends DefaultTask {
     }
 
     @Input
+    @Optional
     String getDetectorUrl() {
         return pluginExtension.isolationDetectorUrl
     }
@@ -81,6 +83,7 @@ class IsolationCheck extends DefaultTask {
     }
 
     @Input
+    @Optional
     ComplianceLevel getComplianceLevel() {
         return pluginExtension.complianceLevel
     }
@@ -89,7 +92,9 @@ class IsolationCheck extends DefaultTask {
         pluginExtension.complianceLevel = complianceLevel
     }
 
-    Collection<String> whitelistedResources() {
+    @Input
+    @Optional
+    Collection<String> getWhitelistedResources() {
         return pluginExtension.isolationDetectorWhitelist
     }
 
@@ -97,7 +102,9 @@ class IsolationCheck extends DefaultTask {
         pluginExtension.isolationDetectorWhitelist = whitelistedResources
     }
 
-    Collection<String> contentCreatorComponents() {
+    @Input
+    @Optional
+    Collection<String> getContentCreatorComponents() {
         return pluginExtension.contentCreatorComponents
     }
 
@@ -106,6 +113,7 @@ class IsolationCheck extends DefaultTask {
     }
 
     @Input
+    @Optional
     String getFirstSpiritVersion() {
         return pluginExtension.firstSpiritVersion
     }
