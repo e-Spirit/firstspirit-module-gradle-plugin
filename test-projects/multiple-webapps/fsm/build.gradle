@@ -1,0 +1,155 @@
+import java.util.zip.ZipFile
+
+plugins {
+	id 'de.espirit.firstspirit-module'
+}
+
+dependencies {
+	fsProvidedCompile 'de.espirit.firstspirit:fs-isolated-runtime:5.2.190507'
+	fsWebCompile 'joda-time:joda-time:2.9'
+	fsModuleCompile 'org.joda:joda-convert:2.1.2'
+}
+
+firstSpiritModule {
+	moduleName = "Test Multiple WebApps"
+	webAppComponent("WebAppA", project(":web_a"))
+	webAppComponent("WebAppB", project(":web_b"))
+}
+
+// Test tasks and methods
+
+/**
+ * Asserts that a resource entry in the module xml is also located in the lib directory
+ * @param fsm               The FSM archive
+ * @param moduleXmlFilename The filename of the module.xml, either META-INF/module.xml or META-INF/module-isolated.xml
+ */
+static def testResourceEntries(ZipFile fsm, String moduleXmlFilename) {
+	// Test if all resource entries in module.xml are present in the archive
+	def moduleXml = fsm.getEntry(moduleXmlFilename)
+	fsm.getInputStream(moduleXml).eachLine { line ->
+		if (line.trim().startsWith("<resource ")) {
+			// Trim <resource> tags from filename and test if resource exists
+			def resourceFile = line.substring(line.indexOf(">") + 1).replace("</resource>", "")
+			assert fsm.getEntry(resourceFile) != null
+		}
+	}
+}
+
+/**
+ * Gets the text between a {@code <web-app>} and {@code </web-app>} tag for a given web-app
+ * @param fsm               The FSM archive
+ * @param moduleXmlFilename The filename of the module.xml, either META-INF/module.xml or META-INF/module-isolated.xml
+ * @param webAppName        The name of the webapp
+ * @return A list containing the lines between the {@code <web-app>} and {@code </web-app>} tag of a web-app with the name {@code webAppName}
+ */
+static def getWebAppXml(ZipFile fsm, String moduleXmlFilename, String webAppName) {
+	def moduleXmlText = fsm.getInputStream(fsm.getEntry(moduleXmlFilename)).readLines()
+	List<String> currentWebAppTag = null
+	def inWebAppTag = false
+	for (def line : moduleXmlText) {
+		def trimmed = line.trim()
+		if (!inWebAppTag && trimmed.startsWith("<web-app")) {
+			currentWebAppTag = []
+			inWebAppTag = true
+		} else if (inWebAppTag) {
+			if (trimmed == "</web-app>") {
+				return currentWebAppTag
+			} else if (trimmed.startsWith("<name>")) {
+				def name = trimmed.substring(trimmed.indexOf(">") + 1).replace("</name>", "")
+				if (name != webAppName) {
+					inWebAppTag = false
+				}
+			}
+			currentWebAppTag.add(line)
+		}
+	}
+	return null
+}
+
+static def assertWebAppXml(List<String> webAppXmlLines) {
+	def webAppResources = webAppXmlLines.findAll { it.startsWith("<resource ") }
+	def resourceNamePattern = ~/name\s*=\s*"([^"]+)"/
+	webAppResources.each { resource ->
+		def resourceName = (resource =~ resourceNamePattern)[0][1]
+		// Each resource should occur only once
+		assert webAppResources.count { (it =~ resourceNamePattern)[0][1] == resourceName } == 1
+	}
+}
+
+static def extractNameAndVersion(String resource) {
+	def extractAttributeValue = { attribute ->
+		def regex = attribute + /\s*=\s*"([^"]+)"/
+		(resource =~ regex)[0][1]
+	}
+
+	Tuple.of(extractAttributeValue("name"), extractAttributeValue("version"))
+}
+
+static def assertFsmResourcesFolder(Project project, ZipFile fsm) {
+	// Tests if each file in a project's fsm-resource folder exists
+	def fsmResourcesPath = project.projectDir.toPath().resolve("src").resolve("main").resolve("fsm-resources").toFile()
+	if (fsmResourcesPath.exists()) {
+		fsmResourcesPath.eachFileRecurse {
+			assert fsm.getEntry(fsmResourcesPath.relativePath(it)) != null
+		}
+	}
+}
+
+task testModuleXml {
+	dependsOn assembleFSM
+	doLast {
+		// Tests the contents of the module xml
+		def fsmFile = assembleFSM.archiveFile.get().asFile
+		new ZipFile(fsmFile).withCloseable { fsm ->
+			// Ensure all <resource> entries in module-xml are in lib directory
+			testResourceEntries(fsm, "META-INF/module.xml")
+			testResourceEntries(fsm, "META-INF/module-isolated.xml")
+
+			// Test specific web resources
+
+			// WebApp A
+			def webAppAXml = getWebAppXml(fsm, "META-INF/module-isolated.xml", "WebAppA").collect { it.trim() }
+			assertWebAppXml(webAppAXml)
+
+			// Resources of Web-App A
+			def webAppAResources = webAppAXml.findAll { it.startsWith("<resource ")}.collect { extractNameAndVersion(it) }
+			assert webAppAResources.contains(Tuple.of("multiple-webapps:web_a", "0.0.1"));
+			assert webAppAResources.contains(Tuple.of("org.joda:joda-convert", "2.1.2"));
+			assert webAppAResources.contains(Tuple.of("joda-time:joda-time", "2.10"));
+			assert webAppAResources.contains(Tuple.of("org.slf4j:slf4j-api", "1.7.25"));
+
+			// Don't want resources of the other subproject, no matter the version
+			def webAppAResourceNames = webAppAResources.collect { it[0] } // Get names only
+			assert !webAppAResourceNames.contains("multiple-webapps:web_b")
+			assert !webAppAResourceNames.contains("de.espirit.firstspirit:fs-isolated-runtime")
+			assert !webAppAResourceNames.contains("com.fasterxml.jackson.core:jackson-databind")
+			assert !webAppAResourceNames.contains("com.fasterxml.jackson.core:jackson-core")
+			assert !webAppAResourceNames.contains("com.fasterxml.jackson.core:jackson-annotations")
+
+
+			// WebApp B
+			def webAppBXml = getWebAppXml(fsm, "META-INF/module-isolated.xml", "WebAppB").collect { it.trim() }
+			assertWebAppXml(webAppBXml)
+
+			// Resources of Web-App B
+			def webAppBResources = webAppBXml.findAll { it.startsWith("<resource ")}.collect { extractNameAndVersion(it) }
+			assert webAppBResources.contains(Tuple.of("multiple-webapps:web_b", "0.0.1"));
+			assert webAppBResources.contains(Tuple.of("joda-time:joda-time", "2.10"));
+			assert webAppBResources.contains(Tuple.of("org.slf4j:slf4j-api", "1.7.25"));
+			assert webAppBResources.contains(Tuple.of("com.fasterxml.jackson.core:jackson-core", "2.10.0"));
+			assert webAppBResources.contains(Tuple.of("com.fasterxml.jackson.core:jackson-databind", "2.10.0"));
+			assert webAppBResources.contains(Tuple.of("com.fasterxml.jackson.core:jackson-annotations", "2.10.0"));
+
+			// Don't want resources of Web-App A
+			def webAppBResourceNames = webAppBResources.collect { it[0] }
+			assert !webAppBResourceNames.contains("multiple-webapps:web_a")
+			assert !webAppAResourceNames.contains("de.espirit.firstspirit:fs-isolated-runtime")
+			assert !webAppBResourceNames.contains("org.joda:joda-convert")
+
+			// Test Fsm-Resources folder
+			assertFsmResourcesFolder(project, fsm)
+			assertFsmResourcesFolder(project(":web_a"), fsm)
+			assertFsmResourcesFolder(project(":web_b"), fsm)
+		}
+	}
+}

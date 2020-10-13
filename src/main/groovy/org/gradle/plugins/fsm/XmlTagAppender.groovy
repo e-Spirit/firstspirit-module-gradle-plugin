@@ -12,11 +12,13 @@ import de.espirit.firstspirit.server.module.ModuleInfo
 import groovy.io.FileType
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.CompileStatic
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.ResolvedArtifact
+import org.gradle.api.logging.LogLevel
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
 import org.gradle.api.plugins.JavaPlugin
@@ -26,6 +28,7 @@ import org.gradle.plugins.fsm.tasks.bundling.FSM
 import java.lang.annotation.Annotation
 
 import static de.espirit.firstspirit.module.GadgetComponent.GadgetFactory
+import static org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME
 import static org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME
 import static org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.PROVIDED_COMPILE_CONFIGURATION_NAME
 
@@ -267,34 +270,99 @@ class XmlTagAppender {
     }
 
 
+    /**
+     * Tests if two {@link org.gradle.api.artifacts.ResolvedConfiguration} objects are the same, ignoring the module version. Used for dependency version resolution
+     */
+    private static boolean moduleMatches(ResolvedArtifact a, ResolvedArtifact b) {
+        a.moduleVersion.id.name == b.moduleVersion.id.name &&
+                a.moduleVersion.id.group == b.moduleVersion.id.group &&
+                a.extension == b.extension &&
+                a.classifier == b.classifier &&
+                a.type == b.type
+    }
+
+
+    /**
+     * Finds all dependencies of a given configuration and finds the global version of each dependency
+     *
+     * @param project           The project
+     * @param configurationName The configuration to fetch the dependencies for
+     * @param allDependencies   All dependencies of the project, with the correct version
+     * @return The dependencies of {@code configurationName}, with the correct version
+     */
+    private static Set<ResolvedArtifact> getResolvedDependencies(Project project, String configurationName, Set<ResolvedArtifact> allDependencies) {
+        def configuration = project.configurations.findByName(configurationName)
+        if (configuration == null) {
+            return Collections.emptySet()
+        }
+        def resolvedArtifacts = configuration.resolvedConfiguration.resolvedArtifacts
+        allDependencies.findAll { resource ->
+            resolvedArtifacts.any { moduleMatches(resource, it) }
+        }
+    }
+
+
     static class WebXmlPaths extends ArrayList<String> { }
 
     @CompileStatic
-    static WebXmlPaths appendWebAppTags(Project project, URLClassLoader cl, List<String> webAppClasses, StringBuilder result, boolean appendDefaultMinVersion, Set<FSMConfigurationsPlugin.MinMaxVersion> minMaxVersionConfigurations = new HashSet<>(), boolean isolated) {
-        List<Class<?>> loadedClasses = webAppClasses
-            .collect{ cl.loadClass(it) }
+    static WebXmlPaths appendWebAppTags(Project project, URLClassLoader cl, List<String> webAppClassNames, StringBuilder result, boolean appendDefaultMinVersion, Set<FSMConfigurationsPlugin.MinMaxVersion> minMaxVersionConfigurations = new HashSet<>(), boolean isolated) {
+        def logger = Logging.getLogger(XmlTagAppender)
+        def webAppClasses = webAppClassNames.collect{ cl.loadClass(it) }
 
-        return appendWebAppComponentTagsOfClasses(loadedClasses, project, result, appendDefaultMinVersion, minMaxVersionConfigurations, isolated)
+        def webXmlPaths = appendWebAppComponentTagsOfClasses(webAppClasses, project, result, appendDefaultMinVersion, minMaxVersionConfigurations, isolated)
+
+        def webAppChecker = new DeclaredWebAppChecker(project, webAppClasses)
+        def declaredWebApps = project.extensions.getByType(FSMPluginExtension).webApps
+
+        // Check if web-apps are complete
+        // Warn if there is a @WebAppComponent annotation not defined in the `firstSpiritModule` block
+        def undeclaredWebAppComponents = webAppChecker.webAppAnnotationsWithoutDeclaration
+        if (declaredWebApps.any() && undeclaredWebAppComponents.any()) {
+            def warningStringBuilder = new StringBuilder()
+            warningStringBuilder.append("@WebAppComponent annotations found that are not registered in the ${FSMPlugin.FSM_EXTENSION_NAME} configuration block:\n")
+            undeclaredWebAppComponents.each {
+                warningStringBuilder.append("- ${it.name()}${!it.displayName().isEmpty() ?  " (" + it.displayName() + ")" : ""}\n")
+            }
+            logger.log(LogLevel.WARN, warningStringBuilder.toString())
+        }
+        // ... or if there is a web-app defined in the `firstSpiritModule` block we cannot find a @WebAppComponent annotation for, throw an error
+        def declaredWebAppNames = webAppChecker.declaredProjectsWithoutAnnotation
+        if (declaredWebAppNames.any()) {
+            def errorStringBuilder = new StringBuilder()
+            errorStringBuilder.append("No @WebAppComponent annotation found for the following web-apps registered in the ${FSMPlugin.FSM_EXTENSION_NAME} configuration block:\n")
+            declaredWebAppNames.each {
+                errorStringBuilder.append("- ${it}\n")
+            }
+            throw new GradleException(errorStringBuilder.toString())
+        }
+
+        webXmlPaths
     }
 
-    private static WebXmlPaths appendWebAppComponentTagsOfClasses(List<Class<?>> loadedClasses, Project project, result, boolean appendDefaultMinVersion, Set<FSMConfigurationsPlugin.MinMaxVersion> minMaxVersionConfigurations = new HashSet<>(), boolean isolated) {
-
-        Set<ResolvedArtifact> webCompileDependencies = project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()
-        Set<ResolvedArtifact> providedCompileDependencies = project.configurations.getByName(PROVIDED_COMPILE_CONFIGURATION_NAME).getResolvedConfiguration().getResolvedArtifacts()
-        if(!isolated){
-            Set<ResolvedArtifact> skippedInLegacyDependencies = getAllSkippedInLegacyDependencies(project)
-            webCompileDependencies.removeAll(skippedInLegacyDependencies)
+    private static WebXmlPaths appendWebAppComponentTagsOfClasses(List<Class<?>> webAppClasses, Project project, result, boolean appendDefaultMinVersion, Set<FSMConfigurationsPlugin.MinMaxVersion> minMaxVersionConfigurations = new HashSet<>(), boolean isolated) {
+        // We might find the same dependencies in different subprojects / configurations, but with different versions
+        // Because only one version ends up in the FSM archive, we need to make sure we always use the correct version
+        def allCompileDependencies = project.configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME).resolvedConfiguration.resolvedArtifacts
+        def sharedWebCompileDependencies = getResolvedDependencies(project, FS_WEB_COMPILE_CONFIGURATION_NAME, allCompileDependencies)
+        def providedCompileDependencies = getResolvedDependencies(project, PROVIDED_COMPILE_CONFIGURATION_NAME, allCompileDependencies)
+        def skippedInLegacyDependencies = getAllSkippedInLegacyDependencies(project, allCompileDependencies)
+        if (!isolated) {
+            sharedWebCompileDependencies.removeAll(skippedInLegacyDependencies)
             providedCompileDependencies.removeAll(skippedInLegacyDependencies)
         }
         def webResourceIndent = INDENT_WS_16
 
         def webXmlPaths = new WebXmlPaths()
 
-        loadedClasses.forEach { webAppClass ->
-            WebAppComponent annotation = Arrays.asList(webAppClass.annotations).find { it instanceof WebAppComponent }
-            if(annotation != null) {
-                StringBuilder webResources = new StringBuilder("")
+        def declaredWebApps = project.extensions.getByType(FSMPluginExtension).webApps
 
+        webAppClasses.forEach { webAppClass ->
+            def annotation = Arrays.asList(webAppClass.annotations).find { it instanceof WebAppComponent } as WebAppComponent
+            if (annotation != null) {
+
+                def webResources = new StringBuilder()
+
+                // fsm-resources directory of root project and fsWebCompile subprojects (shared between all webapps)
                 def appendWebResources = { Project currentProject ->
 
                     def fsmWebResourcesPath = currentProject.projectDir.absolutePath + '/' + FSM.FSM_RESOURCES_PATH
@@ -313,7 +381,33 @@ class XmlTagAppender {
                     appendWebResources(dep.dependencyProject)
                 }
 
-                addResourceTagsForDependencies(webResourceIndent, webCompileDependencies, providedCompileDependencies, webResources, "", null, appendDefaultMinVersion, minMaxVersionConfigurations)
+                def webAppName = evaluateAnnotation(annotation, "name") as String
+                if (declaredWebApps.containsKey(webAppName)) {
+                    def webAppProject = declaredWebApps[webAppName]
+
+                    // fsm-resources directory of current web-app
+                    // - safety check to avoid duplicates
+                    if (!projectDependencies.collect { it.dependencyProject }.contains(webAppProject)) {
+                        appendWebResources(webAppProject)
+                    }
+
+                    // compile dependencies of web-app subproject -
+                    // If we registered a subproject for a given web-app, evaluate its compile dependencies
+                    def webAppProjectDependencies = getResolvedDependencies(webAppProject, JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, allCompileDependencies)
+                    if (!isolated) {
+                        webAppProjectDependencies.removeAll(skippedInLegacyDependencies)
+                    }
+
+                    // Don't want duplicate resources
+                    webAppProjectDependencies.removeAll(sharedWebCompileDependencies)
+
+                    // Add dependencies
+                    webResources.append("""${webResourceIndent}<resource name="${webAppProject.group}:${webAppProject.name}" version="${webAppProject.version}">lib/${getJarFilename(webAppProject)}</resource>\n""")
+                    addResourceTagsForDependencies(webResourceIndent, webAppProjectDependencies, providedCompileDependencies, webResources, "", null, appendDefaultMinVersion, minMaxVersionConfigurations)
+                }
+
+                // fsWebCompile for all subprojects
+                addResourceTagsForDependencies(webResourceIndent, sharedWebCompileDependencies, providedCompileDependencies, webResources, "", null, appendDefaultMinVersion, minMaxVersionConfigurations)
 
                 final String scopes = scopes(annotation.scope())
                 def indent = INDENT_WS_12
@@ -324,12 +418,16 @@ class XmlTagAppender {
 
                 def webResourcesString = webResources.toString()
                 def resourcesString = evaluateResources(annotation, webResourceIndent, project)
-                if(!resourcesString.isEmpty()) { resourcesString = "\n" + resourcesString }
-                if(!webResourcesString.isEmpty()) { webResourcesString = "\n" + webResourcesString }
+                if (!resourcesString.isEmpty()) {
+                    resourcesString = "\n" + resourcesString
+                }
+                if (!webResourcesString.isEmpty()) {
+                    webResourcesString = "\n" + webResourcesString
+                }
 // keep indent (2 tabs / 8 whitespaces) --> 3. level <module><components><web-app>
                 result.append("""
         <web-app${scopes}>
-            <name>${evaluateAnnotation(annotation, "name")}</name>
+            <name>${webAppName}</name>
             <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
             <description>${evaluateAnnotation(annotation, "description")}</description>
             <class>${webAppClass.getName().toString()}</class>${configurable}
@@ -340,8 +438,8 @@ ${resourcesString}${webResourcesString}
             </web-resources>
         </web-app>
 """)
-            }
 
+            }
         }
         return webXmlPaths
     }
@@ -475,9 +573,9 @@ ${resources}
 
             def pathFromAnnotation = expand(resource.path(), context)
 
-            if(resource instanceof Resource) {
+            if (resource instanceof Resource) {
                 sb.append("""${indent}<resource name="${nameFromAnnotation}" version="${versionFromAnnotation}"${minVersion}${maxVersion} scope="${resource.scope().toString().toLowerCase()}" mode="${resource.mode().toString().toLowerCase()}">${pathFromAnnotation}</resource>${end}""")
-            } else if(resource instanceof WebResource) {
+            } else if (resource instanceof WebResource) {
                 final String target = resource.targetPath().isEmpty() ? "" : """ target="${resource.targetPath()}\""""
                 sb.append("""${indent}<resource name="${nameFromAnnotation}" version="${versionFromAnnotation}"${minVersion}${maxVersion}${target}>${pathFromAnnotation}</resource>${end}""")
             } else throw new IllegalArgumentException("Cannot process resource of type ${resource.class}!")
@@ -616,21 +714,16 @@ ${resources}
         Set<ResolvedArtifact> uncleanedDependenciesModuleScoped = configurations.fsModuleCompile.getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> resolvedServerScopeArtifacts = configurations.fsServerCompile.getResolvedConfiguration().getResolvedArtifacts()
         Set<ResolvedArtifact> compileDependenciesServerScoped = uncleanedDependenciesModuleScoped.findAll { moduleScoped ->
-            resolvedServerScopeArtifacts.any {
-                it.moduleVersion.id.group == moduleScoped.moduleVersion.id.group &&
-                it.moduleVersion.id.name == moduleScoped.moduleVersion.id.name &&
-                it.classifier == moduleScoped.classifier &&
-                it.extension == moduleScoped.extension &&
-                it.type == moduleScoped.type
-            }
+            resolvedServerScopeArtifacts.any { moduleMatches(it, moduleScoped) }
         }
         Set<ResolvedArtifact> cleanedCompileDependenciesModuleScoped = uncleanedDependenciesModuleScoped - compileDependenciesServerScoped
         logIgnoredModuleScopeDependencies(logger, uncleanedDependenciesModuleScoped, cleanedCompileDependenciesModuleScoped)
         Set<ResolvedArtifact> providedCompileDependencies = configurations.fsProvidedCompile.getResolvedConfiguration().getResolvedArtifacts()
 
         boolean legacyMode = !isolationMode
-        if(legacyMode) {
-            Set<ResolvedArtifact> skippedInLegacyDependencies = getAllSkippedInLegacyDependencies(project)
+        if (legacyMode) {
+            def allCompileDependencies = project.configurations.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME).resolvedConfiguration.resolvedArtifacts
+            def skippedInLegacyDependencies = getAllSkippedInLegacyDependencies(project, allCompileDependencies)
             compileDependenciesServerScoped.removeAll(skippedInLegacyDependencies)
             cleanedCompileDependenciesModuleScoped.removeAll(skippedInLegacyDependencies)
             providedCompileDependencies.removeAll(skippedInLegacyDependencies)
@@ -647,11 +740,11 @@ ${resources}
         return projectResources.toString()
     }
 
-    private static List<ResolvedArtifact> getAllSkippedInLegacyDependencies(Project project) {
+    private static List<ResolvedArtifact> getAllSkippedInLegacyDependencies(Project project, Set<ResolvedArtifact> allCompileDependencies) {
         project.rootProject.allprojects.collectMany {
             Set<ResolvedArtifact> result = new HashSet<>()
             try {
-                result = it.configurations.skippedInLegacy.getResolvedConfiguration().getResolvedArtifacts()
+                result = getResolvedDependencies(it, FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME, allCompileDependencies)
             } catch (MissingPropertyException e) {
                 Logging.getLogger(XmlTagAppender).trace("No skipInLegacy configuration found for project $it (probably not using fsm plugins at all)", e)
             }

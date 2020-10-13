@@ -83,7 +83,7 @@ class FSMTest {
 	void theTaskNameShouldBeComposedByAVerbAndAnObject(){
 		String verb = "assemble"
 		String object = "FSM"
-		assertThat(project.tasks[verb + object]).isNotNull();
+		assertThat(project.tasks[verb + object]).isNotNull()
 	}
 
 	@Test
@@ -327,6 +327,123 @@ class FSMTest {
 		}
 	}
 
+	@Test
+	void testFsmResourceFilesAreUsedForEachWebApp() {
+		project.version = "1.0.0"
+
+		// Create dummy test projects
+		def webProjectAFile = testDir.toPath().resolve("web_a").toFile()
+		webProjectAFile.mkdirs()
+		def webProjectA = ProjectBuilder.builder().withName("web_a").withProjectDir(webProjectAFile).withParent(project).build()
+		webProjectA.plugins.apply("java")
+		setArtifactoryCredentialsFromLocalProperties(webProjectA)
+		defineArtifactoryForProject(webProjectA)
+
+		// add resources
+		// web_a
+		// +-+ fsm-resources
+		//   +-- 1.txt
+		//   +-- 2.txt
+		def webAResources = Files.createDirectories(webProjectAFile.toPath().resolve(FSM.FSM_RESOURCES_PATH))
+		webAResources.resolve("1.txt").toFile() << "1.txt"
+		webAResources.resolve("2.txt").toFile() << "2.txt"
+
+		def webProjectBFile = testDir.toPath().resolve("web_b").toFile()
+		webProjectBFile.mkdirs()
+		def webProjectB = ProjectBuilder.builder().withName("web_b").withProjectDir(webProjectBFile).withParent(project).build()
+		webProjectB.plugins.apply("java")
+		setArtifactoryCredentialsFromLocalProperties(webProjectB)
+		defineArtifactoryForProject(webProjectB)
+
+		// add resources
+		// web_b
+		// +-+ fsm-resources
+		//   +-- a.txt
+		//   +-+ nested1
+		//     +-+ nested2
+		//       +-- b.txt
+		def webBResources = Files.createDirectories(webProjectBFile.toPath().resolve(FSM.FSM_RESOURCES_PATH))
+		webBResources.resolve("a.txt").toFile() << "a.txt"
+		def nested = Files.createDirectories(webBResources.resolve("nested1").resolve("nested2"))
+		nested.resolve("b.txt") << "b.txt"
+
+		def rootResources = Files.createDirectories(project.projectDir.toPath().resolve(FSM.FSM_RESOURCES_PATH))
+		rootResources.resolve("0.txt") << "0.txt"
+
+		// add web projects as web-apps
+		def fsmPluginExtension = project.extensions.getByType(FSMPluginExtension)
+		fsmPluginExtension.webAppComponent("TestWebAppA", webProjectA)
+		fsmPluginExtension.webAppComponent("TestWebAppB", webProjectB)
+
+		fsm.execute()
+
+		// Test resource entries
+		withFsmFile { ZipFile fsm ->
+			assertThat(fsm.getEntry("0.txt")).isNotNull()
+			assertThat(fsm.getEntry("1.txt")).isNotNull()
+			assertThat(fsm.getEntry("2.txt")).isNotNull()
+			assertThat(fsm.getEntry("a.txt")).isNotNull()
+			assertThat(fsm.getEntry("nested1/nested2/b.txt")).isNotNull()
+		}
+	}
+
+	@Test
+	void testFsmResourceFilesDetectDuplicates() {
+		project.version = "1.0.0"
+
+		// Create dummy test projects
+		def subprojectAFile = testDir.toPath().resolve("a").toFile()
+		subprojectAFile.mkdirs()
+		def subprojectA = ProjectBuilder.builder().withName("a").withProjectDir(subprojectAFile).withParent(project).build()
+		subprojectA.plugins.apply("java")
+		setArtifactoryCredentialsFromLocalProperties(subprojectA)
+		defineArtifactoryForProject(subprojectA)
+
+		// add resources
+		// a
+		// +-+ fsm-resources
+		//   +-+ nested
+		//   | +-- n1.txt    <-- duplicate
+		//   | +-- n2.txt
+		//   +-- 1.txt       <-- duplicate
+		//   +-- 2.txt
+		def subprojectAResources = Files.createDirectories(subprojectAFile.toPath().resolve(FSM.FSM_RESOURCES_PATH))
+		subprojectAResources.resolve("1.txt").toFile() << "1.txt"
+		subprojectAResources.resolve("2.txt").toFile() << "2.txt"
+		def nestedA = Files.createDirectories(subprojectAResources.resolve("nested"))
+		nestedA.resolve("n1.txt").toFile() << "n1.txt"
+		nestedA.resolve("n2.txt").toFile() << "n2.txt"
+
+		def subprojectBFile = testDir.toPath().resolve("b").toFile()
+		subprojectBFile.mkdirs()
+		def subprojectB = ProjectBuilder.builder().withName("b").withProjectDir(subprojectBFile).withParent(project).build()
+		subprojectB.plugins.apply("java")
+		setArtifactoryCredentialsFromLocalProperties(subprojectB)
+		defineArtifactoryForProject(subprojectB)
+
+		// add resources
+		// b
+		// +-+ fsm-resources
+		//   +-+ nested
+		//   | +-- n1.txt    <-- duplicate
+		//   | +-- n3.txt
+		//   +-- 1.txt       <-- duplicate
+		//   +-- 3.txt
+		def subprojectBResources = Files.createDirectories(subprojectBFile.toPath().resolve(FSM.FSM_RESOURCES_PATH))
+		subprojectBResources.resolve("1.txt").toFile() << "1.txt"
+		subprojectBResources.resolve("3.txt").toFile() << "3.txt"
+		def nestedB = Files.createDirectories(subprojectBResources.resolve("nested"))
+		nestedB.resolve("n1.txt").toFile() << "n1.txt"
+		nestedB.resolve("n3.txt").toFile() << "n3.txt"
+
+		fsm.execute()
+
+		// The following files should be detected as duplicates. They will overwrite each other in the FSM archive
+		assertThat(fsm.duplicateFsmResourceFiles).containsExactlyInAnyOrder(
+				"1.txt",
+				"nested/n1.txt"
+		)
+	}
 
 	@Test
 	void testWebXmlResourcesAreExcludedFromResources() {

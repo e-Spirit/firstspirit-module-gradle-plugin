@@ -15,11 +15,12 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
+import groovy.io.FileType
+import groovy.transform.PackageScope
 import groovy.xml.XmlUtil
 import io.github.classgraph.ClassGraph
 import io.github.classgraph.ScanResult
 import org.gradle.api.Project
-import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
@@ -28,7 +29,6 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.classloader.JarClassLoader
-import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.zip.UnzipUtility
 
 import java.nio.charset.StandardCharsets
@@ -56,6 +56,18 @@ class FSM extends Jar {
      * classpath will be copied to 'fsm/lib' folder
      */
     private FileCollection classpath
+
+    /**
+     * Contains all resource file paths added with an fsm-resources folder.
+     * Used for duplicate checking
+     */
+    protected Set<String> fsmResourceFiles = new HashSet<>()
+
+    /**
+     * Contains all resource file paths of all fsm-resources folders that are duplicates. Used for duplicate warning
+     */
+    @PackageScope
+    Set<String> duplicateFsmResourceFiles = new HashSet<>()
 
     public FSMPluginExtension pluginExtension
     private final List<String> moduleBlacklist = new ArrayList<>()
@@ -110,18 +122,14 @@ class FSM extends Jar {
                 }
             }
 
-            FSMConfigurationsPlugin.FS_CONFIGURATIONS.forEach { configName ->
-                def config = project.configurations.getByName(configName)
-                def projectDependencies = config.getAllDependencies().withType(ProjectDependency)
-                projectDependencies.forEach { ProjectDependency dep ->
-                    copyResourceFolderToFsm(dep.dependencyProject, FSM_RESOURCES_PATH)
-                }
+            // Merge fsm-resources folders of all projects
+            project.rootProject.allprojects.each {
+                copyResourceFolderToFsm(it, FSM_RESOURCES_PATH)
             }
-            copyResourceFolderToFsm(project, FSM_RESOURCES_PATH)
 
             configure {
                 metaInf {
-                    if(pluginExtension.moduleDirName != null){
+                    if (pluginExtension.moduleDirName != null) {
                         // include module.xml's
                         String moduleDirPath = trimPathToDirectory(pluginExtension.moduleDirName)
 
@@ -134,17 +142,17 @@ class FSM extends Jar {
                         if (!moduleXml.exists() && !moduleIsolatedXml.exists()) {
                             throw new IllegalArgumentException("No module.xml or module-isolated.xml found in moduleDir " + pluginExtension.moduleDirName)
                         }
-                        if(moduleXml.exists() && moduleIsolatedXml.exists()){
+                        if (moduleXml.exists() && moduleIsolatedXml.exists()) {
                             getLogger().info("Both xml files exist in moduleDir " + moduleDirPath)
                             include moduleXmlFileName
                             include isolatedModuleXmlFileName
                         }
-                        else if(moduleXml.exists() && !moduleIsolatedXml.exists()){
+                        else if (moduleXml.exists() && !moduleIsolatedXml.exists()) {
                             getLogger().warn("Found only a module.xml in moduleDir " + moduleDirPath +
                                              ". Using the default template-module-isolated.xml to replace the missing module-isolated.xml")
                             include moduleXmlFileName
                         }
-                        else if(!moduleXml.exists() && moduleIsolatedXml.exists()){
+                        else if (!moduleXml.exists() && moduleIsolatedXml.exists()) {
                             getLogger().warn("Found only a module-isolated.xml in moduleDir " + moduleDirPath +
                                              ". Using the default template-module.xml to replace the missing module.xml")
                             include isolatedModuleXmlFileName
@@ -162,6 +170,13 @@ class FSM extends Jar {
         def fsmResourcesFolder = new File(fsmResourcesPath)
         if (fsmResourcesFolder.exists()) {
             logger.info("Adding folder ${fsmResourcesPath} from project ${dep.name} to fsm")
+            // Record duplicates to warn later
+            fsmResourcesFolder.eachFileRecurse(FileType.FILES, { file ->
+                def relativePath = fsmResourcesFolder.relativePath(file)
+                if (!fsmResourceFiles.add(relativePath)) {
+                    duplicateFsmResourceFiles.add(relativePath)
+                }
+            })
             into('/') {
                 from(fsmResourcesPath)
             }
@@ -172,8 +187,8 @@ class FSM extends Jar {
 
     //checks if a path contains a filename and removes the filename
     static String trimPathToDirectory(String path){
-        if(path != null){
-            if(path.lastIndexOf("/") < path.lastIndexOf(".")){
+        if (path != null) {
+            if (path.lastIndexOf("/") < path.lastIndexOf(".")) {
                 return path.substring(0,path.lastIndexOf("/"))
             }
             return path
@@ -210,7 +225,7 @@ class FSM extends Jar {
         getLogger().info("Generating module.xml files")
         File archive = archiveFile.get().asFile
         getLogger().info("Found archive ${archive.getPath()}")
-        (FileSystems.newFileSystem(archive.toPath(), getClass().getClassLoader())).withCloseable { fs ->
+        FileSystems.newFileSystem(archive.toPath(), getClass().getClassLoader()).withCloseable { fs ->
             new ZipFile(archive).withCloseable { zipFile ->
 
                 boolean isolated
@@ -226,7 +241,16 @@ class FSM extends Jar {
                 }
 			}
 		}
-	}
+
+        // Test if any duplicate fsm-resources files could overwrite each other
+        if (duplicateFsmResourceFiles.any()) {
+            def warningMessage = new StringBuilder("Warning: Multiple files in fsm-resources with same path found! Files may be overwritten by each other in the FSM archive!\n")
+            duplicateFsmResourceFiles.each {
+                warningMessage.append("- ${it}\n")
+            }
+            getLogger().warn(warningMessage.toString())
+        }
+    }
 
     void writeModuleDescriptorToBuildDirAndZipFile(FileSystem fs, String unfilteredModuleXml, XMLData moduleXML) {
         String filteredModuleXml = XmlUtil.serialize(filterModuleXml(unfilteredModuleXml, moduleXML))
@@ -281,28 +305,29 @@ class FSM extends Jar {
             classGraph.enableAnnotationInfo()
 
             def scan = classGraph.addClassLoader(classLoader).scan()
+            scan.withCloseable {
 
-            WebXmlPaths webXmlPaths
-            components: {
-                StringBuilder result = new StringBuilder()
-                webXmlPaths = appendComponentsTag(project, classLoader, new ClassScannerResultDelegate(scan), appendDefaultMinVersion, result, isolated)
-                moduleXml.componentTags = result.toString()
+                WebXmlPaths webXmlPaths
+                components: {
+                    StringBuilder result = new StringBuilder()
+                    webXmlPaths = appendComponentsTag(project, classLoader, new ClassScannerResultDelegate(scan), appendDefaultMinVersion, result, isolated)
+                    moduleXml.componentTags = result.toString()
+                }
+
+                moduleAnnotation: {
+                    StringBuilder result = new StringBuilder()
+                    appendModuleAnnotationTags(classLoader, new ClassScannerResultDelegate(scan), result, moduleBlacklist)
+                    moduleXml.moduleTags = result.toString()
+                }
+
+                licenses: {
+                    String result = "META-INF/licenses.csv"
+                    moduleXml.licenseTags = result
+                }
+
+
+                moduleXml.resourcesTags = getResourcesTags(project, webXmlPaths, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion, isolated)
             }
-
-            moduleAnnotation: {
-                StringBuilder result = new StringBuilder()
-                appendModuleAnnotationTags(classLoader, new ClassScannerResultDelegate(scan), result, moduleBlacklist)
-                moduleXml.moduleTags = result.toString()
-            }
-
-            licenses: {
-                String result = "META-INF/licenses.csv"
-                moduleXml.licenseTags = result
-            }
-
-
-            moduleXml.resourcesTags = getResourcesTags(project, webXmlPaths, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion, isolated)
-            scan.close()
         }
 
         return moduleXml

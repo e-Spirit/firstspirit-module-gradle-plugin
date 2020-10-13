@@ -60,7 +60,7 @@ class FSMPlugin implements Plugin<Project> {
         project.getPlugins().apply(FSMConfigurationsPlugin)
         project.getPlugins().apply(FSMAnnotationsPlugin)
 
-        project.getExtensions().create(FSM_EXTENSION_NAME, FSMPluginExtension)
+        project.getExtensions().create(FSM_EXTENSION_NAME, FSMPluginExtension, project)
 
         project.getPlugins().apply(JavaPlugin.class)
         project.getPlugins().apply(LicenseReportPlugin.class)
@@ -70,7 +70,6 @@ class FSMPlugin implements Plugin<Project> {
         TaskProvider<IsolationCheck> isolationCheck = configureIsolationCheckTask(project, fsmTask)
         Task checkTask = project.getTasksByName(JavaBasePlugin.CHECK_TASK_NAME, false).iterator().next()
         checkTask.dependsOn(isolationCheck)
-
 
         configureJarTask(project)
         configureLicenseReport(project)

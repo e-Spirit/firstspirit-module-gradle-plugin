@@ -17,8 +17,41 @@ package org.gradle.plugins.fsm
 
 import de.espirit.firstspirit.server.module.ModuleInfo
 import de.espirit.mavenplugins.fsmchecker.ComplianceLevel
+import org.gradle.api.Project
+import org.gradle.api.plugins.JavaPlugin
 
 class FSMPluginExtension {
+
+	private Map<String, Project> _fsmWebApps = [:]
+	private Project _project
+
+	FSMPluginExtension(Project project) {
+		_project = project
+	}
+
+	/**
+	 * Registers a web-app to a given subproject
+	 *
+	 * @param webAppName The name of the web-app
+	 * @param webAppProject The subproject holding the web-app's resources
+	 */
+	void webAppComponent(String webAppName, Project webAppProject) {
+		_fsmWebApps[webAppName] = webAppProject
+		_project.dependencies.add(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, webAppProject)
+	}
+
+	/**
+	 * Registers a web-app subproject, with the name of the web-app matching the project's name.
+	 *
+	 * @param webAppProject The subproject holding the web-app's resources
+	 */
+	void webAppComponent(Project webAppProject) {
+		webAppComponent(webAppProject.name, webAppProject)
+	}
+
+	Map<String, Project> getWebApps() {
+		new HashMap<>(_fsmWebApps)
+	}
 
 	/**
 	 * The name of the module that should be used in the module.xml instead of the project name

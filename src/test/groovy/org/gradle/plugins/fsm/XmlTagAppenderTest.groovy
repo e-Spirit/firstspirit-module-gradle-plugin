@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.assertThatThrownBy
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown
 import static org.gradle.plugins.fsm.ComponentHelper.createResource
 import static org.gradle.plugins.fsm.ComponentHelper.createWebResource
@@ -748,6 +749,91 @@ ${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="module" mode="isolat
         Assert.assertEquals("""${INDENT_WS_8}<resource name="${GROUP}:${NAME}" version="$VERSION" scope="module" mode="isolated">lib/$NAME-${VERSION}.jar</resource>
 ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated" version="1.7.1">lib/slf4j-api-1.7.1.jar</resource>
 ${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="module" mode="isolated" version="2.1.1">lib/joda-convert-2.1.1.jar</resource>""".toString(), result)
+    }
+
+
+    @Test
+    void testMultipleWebapps() {
+        def webAppAProject = ProjectBuilder.builder().withParent(project).withName("web_a").build()
+        webAppAProject.plugins.apply("java")
+        webAppAProject.version = "0.1"
+        webAppAProject.repositories.add(webAppAProject.repositories.mavenCentral())
+        webAppAProject.dependencies.add("implementation", "org.joda:joda-convert:2.1.2")   //  Version higher than for fsWebCompile, should  use higher version
+        webAppAProject.dependencies.add("implementation", "org.slf4j:slf4j-api:1.7.24")
+        webAppAProject.dependencies.add("implementation", "commons-logging:commons-logging:1.2")
+
+        def webAppBProject = ProjectBuilder.builder().withParent(project).withName("web_b").build()
+        webAppBProject.plugins.apply("java")
+        webAppBProject.version = "0.2"
+        webAppBProject.repositories.add(webAppBProject.repositories.mavenCentral())
+        webAppBProject.dependencies.add("implementation", "org.slf4j:slf4j-api:1.7.25")    // Higher Version
+
+        def fsmPluginExtension = project.extensions.getByType(FSMPluginExtension)
+        fsmPluginExtension.webAppComponent("TestWebAppA", webAppAProject)
+        fsmPluginExtension.webAppComponent("TestWebAppB", webAppBProject)
+
+
+        // Generate XML
+        def webAppAnnotations = [ TestWebAppA, TestWebAppB ].collect { it.name }
+        def components = new StringBuilder()
+        def minMaxVersions = new HashSet<FSMConfigurationsPlugin.MinMaxVersion>()
+        def classLoader = new URLClassLoader(new URL[0], getClass().classLoader)
+        XmlTagAppender.appendWebAppTags(project, classLoader, webAppAnnotations, components, false, minMaxVersions, false)
+
+        // Evaluate
+        assertThat(components).isEqualToIgnoringWhitespace("""
+                <web-app scopes="project,global">
+                    <name>TestWebAppA</name>
+                    <displayname></displayname>
+                    <description></description>
+                    <class>org.gradle.plugins.fsm.TestWebAppA</class>
+                    <web-xml>a/web.xml</web-xml>
+                    <web-resources>
+                        <resource name="test:webapps-test-project" version="1.2">lib/webapps-test-project-1.2.jar</resource>
+                        <resource name="webapps-test-project:web_a" version="0.1">lib/web_a-0.1.jar</resource>
+                        <resource name="org.slf4j:slf4j-api" version="1.7.25">lib/slf4j-api-1.7.25.jar</resource>
+                        <resource name="commons-logging:commons-logging" version="1.2">lib/commons-logging-1.2.jar</resource>
+                        <resource name="joda-time:joda-time" version="2.3">lib/joda-time-2.3.jar</resource>
+                        <resource name="org.joda:joda-convert" version="2.1.2">lib/joda-convert-2.1.2.jar</resource>
+                    </web-resources>
+                </web-app>
+                    
+                <web-app scopes="project,global">
+                    <name>TestWebAppB</name>
+                    <displayname></displayname>
+                    <description></description>
+                    <class>org.gradle.plugins.fsm.TestWebAppB</class>
+                    <web-xml>b/web.xml</web-xml>
+                    <web-resources>
+                        <resource name="test:webapps-test-project" version="1.2">lib/webapps-test-project-1.2.jar</resource>
+                        <resource name="webapps-test-project:web_b" version="0.2">lib/web_b-0.2.jar</resource>
+                        <resource name="org.slf4j:slf4j-api" version="1.7.25">lib/slf4j-api-1.7.25.jar</resource>
+                        <resource name="joda-time:joda-time" version="2.3">lib/joda-time-2.3.jar</resource>
+                        <resource name="org.joda:joda-convert" version="2.1.2">lib/joda-convert-2.1.2.jar</resource>
+                    </web-resources>
+                </web-app>
+        """)
+    }
+
+
+    @Test
+    void testFailOnUnknownWebapp()  {
+        // We register a WebApp in `firstSpiritModule` using `webAppComponent`, but
+        // there's no matching annotation.
+        // This should cause XmlTagAppender#appendWebAppTags to fail because of an error
+
+        def webAppAProject = ProjectBuilder.builder().withParent(project).withName("web_a").build()
+        webAppAProject.plugins.apply("java")
+        webAppAProject.version = "0.1"
+
+        def fsmPluginExtension = project.extensions.getByType(FSMPluginExtension)
+        fsmPluginExtension.webAppComponent("not_existing", webAppAProject)
+
+        // Generate XML
+        def webAppAnnotations = [ TestWebAppB ].collect { it.name }
+        def minMaxVersions = new HashSet<FSMConfigurationsPlugin.MinMaxVersion>()
+        def classLoader = new URLClassLoader(new URL[0], getClass().classLoader)
+        assertThatThrownBy { XmlTagAppender.appendWebAppTags(project, classLoader, webAppAnnotations, new StringBuilder(), false, minMaxVersions, false) }.hasMessageContaining("not_existing")
     }
 
 

@@ -1,0 +1,17 @@
+pluginManagement {
+	repositories {
+		maven {
+			url = 'https://artifactory.e-spirit.de/artifactory/repo/'
+			credentials {
+				username = artifactory_username
+				password = artifactory_password
+			}
+		}
+		gradlePluginPortal()
+	}
+}
+
+rootProject.name = 'multiple-webapps'
+
+include "fsm", "web_a", "web_b"
+includeBuild '../../'

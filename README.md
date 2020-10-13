@@ -391,6 +391,40 @@ IMPL_USAGE | Usage of classes which are not part of the isolated runtime
 RUNTIME_USAGE | Usage of classes that are not part of the public API
 DEPRECATED_API_USAGE | Usage of FirstSpirit API that has been deprecated
 
+## Adding WebApps
+
+To add a WebApp to the FSM, use the following steps:
+ 
+ 1. Add a class implementing `WebApp` and mark it with the `@WebAppComponent` annotation, as with other components. This class should be located in the project that assembles the FSM. 
+ 1. Add a Gradle subproject corresponding to the WebApp to your project
+ 1. Register the WebApp in the `firstSpiritModule` configuration block by calling `webAppComponent(String name, Project project)`. Example:
+    ```groovy
+    firstSpiritModule {
+        webAppComponent("myWebApp", project(":myWebAppSubproject"))
+    }
+    ```
+    **Important**: The name you provide in the `webAppComponent` definition **must** match the `name` attribute of the `@WebAppComponent` annotation!\
+    **Note**: If you add a web app with `webAppComponent`, do **not** declare a `fsWebCompile` dependency on the subproject. 
+    
+If you have multiple webapps, note that the `fsm-resources` directories (see above) of each Gradle subproject are merged into the root directory of the FSM archive. To ensure no files are overwritten, we recommend placing the resources of each web app into a uniquely named subfolder in the `fsm-resources` directory. Example:
+    
+```
++-+ myWebAppA
+| +-- build.gradle
+| +-+ src
+|   +-+ main
+|     +-+ fsm-resources
+|       +-+ my-web-app-a
+|         +-- ...       // resources for the first web app
++-+ myWebAppB
+  +-- build.gradle
+  +-+ src
+    +-+ main
+      +-+ fsm-resources
+        +-+ my-web-app-b
+          +-- ...       // resources for the second web app
+```  
+ 
 
 ## IDE support
 
