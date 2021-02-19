@@ -10,6 +10,6 @@ java {
 
 dependencies {
     compile fsDependency('junit:junit:4.12', true)
-    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.190507'
+    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.200910'
     compile "$guavaProperty:$guavaVersionProperty"
 }

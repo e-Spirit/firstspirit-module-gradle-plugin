@@ -13,7 +13,7 @@ rootProject.ext {
 }
 
 dependencies {
-    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.190507'
+    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.200910'
     fsWebCompile fsDependency(dependency:'org.apache.commons:commons-lang3:3.8.1', skipInLegacy:true)
     compile "$commonsIOWebDependencyName:2.6"
 }

@@ -1,4 +1,0 @@
-project:
-  type: library
-build-tool:
-  type: gradlew

@@ -1,0 +1,8 @@
+team: core-platform
+responsible:
+  - kafmann
+  - reinartz
+  - tarnowski
+docker:
+  images:
+    - docker.artifactory.e-spirit.de/core-platform/base:jdk-8
