@@ -28,9 +28,7 @@ import org.gradle.plugins.fsm.tasks.bundling.FSM
 import java.lang.annotation.Annotation
 
 import static de.espirit.firstspirit.module.GadgetComponent.GadgetFactory
-import static org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME
-import static org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME
-import static org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.PROVIDED_COMPILE_CONFIGURATION_NAME
+import static org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.*
 
 class XmlTagAppender {
 
@@ -70,7 +68,7 @@ class XmlTagAppender {
         Collection<String> fsmDependencies = fsmPlugin.getFsmDependencies()
 
         for (String name : fsmDependencies) {
-            result.append("\n").append(INDENT_WS_8).append("<dependency>").append(name).append("</dependency>")
+            result.append("\n").append(INDENT_WS_8).append("<depends>").append(name).append("</depends>")
         }
         return result
     }

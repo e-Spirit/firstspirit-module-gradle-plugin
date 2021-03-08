@@ -14,9 +14,7 @@ import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.Assertions.assertThatThrownBy
-import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown
+import static org.assertj.core.api.Assertions.*
 import static org.gradle.plugins.fsm.ComponentHelper.createResource
 import static org.gradle.plugins.fsm.ComponentHelper.createWebResource
 import static org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME
@@ -704,8 +702,8 @@ ${INDENT_WS_8}</public>
     @Test
     void getFsmDependencyTags() {
         def beginsWithANewLineAndIndentation = "\n" + """${INDENT_WS_8}"""
-        def firstFsmDependency = beginsWithANewLineAndIndentation + "<dependency>oneFSM</dependency>"
-        def secondFsmDependency = beginsWithANewLineAndIndentation + "<dependency>anotherFSM</dependency>"
+        def firstFsmDependency = beginsWithANewLineAndIndentation + "<depends>oneFSM</depends>"
+        def secondFsmDependency = beginsWithANewLineAndIndentation + "<depends>anotherFSM</depends>"
 
         String result = XmlTagAppender.getFsmDependencyTags(project)
         Assert.assertEquals(firstFsmDependency + secondFsmDependency, result)
