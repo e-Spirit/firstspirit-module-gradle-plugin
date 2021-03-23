@@ -147,6 +147,7 @@ class XmlTagAppender {
         <public>
             <name>${evaluateAnnotation(annotation, "name")}</name>
             <displayname>${evaluateAnnotation(annotation, "displayName")}</displayname>
+            <description>${evaluateAnnotation(annotation, "description")}</description>
             <class>${publicComponentClass.getName().toString()}</class>${configurable}
         </public>""")
 
@@ -177,12 +178,13 @@ class XmlTagAppender {
                 .findAll { it instanceof ScheduleTaskComponent }
                 .forEach { annotation ->
                     def indent = INDENT_WS_12
-                    final String configurable = annotation.configurable() == Configuration.class ? "" : "\n" + indent + "<configurable>${annotation.configurable().name}</configurable>"
+                    def configurable = annotation.configurable() == Configuration.class ? "" : "\n" + indent + "<configurable>${annotation.configurable().name}</configurable>"
+                    def displayName = annotation.displayName().allWhitespace ? "" : "\n" + indent + "<displayname>${annotation.displayName()}</displayname>"
 
 // keep indent (2 tabs / 8 whitespaces) --> 3. level <module><components><public>
                     result.append("""
         <public>
-            <name>${evaluateAnnotation(annotation, "taskName")}</name>
+            <name>${evaluateAnnotation(annotation, "taskName")}</name>${displayName}
             <description>${evaluateAnnotation(annotation, "description")}</description>
             <class>${ScheduleTaskSpecification.getName()}</class>
             <configuration>

@@ -104,11 +104,13 @@ class XmlTagAppenderTest {
 ${INDENT_WS_8}<public>
 ${INDENT_WS_12___}<name>TestPublicComponentName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>Component Description</description>
 ${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestPublicComponent</class>
 ${INDENT_WS_8}</public>
 ${INDENT_WS_8}<public>
 ${INDENT_WS_12___}<name>TestPublicComponentWithConfigName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description></description>
 ${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestPublicComponentWithConfiguration</class>
 ${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.TestConfigurable</configurable>
 ${INDENT_WS_8}</public>
@@ -269,6 +271,7 @@ ${INDENT_WS_4}<configurable>org.gradle.plugins.fsm.TestConfigurable</configurabl
 ${INDENT_WS_8}<public>
 ${INDENT_WS_12___}<name>TestPublicComponentName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description>Component Description</description>
 ${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestPublicComponent</class>
 ${INDENT_WS_8}</public>""".toString(), result.toString())
     }
@@ -283,6 +286,7 @@ ${INDENT_WS_8}</public>""".toString(), result.toString())
 ${INDENT_WS_8}<public>
 ${INDENT_WS_12___}<name>TestPublicComponentWithConfigName</name>
 ${INDENT_WS_12___}<displayname>TestDisplayName</displayname>
+${INDENT_WS_12___}<description></description>
 ${INDENT_WS_12___}<class>org.gradle.plugins.fsm.TestPublicComponentWithConfiguration</class>
 ${INDENT_WS_12___}<configurable>org.gradle.plugins.fsm.TestConfigurable</configurable>
 ${INDENT_WS_8}</public>""".toString(), result.toString())
@@ -332,6 +336,7 @@ ${INDENT_WS_8}</public>""".toString(), result.toString())
         Assert.assertEquals("""
 ${INDENT_WS_8}<public>
 ${INDENT_WS_12___}<name>Test task</name>
+${INDENT_WS_12___}<displayname>Test Task Display Name</displayname>
 ${INDENT_WS_12___}<description>A task for test purpose</description>
 ${INDENT_WS_12___}<class>de.espirit.firstspirit.module.ScheduleTaskSpecification</class>
 ${INDENT_WS_12___}<configuration>

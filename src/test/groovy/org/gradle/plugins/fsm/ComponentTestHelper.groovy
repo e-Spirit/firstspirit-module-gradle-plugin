@@ -317,7 +317,7 @@ class TestWebAppComponentWithoutConfiguration extends BaseWebApp {
     static class TestConfigurable extends BaseConfiguration { }
 }
 
-@PublicComponent(name = "TestPublicComponentName", displayName = "TestDisplayName")
+@PublicComponent(name = "TestPublicComponentName", displayName = "TestDisplayName", description = "Component Description")
 class TestPublicComponent {
 }
 
@@ -325,7 +325,7 @@ class TestPublicComponent {
 class TestPublicComponentWithConfiguration {
 }
 
-@ScheduleTaskComponent(taskName = "Test task", description = "A task for test purpose")
+@ScheduleTaskComponent(taskName = "Test task", displayName = "Test Task Display Name", description = "A task for test purpose")
 class TestScheduleTaskComponentWithoutForm {
 }
 

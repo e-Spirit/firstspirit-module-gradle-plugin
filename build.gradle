@@ -29,7 +29,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 ext {
-    fsmAnnotationsVersion = '1.9.5'
+    fsmAnnotationsVersion = '1.9.6'
 
     // set version to {{issue.key}}-SNAPSHOT for feature branches
     try {
