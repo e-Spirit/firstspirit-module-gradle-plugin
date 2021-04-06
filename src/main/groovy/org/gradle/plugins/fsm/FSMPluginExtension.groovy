@@ -18,6 +18,7 @@ package org.gradle.plugins.fsm
 import de.espirit.firstspirit.server.module.ModuleInfo
 import de.espirit.mavenplugins.fsmchecker.ComplianceLevel
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Dependency
 import org.gradle.api.plugins.JavaPlugin
 
 class FSMPluginExtension {
@@ -37,7 +38,13 @@ class FSMPluginExtension {
 	 */
 	void webAppComponent(String webAppName, Project webAppProject) {
 		_fsmWebApps[webAppName] = webAppProject
-		_project.dependencies.add(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, webAppProject)
+
+		// This is the same as
+		//    implementation project("projectName", configuration: "default")
+		// and is required because of an error with the variant selection regarding the license report plugin.
+		// For more information, see https://github.com/jk1/Gradle-License-Report/issues/170
+		def projectDependency = _project.dependencies.project(path: webAppProject.path, configuration: "default")
+		_project.dependencies.add(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, projectDependency)
 	}
 
 	/**

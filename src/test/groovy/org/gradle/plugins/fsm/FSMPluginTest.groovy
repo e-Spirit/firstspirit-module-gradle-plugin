@@ -15,6 +15,7 @@
  */
 package org.gradle.plugins.fsm
 
+import org.assertj.core.api.HamcrestCondition
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
@@ -26,7 +27,6 @@ import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 import org.gradle.testfixtures.ProjectBuilder
-import org.junit.Assert
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -72,7 +72,7 @@ class FSMPluginTest {
 		project.apply plugin: FSMPlugin.NAME
 
 		Task fsm = project.tasks[FSMPlugin.FSM_TASK_NAME]
-		Assert.assertThat(fsm, dependsOn ( JavaPlugin.JAR_TASK_NAME, JavaPlugin.CLASSES_TASK_NAME, FSMPlugin.GENERATE_LICENSE_REPORT_TASK_NAME))
+		assertThat(fsm).is(new HamcrestCondition<Task>(dependsOn(JavaPlugin.JAR_TASK_NAME, JavaPlugin.CLASSES_TASK_NAME, FSMPlugin.GENERATE_LICENSE_REPORT_TASK_NAME)))
 	}
 	
 	@Test
@@ -80,7 +80,7 @@ class FSMPluginTest {
 		project.apply plugin: FSMPlugin.NAME
 
 		Task assemble = project.tasks[BasePlugin.ASSEMBLE_TASK_NAME]
-		Assert.assertThat(assemble, dependsOn(FSMPlugin.FSM_TASK_NAME))
+		assertThat(assemble).is(new HamcrestCondition<Task>(dependsOn(FSMPlugin.FSM_TASK_NAME)))
 	}
 
 	@Test
@@ -88,7 +88,7 @@ class FSMPluginTest {
 		project.apply plugin: FSMPlugin.NAME
 
 		Task check = project.tasks[JavaBasePlugin.CHECK_TASK_NAME]
-		Assert.assertThat(check, dependsOn(JavaPlugin.TEST_TASK_NAME, FSMPlugin.ISOLATION_CHECK_TASK_NAME))
+		assertThat(check).is(new HamcrestCondition<Task>(dependsOn(JavaPlugin.TEST_TASK_NAME, FSMPlugin.ISOLATION_CHECK_TASK_NAME)))
 	}
 
     @Test
@@ -109,7 +109,7 @@ class FSMPluginTest {
 		Task fsmTask = project.tasks[FSMPlugin.FSM_TASK_NAME]
 		Task checkIsolationTask = project.tasks[FSMPlugin.ISOLATION_CHECK_TASK_NAME]
 
-		Assert.assertThat(checkIsolationTask, dependsOn(fsmTask.name))
+		assertThat(checkIsolationTask).is(new HamcrestCondition<Task>(dependsOn(fsmTask.name)))
 	}
 
 	@Test

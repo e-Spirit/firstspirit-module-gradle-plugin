@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FSMPluginExtensionTest {
+class FSMPluginExtensionTest {
 
     private FSMPluginExtension testling;
     private Project project;
@@ -27,8 +27,8 @@ public class FSMPluginExtensionTest {
 
     @Test
     void testWebApps() {
-        final Project webAppSubprojectA = ProjectBuilder.builder().withName("web_a").build();
-        final Project webAppSubprojectB = ProjectBuilder.builder().withName("web_b").build();
+        final Project webAppSubprojectA = ProjectBuilder.builder().withParent(project).withName("web_a").build();
+        final Project webAppSubprojectB = ProjectBuilder.builder().withParent(project).withName("web_b").build();
 
         testling.webAppComponent("WebAppA", webAppSubprojectA);
         testling.webAppComponent(webAppSubprojectB);

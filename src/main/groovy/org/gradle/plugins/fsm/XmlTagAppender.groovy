@@ -608,18 +608,14 @@ ${resources}
         context
     }
 
-    private static ResolvedArtifact getCompileDependencyForNameOrNull(Project project, nameFromAnnotation) {
-        def dependencyForNameOrNull = project.configurations.findAll { config ->
-            [JavaPlugin.COMPILE_CONFIGURATION_NAME, FSMConfigurationsPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, FSMConfigurationsPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME].contains(config.name)
-        }.collectMany { org.gradle.api.artifacts.Configuration config ->
-            config.getResolvedConfiguration().getResolvedArtifacts().asList()
-        }.find { ResolvedArtifact dependency ->
+    private static ResolvedArtifact getCompileDependencyForNameOrNull(Project project, String nameFromAnnotation) {
+        def configuration = project.configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME)
+        configuration.resolvedConfiguration.resolvedArtifacts.find { ResolvedArtifact dependency ->
             def splitName = dependency.id.componentIdentifier.displayName.split(":")
             def groupId = splitName[0]
             def name = splitName[1]
             nameFromAnnotation == "${groupId}:${name}"
         }
-        dependencyForNameOrNull
     }
 
     private static String getPathInFsmForDependency(ResolvedArtifact artifact) {
@@ -722,7 +718,7 @@ ${resources}
 
         boolean legacyMode = !isolationMode
         if (legacyMode) {
-            def allCompileDependencies = project.configurations.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME).resolvedConfiguration.resolvedArtifacts
+            def allCompileDependencies = project.configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME).resolvedConfiguration.resolvedArtifacts
             def skippedInLegacyDependencies = getAllSkippedInLegacyDependencies(project, allCompileDependencies)
             compileDependenciesServerScoped.removeAll(skippedInLegacyDependencies)
             cleanedCompileDependenciesModuleScoped.removeAll(skippedInLegacyDependencies)

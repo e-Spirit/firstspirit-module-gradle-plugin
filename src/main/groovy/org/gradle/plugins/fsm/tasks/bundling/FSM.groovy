@@ -21,6 +21,7 @@ import groovy.xml.XmlUtil
 import io.github.classgraph.ClassGraph
 import io.github.classgraph.ScanResult
 import org.gradle.api.Project
+import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
@@ -81,7 +82,8 @@ class FSM extends Jar {
 
         archiveExtension.set(FSM_EXTENSION)
         destinationDirectory.set(project.file('build/fsm'))
-        pluginExtension = project.getExtensions().getByType(FSMPluginExtension)
+        pluginExtension = project.extensions.getByType(FSMPluginExtension)
+        duplicatesStrategy = DuplicatesStrategy.WARN
 
 //        We're creating the fsm task and its config in the fsm plugin constructor, so the user's
 //        configuration from the build script is not yet applied. The configuration should be deferred

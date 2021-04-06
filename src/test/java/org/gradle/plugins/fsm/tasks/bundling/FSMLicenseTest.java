@@ -6,13 +6,13 @@ import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Rule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -22,16 +22,16 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 public class FSMLicenseTest {
 
 	private static final String LICENSE_HEADER = "\"artifact\",\"moduleUrl\",\"moduleLicense\",\"moduleLicenseUrl\",\n";
-	@Rule
-	public final TemporaryFolder testProjectDir = new TemporaryFolder();
-	private File settingsFile;
-	private File buildFile;
+	private Path testDir;
+	private Path settingsFile;
+	private Path buildFile;
 
 	@BeforeEach
-	public void setUp() throws Exception {
-		testProjectDir.create();
-		buildFile = testProjectDir.newFile("build.gradle");
-		settingsFile = testProjectDir.newFile("settings.gradle");
+	public void setUp(@TempDir final Path tempDir) throws Exception {
+		testDir = tempDir;
+
+		buildFile = Files.createFile(testDir.resolve("build.gradle"));
+		settingsFile = Files.createFile(testDir.resolve("settings.gradle"));
 	}
 
 	@Test
@@ -43,14 +43,14 @@ public class FSMLicenseTest {
 
 		// Execute the gradle build
 		final BuildResult result = GradleRunner.create()
-				.withProjectDir(testProjectDir.getRoot())
+				.withProjectDir(testDir.toFile())
 				.withArguments(FSMPlugin.FSM_TASK_NAME)
 				.withPluginClasspath()
 				.build();
 		assertThat(result.task(":" + FSMPlugin.FSM_TASK_NAME).getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 
 		// examine result
-		final Path fsmFile = testProjectDir.getRoot().toPath().resolve("build/fsm/testFsmNoLicenses-1.0-SNAPSHOT.fsm");
+		final Path fsmFile = testDir.resolve("build/fsm/testFsmNoLicenses-1.0-SNAPSHOT.fsm");
 		assertThat(fsmFile.toFile()).exists();
 		try (final ZipFile zipFile = new ZipFile(fsmFile.toFile())) {
 			final ZipEntry licenseReport = zipFile.getEntry("META-INF/licenses.csv");
@@ -71,14 +71,14 @@ public class FSMLicenseTest {
 
 		// Execute the gradle build
 		final BuildResult result = GradleRunner.create()
-				.withProjectDir(testProjectDir.getRoot())
+				.withProjectDir(testDir.toFile())
 				.withArguments(FSMPlugin.FSM_TASK_NAME)
 				.withPluginClasspath()
 				.build();
 		assertThat(result.task(":" + FSMPlugin.FSM_TASK_NAME).getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 
 		// get result
-		final Path fsmFile = testProjectDir.getRoot().toPath().resolve("build/fsm/testFsmNoLicenses-1.0-SNAPSHOT.fsm");
+		final Path fsmFile = testDir.resolve("build/fsm/testFsmNoLicenses-1.0-SNAPSHOT.fsm");
 		assertThat(fsmFile.toFile()).exists();
 		try (final ZipFile zipFile = new ZipFile(fsmFile.toFile())) {
 			// test license file
@@ -101,8 +101,8 @@ public class FSMLicenseTest {
 		}
 	}
 
-	private void writeFile(@NotNull final File file, @NotNull final String text) throws IOException {
-		try (BufferedWriter output = new BufferedWriter(new FileWriter(file))) {
+	private void writeFile(@NotNull final Path file, @NotNull final String text) throws IOException {
+		try (final Writer output = Files.newBufferedWriter(file)) {
 			output.write(text);
 		}
 	}

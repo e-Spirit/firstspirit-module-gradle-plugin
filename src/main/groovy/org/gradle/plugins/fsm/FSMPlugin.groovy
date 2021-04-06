@@ -17,7 +17,6 @@ package org.gradle.plugins.fsm
 
 
 import com.github.jk1.license.LicenseReportPlugin
-import com.github.jk1.license.render.CsvReportRenderer
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -78,13 +77,9 @@ class FSMPlugin implements Plugin<Project> {
     void configureLicenseReport(Project project) {
         project.licenseReport {
             // Set output directory for the report data.
-            // Defaults to ${project.buildDir}/reports/dependency-license.
             outputDir = "${project.buildDir}/${FSM.LICENSES_DIR_NAME}"
-
-            // Adjust the configurations to fetch dependencies, e.g. for Android projects. Default is 'runtimeClasspath'
-            configurations = ['compile']
-
-            renderers = [new CsvReportRenderer()]
+            configurations = [JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME]
+            renderers = [new LicenseCsvRenderer()]
         }
     }
 

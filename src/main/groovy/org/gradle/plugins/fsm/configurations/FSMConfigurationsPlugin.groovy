@@ -21,6 +21,7 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.logging.Logging
+import org.gradle.api.plugins.JavaLibraryPlugin
 import org.gradle.api.plugins.JavaPlugin
 
 /**
@@ -91,7 +92,7 @@ class FSMConfigurationsPlugin implements Plugin<Project> {
     void apply(Project project) {
         this.project = project
 
-        project.getPlugins().apply(JavaPlugin.class)
+        project.plugins.apply(JavaLibraryPlugin)
         configureConfigurations(project.getConfigurations())
 
         project.ext.fsDependency = { Object... args ->
@@ -154,10 +155,10 @@ class FSMConfigurationsPlugin implements Plugin<Project> {
 
         configurationContainer.getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME)
                 .extendsFrom(provideCompileConfiguration)
-        configurationContainer.getByName(JavaPlugin.RUNTIME_CONFIGURATION_NAME)
+        configurationContainer.getByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME)
             .extendsFrom(provideRuntimeConfiguration)
 
-        configurationContainer.getByName(JavaPlugin.COMPILE_CONFIGURATION_NAME)
+        configurationContainer.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
                 .extendsFrom(fsServerCompileConfiguration)
                 .extendsFrom(fsModuleCompileConfiguration)
                 .extendsFrom(fsWebCompileConfiguration)

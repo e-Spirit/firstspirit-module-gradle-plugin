@@ -17,11 +17,11 @@ repositories {
 
 dependencies {
     // Test dependency is irrelevant for licensing
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
 
     // use one, real, dependency
     // it needs:
     // - license info
     // - some transitive dependencies which also have license info
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.0'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.0'
 }
