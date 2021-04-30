@@ -21,16 +21,17 @@ import groovy.xml.XmlUtil
 import io.github.classgraph.ClassGraph
 import io.github.classgraph.ScanResult
 import org.gradle.api.Project
+import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.file.FileCollection
+import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
-import org.gradle.plugins.fsm.classloader.JarClassLoader
-import org.gradle.plugins.fsm.zip.UnzipUtility
+import org.gradle.plugins.fsm.classloader.FsmComponentClassLoader
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.*
@@ -53,10 +54,19 @@ class FSM extends Jar {
     static final String LICENSES_DIR_NAME = 'licenses'
 
     /**
-     * The fsm runtime classpath. All libraries in this
-     * classpath will be copied to 'fsm/lib' folder
+     * The fsm runtime classpath. All libraries in this classpath will be copied to 'fsm/lib' folder
      */
     private FileCollection classpath
+
+    /**
+     * If set, overrides the classloader for the component scan.
+     * Intended to be used for unit tests.<br/>
+     *
+     * If {@code null}, the default class scanning behaviour is used
+     *
+     * @see #configureComponentScan(ClassGraph)
+     */
+    private ClassLoader componentClassLoader
 
     /**
      * Contains all resource file paths added with an fsm-resources folder.
@@ -75,11 +85,49 @@ class FSM extends Jar {
 
     @Internal
     protected List<String> getModuleBlacklist() {
-        return moduleBlacklist
+        moduleBlacklist
+    }
+
+    @Internal
+    ClassLoader getComponentClassLoader() {
+        componentClassLoader
+    }
+
+    void setComponentClassLoader(ClassLoader classLoader) {
+        this.componentClassLoader = classLoader
+    }
+
+    /**
+     * Configures how the component scan finds components.
+     * If {@link #componentClassLoader} is set (used in unit tests), the class loader
+     * is used to find components. <br/>
+     *
+     * Otherwise, the default class loading behaviour is used, which scans all java
+     * subprojects in this build which are part of the compile classpath
+     *
+     * @param classGraph The {@link ClassGraph} instance to configure
+     */
+    void configureComponentScan(ClassGraph classGraph) {
+        if (componentClassLoader) {
+            // If set, use the overridden class loader
+            classGraph.addClassLoader(componentClassLoader)
+        } else {
+            // Get current project + all subprojects for which we have a compile dependency and get their
+            // jar tasks' classpath
+            def compileClasspathConfiguration = project.configurations.compileClasspath
+            def projectDependencies = compileClasspathConfiguration.allDependencies.withType(ProjectDependency)
+                    .collect { it.dependencyProject }
+                    .findAll { it.plugins.hasPlugin(JavaPlugin) }
+            def allProjects = [project] + projectDependencies
+            def jarFiles = allProjects.collect {
+                def jarTask = it.tasks.getByName(JavaPlugin.JAR_TASK_NAME) as Jar
+                jarTask.archiveFile.get().asFile
+            }
+            classGraph.overrideClasspath(jarFiles)
+        }
     }
 
     FSM() {
-
         archiveExtension.set(FSM_EXTENSION)
         destinationDirectory.set(project.file('build/fsm'))
         pluginExtension = project.extensions.getByType(FSMPluginExtension)
@@ -233,12 +281,12 @@ class FSM extends Jar {
                 boolean isolated
                 legacy: {
                     isolated = false
-                    XMLData moduleXml = getXMLTagsFromAppender(archive, pluginExtension.appendDefaultMinVersion, isolated, moduleBlacklist)
+                    XMLData moduleXml = getXMLTagsFromAppender(pluginExtension.appendDefaultMinVersion, isolated, moduleBlacklist)
                     writeModuleDescriptorToBuildDirAndZipFile(fs, getUnfilteredModuleXml(zipFile, isolated), moduleXml)
                 }
                 isolated: {
                     isolated = true
-                    XMLData moduleIsolatedXml = getXMLTagsFromAppender(archive, pluginExtension.appendDefaultMinVersion, isolated, moduleBlacklist)
+                    XMLData moduleIsolatedXml = getXMLTagsFromAppender(pluginExtension.appendDefaultMinVersion, isolated, moduleBlacklist)
                     writeModuleDescriptorToBuildDirAndZipFile(fs, getUnfilteredModuleXml(zipFile, isolated), moduleIsolatedXml)
                 }
 			}
@@ -295,18 +343,16 @@ class FSM extends Jar {
         unfilteredModuleXml
     }
 
-    XMLData getXMLTagsFromAppender(File archive, boolean appendDefaultMinVersion, boolean isolated, List<String> moduleBlacklist = new ArrayList<String>()) {
-        File tempDir = unzipFsmToNewTempDir(archive)
+    XMLData getXMLTagsFromAppender(boolean appendDefaultMinVersion, boolean isolated, List<String> moduleBlacklist = new ArrayList<String>()) {
         def moduleXml = new XMLData(isolated: isolated)
 
-
-        def libDir = new File(Paths.get(tempDir.getPath(), "lib").toString())
-        new JarClassLoader(libDir, getClass().getClassLoader()).withCloseable { classLoader ->
+        new FsmComponentClassLoader(project).withCloseable { classLoader ->
             def classGraph = new ClassGraph()
-            classGraph.enableClassInfo()
-            classGraph.enableAnnotationInfo()
+                    .enableClassInfo()
+                    .enableAnnotationInfo()
+            configureComponentScan(classGraph)
 
-            def scan = classGraph.addClassLoader(classLoader).scan()
+            def scan = classGraph.scan()
             scan.withCloseable {
 
                 WebXmlPaths webXmlPaths
@@ -326,7 +372,6 @@ class FSM extends Jar {
                     String result = "META-INF/licenses.csv"
                     moduleXml.licenseTags = result
                 }
-
 
                 moduleXml.resourcesTags = getResourcesTags(project, webXmlPaths, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion, isolated)
             }
@@ -364,28 +409,6 @@ class FSM extends Jar {
         @Override
         List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation) {
             return scan.getClassesWithAnnotation(annotation.name).getNames()
-        }
-    }
-
-    private File unzipFsmToNewTempDir(File archive) {
-        def tempDir = getTemporaryDirFactory().create()
-        getLogger().info("Extracting archive to $tempDir")
-
-        try {
-            new UnzipUtility().unzip(archive.getPath(), tempDir.getPath())
-        } catch (IOException ex) {
-            getLogger().error("Problem with fsm unzipping", ex)
-        }
-        tempDir
-    }
-
-    void list(List<URL> urlsList, File file) {
-        if (file.isFile()) {
-            urlsList.add(file.toURI().toURL())
-        }
-        File[] children = file.listFiles()
-        for (File child : children) {
-            list(urlsList, child)
         }
     }
 

@@ -5,6 +5,16 @@ plugins {
 group 'de.espirit'
 version '1.0-SNAPSHOT'
 
+repositories {
+    maven {
+        url 'https://artifactory.e-spirit.de/artifactory/repo'
+        credentials {
+            username = "${System.getProperty("artifactory_username")}"
+            password = "${System.getProperty("artifactory_password")}"
+        }
+    }
+}
+
 dependencies {
     // Test dependency is irrelevant for licensing
     testImplementation group: 'junit', name: 'junit', version: '4.12'

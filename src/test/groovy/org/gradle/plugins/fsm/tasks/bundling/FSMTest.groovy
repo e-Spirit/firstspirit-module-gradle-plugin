@@ -59,6 +59,8 @@ class FSMTest {
 
 		fsm = project.tasks[FSMPlugin.FSM_TASK_NAME] as FSM
 
+		// Add component classes defined in ComponentTestHelper to component classes
+		fsm.componentClassLoader = FSMTest.classLoader
 		fsm.archiveBaseName.set('testbasename')
 		fsm.archiveAppendix.set('testappendix')
 		fsm.archiveVersion.set('1.0')
