@@ -19,12 +19,14 @@ class FSMAnnotationsPlugin implements Plugin<Project> {
     }
 
     def addFsmAnnotationsDependencyToProject() {
-        Properties props = new Properties()
-        InputStream versionsFile = FSMAnnotationsPlugin.class.getResourceAsStream("/versions.properties")
-        if(versionsFile == null) {
+        def props = new Properties()
+        def versionFile = FSMAnnotationsPlugin.getResourceAsStream("/versions.properties")
+        if (versionFile == null) {
             throw new IllegalStateException("Couldn't find versions.properties file that should be a generated resource!")
         }
-        props.load(versionsFile)
+        versionFile.withCloseable {
+            props.load(versionFile)
+        }
 
         project.dependencies {
             def annotationsDep = "com.espirit.moddev.components:annotations:${props.get("fsm-annotations-version")}"

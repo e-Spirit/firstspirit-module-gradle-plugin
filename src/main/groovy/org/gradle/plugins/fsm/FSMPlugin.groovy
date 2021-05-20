@@ -72,6 +72,7 @@ class FSMPlugin implements Plugin<Project> {
 
         configureJarTask(project)
         configureLicenseReport(project)
+        configureManifest(project)
     }
 
     void configureLicenseReport(Project project) {
@@ -83,7 +84,7 @@ class FSMPlugin implements Plugin<Project> {
         }
     }
 
-    private FSM configureFsmTask(final Project project) {
+    private static FSM configureFsmTask(final Project project) {
 
         FSM fsmTask = project.getTasks().create(FSM_TASK_NAME, FSM.class)
         fsmTask.setDescription("Assembles an fsmTask archive containing the FirstSpirit module.")
@@ -133,7 +134,7 @@ class FSMPlugin implements Plugin<Project> {
         return fsmTask
     }
 
-    private void addPublication(Project project, FSM fsm) {
+    private static void addPublication(Project project, FSM fsm) {
         // remove jar artifact added by java the plugin (see http://issues.gradle.org/browse/GRADLE-687)
         Configuration archivesConfig = project.getConfigurations().getByName(Dependency.ARCHIVES_CONFIGURATION)
         archivesConfig.getArtifacts().clear()
@@ -144,7 +145,7 @@ class FSMPlugin implements Plugin<Project> {
         publicationSet.addCandidate(new ArchivePublishArtifact(fsm))
     }
 
-    private TaskProvider<IsolationCheck> configureIsolationCheckTask(final Project project, final FSM fsmTask) {
+    private static TaskProvider<IsolationCheck> configureIsolationCheckTask(final Project project, final FSM fsmTask) {
         def isolationCheck = project.getTasks().register(ISOLATION_CHECK_TASK_NAME, IsolationCheck.class)
         isolationCheck.configure {
             it.setDescription("Verifies the isolation of resources in the FSM.")
@@ -159,8 +160,63 @@ class FSMPlugin implements Plugin<Project> {
         return isolationCheck
     }
 
-    private void configureJarTask(Project project) {
+    private static void configureJarTask(Project project) {
         final Jar jarTask = (Jar) project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME)
         jarTask.exclude("module.xml")
     }
+
+    private static void configureManifest(Project project) {
+        // Configure each JAR's manifest in the project. This also includes the .fsm file
+        // We cannot configure the tasks directly, because the project is not evaluated yet
+        // We also cannot use project.afterEvaluate {...}, because the unit tests apply the plugin after
+        // the project has already been evaluated, causing Gradle to throw an exception
+        // Because of this, we use the task execution graph to find all Jar Tasks and configure them
+
+        project.gradle.taskGraph.whenReady { taskGraph ->
+            project.logger.info("Configuring JAR manifests...")
+            taskGraph.allTasks.findAll { it instanceof Jar }.each { task ->
+                def buildJdk = "${System.properties['java.runtime.version']} (${System.properties['java.vendor']})"
+                project.logger.info("Configuring task of project ${task.project.name}, task name: ${task.path}")
+                if (task instanceof FSM) {
+                    def fsmTask = task as FSM
+                    addManifestAttribute(fsmTask, "Created-By", "FirstSpirit Module Gradle Plugin ${getPluginVersion()}")
+                    addManifestAttribute(fsmTask, "Build-Jdk", buildJdk)
+                    addManifestAttribute(fsmTask, "Build-Tool", "Gradle $project.gradle.gradleVersion")
+                } else {
+                    def jarTask = task as Jar
+                    addManifestAttribute(jarTask, "Build-Jdk", buildJdk)
+                    addManifestAttribute(jarTask, "Created-By", "Gradle $project.gradle.gradleVersion")
+                }
+            }
+        }
+    }
+
+    /**
+     * Gets the version of the FSM gradle plugin from {@code versions.properties}.
+     * It would also be possible to use {@code FSMPlugin.package.implementationVersion},
+     * however, this relies on the implementation version being set in the plugin jar.
+     * This is not the case for unit tests starting a gradle build.
+     *
+     * @return The plugin version
+     */
+    private static String getPluginVersion() {
+        FSMPlugin.getResourceAsStream("/versions.properties").withCloseable {
+            def properties = new Properties()
+            properties.load(it)
+            return properties["version"]
+        }
+    }
+
+    /**
+     * Sets a parameter for a {@link Jar} task's manifest, if it wasn't already set before.
+     * If the parameter was already set, doesn't do anything.
+     *
+     * @param jarTask The {@link Task} to configure
+     * @param name    The name of the attribute to configure
+     * @param value   The value of the attribute
+     */
+    private static void addManifestAttribute(Jar jarTask, String name, Object value) {
+        jarTask.manifest.attributes.putIfAbsent(name, value)
+    }
+
 }

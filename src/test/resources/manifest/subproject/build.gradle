@@ -1,0 +1,18 @@
+plugins {
+    id "java-library"
+}
+
+version = "3.0.0"
+
+// Override some attributes in the META-INF/MANIFEST.MF file located in the project jar
+// ...during configuration
+jar.manifest.attributes(
+        "Build-Jdk": "Custom-Jdk",
+)
+
+// ...and during runtime
+jar.doFirst { jarTask ->
+        jarTask.manifest.attributes(
+                "Custom-Key": "Custom-Value"
+        )
+}

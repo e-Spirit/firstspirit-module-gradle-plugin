@@ -136,6 +136,8 @@ task writePropertiesToResourceFile() {
     doLast {
         Properties props = new Properties()
         props.setProperty('fsm-annotations-version', project.fsmAnnotationsVersion)
+        props.setProperty('version', version as String)
+
         File propsFile = sourceSets.main.output.resourcesDir.toPath().resolve("versions.properties").toFile()
         File propsFileTest = sourceSets.test.output.resourcesDir.toPath().resolve("versions.properties").toFile()
         [propsFile, propsFileTest].forEach { targetFile ->
@@ -156,6 +158,8 @@ test.dependsOn writePropertiesToResourceFile
 test {
     systemProperty "artifactory_username", findProperty("artifactory_username")
     systemProperty "artifactory_password", findProperty("artifactory_password")
+    systemProperty "gradle.version", gradle.gradleVersion
+    systemProperty "version", version
     maxHeapSize = "2048m"
     useJUnitPlatform()
 }
