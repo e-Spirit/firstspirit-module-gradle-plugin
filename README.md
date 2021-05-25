@@ -40,7 +40,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```groovy
 plugins {
-    id 'de.espirit.firstspirit-module' version '{{version}}'
+    id 'de.espirit.firstspirit-module' version '2.1.1'
 }
 ```
 
@@ -125,6 +125,7 @@ isolationDetectorUrl        | String        | *unset*             		|  If set, t
 isolationDetectorWhitelist  | String[]      | *unset*                   |  Contains all resources that should not be scanned for dependencies
 contentCreatorComponents    | String[]      | *unset*                   |  Names of components which are meant to be installed with the ContentCreator.
 complianceLevel             | String        | DEFAULT                   |  Compliance level to check for if isolationDetectorUrl is set
+maxBytecodeVersion          | int           | 55                        |  Maximum bytecode version for all JAR files of the FSM. Defaults to 55 (JDK 11).
 firstSpiritVersion          | String        | *unset*             		|  FirstSpirit version used in the isolation check
 appendDefaultMinVersion     | boolean       | true                      |  If set to true, appends the artifact version as the minVersion attribute to all resource tags (except resources which were explicitly set within FS component annotations)
 

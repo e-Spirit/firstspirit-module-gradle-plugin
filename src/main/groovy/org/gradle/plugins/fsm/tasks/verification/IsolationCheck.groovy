@@ -42,10 +42,12 @@ class IsolationCheck extends DefaultTask {
 
         getLogger().lifecycle("Running isolation check ...")
         getLogger().lifecycle("\tComplianceLevel: '" + getComplianceLevel() + "'")
+        getLogger().lifecycle("\tmaximum bytecode version: '" + getMaxBytecodeVersion() + "'")
         getLogger().lifecycle("\tagainst detector: '" + pluginExtension.isolationDetectorUrl+ "'")
         getLogger().lifecycle("\tusing FirstSpirit version: '" + pluginExtension.firstSpiritVersion + "'")
         getLogger().lifecycle("\tfsms: '" + pathList + "'")
-        def connector = new WebServiceConnector(uri, pluginExtension.firstSpiritVersion)
+        def connector = new WebServiceConnector(uri, pluginExtension.firstSpiritVersion,
+                pluginExtension.getMaxBytecodeVersion())
 
         def complianceCheck = new ComplianceCheckImpl(getComplianceLevel(), project.getBuildDir().toPath(), connector)
         if (pluginExtension.isolationDetectorWhitelist != null) {
@@ -90,6 +92,15 @@ class IsolationCheck extends DefaultTask {
 
     void setComplianceLevel(ComplianceLevel complianceLevel) {
         pluginExtension.complianceLevel = complianceLevel
+    }
+
+    @Input
+    int getMaxBytecodeVersion() {
+        return pluginExtension.maxBytecodeVersion
+    }
+
+    void setMaxBytecodeVersion(int maxBytecodeVersion) {
+        pluginExtension.maxBytecodeVersion = maxBytecodeVersion
     }
 
     @Input

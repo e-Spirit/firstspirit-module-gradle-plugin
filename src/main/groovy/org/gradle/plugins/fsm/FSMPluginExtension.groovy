@@ -18,7 +18,6 @@ package org.gradle.plugins.fsm
 import de.espirit.firstspirit.server.module.ModuleInfo
 import de.espirit.mavenplugins.fsmchecker.ComplianceLevel
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Dependency
 import org.gradle.api.plugins.JavaPlugin
 
 class FSMPluginExtension {
@@ -106,6 +105,11 @@ class FSMPluginExtension {
 	 * {@link ComplianceLevel#DEFAULT}
 	 */
 	ComplianceLevel complianceLevel = ComplianceLevel.DEFAULT
+
+	/**
+	 * The maximum bytecode level allowed for all Java classes
+	 */
+	int maxBytecodeVersion = 55 // JDK 11
 
     /**
      * The FirstSpirit version to check against with the isolation detector service.
