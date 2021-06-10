@@ -22,7 +22,7 @@ class IsolationCheck extends DefaultTask {
     public FSMPluginExtension pluginExtension
 
     IsolationCheck() {
-        pluginExtension = project.getExtensions().getByType(FSMPluginExtension)
+        pluginExtension = project.extensions.getByType(FSMPluginExtension)
     }
 
     @TaskAction
@@ -34,20 +34,22 @@ class IsolationCheck extends DefaultTask {
             return
         }
 
-        if (Strings.isEmpty(pluginExtension.firstSpiritVersion)) {
+        if (Strings.isEmpty(firstSpiritVersion)) {
             throw new GradleException("Isolation check requires FirstSpirit version to check against. Please consult the README.")
         }
 
-        final URI uri = new URI(pluginExtension.isolationDetectorUrl)
+        def uri = new URI(pluginExtension.isolationDetectorUrl)
 
-        getLogger().lifecycle("Running isolation check ...")
-        getLogger().lifecycle("\tComplianceLevel: '" + getComplianceLevel() + "'")
-        getLogger().lifecycle("\tmaximum bytecode version: '" + getMaxBytecodeVersion() + "'")
-        getLogger().lifecycle("\tagainst detector: '" + pluginExtension.isolationDetectorUrl+ "'")
-        getLogger().lifecycle("\tusing FirstSpirit version: '" + pluginExtension.firstSpiritVersion + "'")
-        getLogger().lifecycle("\tfsms: '" + pathList + "'")
-        def connector = new WebServiceConnector(uri, pluginExtension.firstSpiritVersion,
-                pluginExtension.getMaxBytecodeVersion())
+        logger.lifecycle("Running isolation check ...")
+        logger.lifecycle("\tComplianceLevel: '" + complianceLevel + "'")
+        logger.lifecycle("\tmaximum bytecode version: '" + maxBytecodeVersion + "'")
+        logger.lifecycle("\tagainst detector: '" + pluginExtension.isolationDetectorUrl + "'")
+        if (isolationDetectorUsername != null) {
+            logger.lifecycle("\tauthenticating as: '" + isolationDetectorUsername + "'")
+        }
+        logger.lifecycle("\tusing FirstSpirit version: '" + firstSpiritVersion + "'")
+        logger.lifecycle("\tfsms: '" + pathList + "'")
+        def connector = new WebServiceConnector(uri, firstSpiritVersion, maxBytecodeVersion, isolationDetectorUsername, isolationDetectorPassword)
 
         def complianceCheck = new ComplianceCheckImpl(getComplianceLevel(), project.getBuildDir().toPath(), connector)
         if (pluginExtension.isolationDetectorWhitelist != null) {
@@ -77,7 +79,7 @@ class IsolationCheck extends DefaultTask {
     @Input
     @Optional
     String getDetectorUrl() {
-        return pluginExtension.isolationDetectorUrl
+        pluginExtension.isolationDetectorUrl
     }
 
     void setDetectorUrl(String detectorUrl) {
@@ -87,7 +89,7 @@ class IsolationCheck extends DefaultTask {
     @Input
     @Optional
     ComplianceLevel getComplianceLevel() {
-        return pluginExtension.complianceLevel
+        pluginExtension.complianceLevel
     }
 
     void setComplianceLevel(ComplianceLevel complianceLevel) {
@@ -96,7 +98,7 @@ class IsolationCheck extends DefaultTask {
 
     @Input
     int getMaxBytecodeVersion() {
-        return pluginExtension.maxBytecodeVersion
+        pluginExtension.maxBytecodeVersion
     }
 
     void setMaxBytecodeVersion(int maxBytecodeVersion) {
@@ -106,7 +108,7 @@ class IsolationCheck extends DefaultTask {
     @Input
     @Optional
     Collection<String> getWhitelistedResources() {
-        return pluginExtension.isolationDetectorWhitelist
+        pluginExtension.isolationDetectorWhitelist
     }
 
     void setWhitelistedResources(Collection<String> whitelistedResources) {
@@ -116,7 +118,7 @@ class IsolationCheck extends DefaultTask {
     @Input
     @Optional
     Collection<String> getContentCreatorComponents() {
-        return pluginExtension.contentCreatorComponents
+        pluginExtension.contentCreatorComponents
     }
 
     void setContentCreatorComponents(Collection<String> contentCreatorComponents) {
@@ -126,11 +128,30 @@ class IsolationCheck extends DefaultTask {
     @Input
     @Optional
     String getFirstSpiritVersion() {
-        return pluginExtension.firstSpiritVersion
+        pluginExtension.firstSpiritVersion
     }
 
     void setFirstSpiritVersion(String firstSpiritVersion) {
         pluginExtension.firstSpiritVersion = firstSpiritVersion
     }
 
+    @Input
+    @Optional
+    String getIsolationDetectorUsername() {
+        pluginExtension.isolationDetectorUsername
+    }
+
+    void setIsolationDetectorUsername(String isolationDetectorUsername) {
+        pluginExtension.isolationDetectorUsername = isolationDetectorUsername
+    }
+
+    @Input
+    @Optional
+    String getIsolationDetectorPassword() {
+        pluginExtension.isolationDetectorPassword
+    }
+
+    void setIsolationDetectorPassword(String isolationDetectorPassword) {
+        pluginExtension.isolationDetectorPassword = isolationDetectorPassword
+    }
 }

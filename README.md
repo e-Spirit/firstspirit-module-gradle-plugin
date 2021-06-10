@@ -122,6 +122,8 @@ displayName                 | String        | *unset*             		|  Human-rea
 moduleDirName               | String        | src/main/resources  		|  The name of the directory containing the module.xml (and/or module-isolated.xml), relative to the project directory.
 resourceMode                | Mode          | *unset*             		|  Resource mode (legacy, isolated) used for all resources
 isolationDetectorUrl        | String        | *unset*             		|  If set, this URL is used to connect to the FSM Dependency Detector
+isolationDetectorUsername   | String        | *unset*             		|  If set, this username is used to connect to the FSM Dependency Detector
+isolationDetectorPassword   | String        | *unset*             		|  If set, this password is used to connect to the FSM Dependency Detector
 isolationDetectorWhitelist  | String[]      | *unset*                   |  Contains all resources that should not be scanned for dependencies
 contentCreatorComponents    | String[]      | *unset*                   |  Names of components which are meant to be installed with the ContentCreator.
 complianceLevel             | String        | DEFAULT                   |  Compliance level to check for if isolationDetectorUrl is set
@@ -137,6 +139,8 @@ firstSpiritModule {
     moduleDirName = 'src/main/module'
     resourceMode = ISOLATED
     isolationDetectorUrl = 'https://...'
+    isolationDetectorUsername = ${isolation_detector_username}  // Read sensitive credentials from external properties file
+    isolationDetectorPassword = ${isolation_detector_password}  
     isolationDetectorWhitelist = ['org.freemarker:freemarker:2.3.28']
     firstSpiritVersion = '5.2.190507'
     complianceLevel = 'HIGHEST'

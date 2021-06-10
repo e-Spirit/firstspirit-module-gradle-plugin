@@ -84,6 +84,16 @@ class FSMPluginExtension {
      */
     ModuleInfo.Mode resourceMode = ModuleInfo.Mode.ISOLATED
 
+	/**
+	 * If set, the plugin will use this username to connect to the FSM Dependency Detector
+	 */
+	String isolationDetectorUsername
+
+	/**
+	 * If set, the plugin will use this password to connect to the FSM Dependency Detector
+	 */
+	String isolationDetectorPassword
+
     /**
      * If set, this URL is used to connect to the FSM Dependency Detector
      */
