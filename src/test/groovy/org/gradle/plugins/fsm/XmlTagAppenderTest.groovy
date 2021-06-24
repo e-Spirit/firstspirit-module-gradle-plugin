@@ -611,36 +611,49 @@ ${INDENT_WS_8}</public>
 
     @Test
     void getResourceTagForDependency() throws Exception {
-        ResolvedArtifact resolvedArtifact = createArtifactMock()
-        ModuleVersionIdentifier moduleVersionIdentifier = createVersionIdentifierMock("mygroup", "myname", "1.0.0")
+        def resolvedArtifact = createArtifactMock()
+        def moduleVersionIdentifier = createVersionIdentifierMock("mygroup", "myname", "1.0.0")
 
-        def indent = INDENT_WS_8
-        String result = XmlTagAppender.getResourceTagForDependency(indent, moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED, true)
-        Assert.assertEquals("""${indent}<resource name="mygroup:myname" scope="server" mode="isolated" version="1.0.0" minVersion="1.0.0">lib/myname-1.0.0.jar</resource>""".toString(), result)
+        def result = XmlTagAppender.getResourceTagForDependency(moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED, true)
+        Assert.assertEquals("""<resource name="mygroup:myname" scope="server" mode="isolated" version="1.0.0" minVersion="1.0.0">lib/myname-1.0.0.jar</resource>""".toString(), result)
     }
 
     @Test
     void getResourceTagForDependencyWithMinMaxVersion() throws Exception {
-        ResolvedArtifact resolvedArtifact = createArtifactMock()
-        ModuleVersionIdentifier moduleVersionIdentifier = createVersionIdentifierMock("mygroup", "myname", "1.0.0")
+        def resolvedArtifact = createArtifactMock()
+        def moduleVersionIdentifier = createVersionIdentifierMock("mygroup", "myname", "1.0.0")
         def minMaxVersions = new HashSet<FSMConfigurationsPlugin.MinMaxVersion>()
         minMaxVersions.add(new FSMConfigurationsPlugin.MinMaxVersion(dependency: "mygroup:myname:1.0.0", minVersion: "0.9", maxVersion: "1.1.0"))
 
-        def indent = INDENT_WS_8
-        String result = XmlTagAppender.getResourceTagForDependency(indent, moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED, true, minMaxVersions)
-        Assert.assertEquals("""${indent}<resource name="mygroup:myname" scope="server" mode="isolated" version="1.0.0" minVersion="0.9" maxVersion="1.1.0">lib/myname-1.0.0.jar</resource>""".toString(), result)
+        def result = XmlTagAppender.getResourceTagForDependency(moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED, true, minMaxVersions)
+        Assert.assertEquals("""<resource name="mygroup:myname" scope="server" mode="isolated" version="1.0.0" minVersion="0.9" maxVersion="1.1.0">lib/myname-1.0.0.jar</resource>""".toString(), result)
+    }
+
+    @Test
+    void getResourceTagForDependencyWithClassifierExtension() throws Exception {
+        def moduleVersionIdentifier = createVersionIdentifierMock("mygroup", "myname", "1.0.0")
+        def artifactClassifier = createArtifactMock("myclassifier", "jar")
+        assertThat("""<resource name="mygroup:myname:myclassifier" scope="server" mode="isolated" version="1.0.0" minVersion="1.0.0">lib/myname-1.0.0-myclassifier.jar</resource>""".toString())
+                .isEqualTo(XmlTagAppender.getResourceTagForDependency(moduleVersionIdentifier, artifactClassifier, "server", ModuleInfo.Mode.ISOLATED, true))
+
+        def artifactExtension = createArtifactMock(null, "fsm")
+        assertThat("""<resource name="mygroup:myname@fsm" scope="server" mode="isolated" version="1.0.0" minVersion="1.0.0">lib/myname-1.0.0.fsm</resource>""".toString())
+                .isEqualTo(XmlTagAppender.getResourceTagForDependency(moduleVersionIdentifier, artifactExtension, "server", ModuleInfo.Mode.ISOLATED, true))
+
+        def artifactClassifierExtension = createArtifactMock("myclassifier", "fsm")
+        assertThat("""<resource name="mygroup:myname:myclassifier@fsm" scope="server" mode="isolated" version="1.0.0" minVersion="1.0.0">lib/myname-1.0.0-myclassifier.fsm</resource>""".toString())
+                .isEqualTo(XmlTagAppender.getResourceTagForDependency(moduleVersionIdentifier, artifactClassifierExtension, "server", ModuleInfo.Mode.ISOLATED, true))
     }
 
     @Test
     void getResourceTagForDependencyWithNullMinMaxVersions() throws Exception {
-        ResolvedArtifact resolvedArtifact = createArtifactMock()
-        ModuleVersionIdentifier moduleVersionIdentifier = createVersionIdentifierMock("mygroup", "myname", "1.0.0")
+        def resolvedArtifact = createArtifactMock()
+        def moduleVersionIdentifier = createVersionIdentifierMock("mygroup", "myname", "1.0.0")
         def minMaxVersions = new HashSet<FSMConfigurationsPlugin.MinMaxVersion>()
         minMaxVersions.add(new FSMConfigurationsPlugin.MinMaxVersion(dependency: "mygroup:myname:1.0.0", maxVersion: "1.1.0"))
 
-        def indent = INDENT_WS_8
-        String result = XmlTagAppender.getResourceTagForDependency(indent, moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED, false, minMaxVersions)
-        Assert.assertEquals("""${indent}<resource name="mygroup:myname" scope="server" mode="isolated" version="1.0.0" maxVersion="1.1.0">lib/myname-1.0.0.jar</resource>""".toString(), result)
+        def result = XmlTagAppender.getResourceTagForDependency(moduleVersionIdentifier, resolvedArtifact, "server", ModuleInfo.Mode.ISOLATED, false, minMaxVersions)
+        Assert.assertEquals("""<resource name="mygroup:myname" scope="server" mode="isolated" version="1.0.0" maxVersion="1.1.0">lib/myname-1.0.0.jar</resource>""".toString(), result)
     }
 
     @Test
@@ -840,9 +853,10 @@ ${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="module" mode="isolat
     }
 
 
-    private static ResolvedArtifact createArtifactMock() {
+    private static ResolvedArtifact createArtifactMock(String classifier = null, String extension = "jar") {
         def resolvedArtifact = mock(ResolvedArtifact)
-        when(resolvedArtifact.extension).thenReturn("jar")
+        when(resolvedArtifact.extension).thenReturn(extension)
+        when(resolvedArtifact.classifier).thenReturn(classifier)
         resolvedArtifact
     }
 

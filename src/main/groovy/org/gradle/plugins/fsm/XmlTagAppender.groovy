@@ -2,6 +2,7 @@ package org.gradle.plugins.fsm
 
 import com.espirit.moddev.components.annotations.*
 import com.espirit.moddev.components.annotations.params.gadget.Scope
+import de.espirit.common.tools.Strings
 import de.espirit.firstspirit.client.access.editor.ValueEngineerFactory
 import de.espirit.firstspirit.generate.FilenameFactory
 import de.espirit.firstspirit.generate.UrlFactory
@@ -627,27 +628,38 @@ ${resources}
     }
 
     private static void addResourceTagsForDependencies(String indent, Set<ResolvedArtifact> dependencies, Set<ResolvedArtifact> providedCompileDependencies, StringBuilder projectResources, String scope, ModuleInfo.Mode mode, boolean appendDefaultMinVersion, Set<FSMConfigurationsPlugin.MinMaxVersion> minMaxVersionDefinitions = new HashSet<>()) {
-        dependencies.
-            findAll{ !providedCompileDependencies.contains(it) }
-            .forEach {
-                ModuleVersionIdentifier dependencyId = it.moduleVersion.id
-                projectResources.append("\n" + getResourceTagForDependency(indent, dependencyId, it, scope, mode, appendDefaultMinVersion, minMaxVersionDefinitions))
-            }
+        dependencies.findAll {
+            !providedCompileDependencies.contains(it)
+        }.forEach {
+            def dependencyId = it.moduleVersion.id
+            def resourceTag = getResourceTagForDependency(dependencyId, it, scope, mode, appendDefaultMinVersion, minMaxVersionDefinitions)
+            projectResources.append("\n${indent}${resourceTag}")
+        }
     }
 
-    static String getResourceTagForDependency(String indent, ModuleVersionIdentifier dependencyId, ResolvedArtifact artifact, String scope, ModuleInfo.Mode mode, boolean appendDefaultMinVersion = true, Set<FSMConfigurationsPlugin.MinMaxVersion> minMaxVersionDefinitions = new HashSet<>()) {
-        def scopeAttribute = scope == null || scope.isEmpty() ? "" : """ scope="${scope}\""""
-        def classifier = artifact.classifier != null && !artifact.classifier.isEmpty() ? "-${artifact.classifier}" : ""
-        def modeAttribute = mode == null ? "" : """ mode="${mode.name().toLowerCase(Locale.ROOT)}\""""
+    static String getResourceTagForDependency(ModuleVersionIdentifier dependencyId, ResolvedArtifact artifact, String scope, ModuleInfo.Mode mode, boolean appendDefaultMinVersion = true, Set<MinMaxVersion> minMaxVersionDefinitions = new HashSet<>()) {
+        def dependencyAsString = "${dependencyId.group}:${dependencyId.name}"
 
-        String dependencyAsString = "${dependencyId.group}:${dependencyId.name}"
-        FSMConfigurationsPlugin.MinMaxVersion optionalMinMaxVersion = minMaxVersionDefinitions.find { it.dependency.startsWith(dependencyAsString) }
+        // Construct file name in FSM
+        def fileClassifier = Strings.isEmpty(artifact.classifier) ? "" : "-${artifact.classifier}"
+        def filename = "${dependencyId.name}-${dependencyId.version}$fileClassifier.${artifact.extension}"
+
+        // Construct resource identifier
+        def resourceClassifier = Strings.isEmpty(artifact.classifier) ? "" : ":${artifact.classifier}"
+        def resourceExtension = Strings.isEmpty(artifact.extension) || artifact.extension == "jar" ? "" : "@${artifact.extension}" // Special case for "jar", as the "default" extension we do not put it here
+        def resourceIdentifier = "${dependencyAsString}${resourceClassifier}${resourceExtension}"
+
+        // Get attributes
+        def scopeAttribute = Strings.isEmpty(scope) ? "" : " scope=\"${scope}\""
+        def modeAttribute = mode == null ? "" : " mode=\"${mode.name().toLowerCase(Locale.ROOT)}\""
+
+        def optionalMinMaxVersion = minMaxVersionDefinitions.find { it.dependency.startsWith(dependencyAsString) }
         def minVersionAttribute = appendDefaultMinVersion ? dependencyId.version : null
         minVersionAttribute = optionalMinMaxVersion?.minVersion ? optionalMinMaxVersion.minVersion : minVersionAttribute
+        def minVersionString = minVersionAttribute ? " minVersion=\"${minVersionAttribute}\"" : ""
+        def maxVersionString = optionalMinMaxVersion ? " maxVersion=\"${optionalMinMaxVersion.maxVersion}\"" : ""
 
-        String minVersionString = minVersionAttribute ? """ minVersion="${minVersionAttribute}\"""" : ""
-        String maxVersionString = optionalMinMaxVersion ? """ maxVersion="${optionalMinMaxVersion.maxVersion}\"""" : ""
-        """${indent}<resource name="${dependencyId.group}:${dependencyId.name}"$scopeAttribute$modeAttribute version="${dependencyId.version}"${minVersionString}${maxVersionString}>lib/${dependencyId.name}-${dependencyId.version}$classifier.${artifact.extension}</resource>"""
+        """<resource name="${resourceIdentifier}"$scopeAttribute$modeAttribute version="${dependencyId.version}"${minVersionString}${maxVersionString}>lib/${filename}</resource>"""
     }
 
     static String getJarFilename(Project project) {
