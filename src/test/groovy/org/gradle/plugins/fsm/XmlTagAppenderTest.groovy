@@ -12,6 +12,7 @@ import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.*
@@ -683,6 +684,7 @@ ${INDENT_WS_8}</public>
     }
 
     @Test
+    @Disabled("DEVEX-497 - Race Condition When Downloading Dependency Twice")
     void testResourcePropertyInterpolationInWebappResources() {
         WebAppComponent annotation = new CustomWebAppComponent() {
             @Override
@@ -700,6 +702,7 @@ ${INDENT_WS_8}</public>
     }
 
     @Test
+    @Disabled("DEVEX-497 - Race Condition When Downloading Dependency Twice")
     void testResourcePropertyInterpolationInProjectAppResources() {
         ProjectAppComponent annotation = new CustomProjectAppComponent() {
             @Override
@@ -729,6 +732,7 @@ ${INDENT_WS_8}</public>
 
 
     @Test
+    @Disabled("DEVEX-497 - Race Condition When Downloading Dependency Twice")
     void resolveScopeResourceConflict() {
         project.dependencies.add(FSMConfigurationsPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
         project.dependencies.add(FSMConfigurationsPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
@@ -741,6 +745,7 @@ ${INDENT_WS_8}<resource name="org.slf4j:slf4j-api" scope="server" mode="isolated
     }
 
     @Test
+    @Disabled("DEVEX-497 - Race Condition When Downloading Dependency Twice")
     void moduleScopeServerScopeResolutionWorksCorrectly() {
         // Module and server scope should be resolved together, so the higher version wins, just like normal maven dependency resolution works.
         // In the fsm, the dependency should then only be present on server scope. That's a bit unintuitive, but the right behaviour.
@@ -756,6 +761,7 @@ ${INDENT_WS_8}<resource name="org.joda:joda-convert" scope="module" mode="isolat
     }
 
     @Test
+    @Disabled("DEVEX-497 - Race Condition When Downloading Dependency Twice")
     void moduleScopeServerScopeResolutionWorksCorrectly_serverVersionHigher() {
         project.dependencies.add(FSMConfigurationsPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.1")
         project.dependencies.add(FSMConfigurationsPlugin.FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.0")

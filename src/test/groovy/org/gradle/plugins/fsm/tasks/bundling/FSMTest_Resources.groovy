@@ -5,6 +5,7 @@ import org.gradle.api.Project
 import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
@@ -45,6 +46,7 @@ class FSMTest_Resources {
     }
 
     @Test
+    @Disabled("DEVEX-497 - Race Condition When Downloading Dependency Twice")
     void testResourceWithTransitiveDependency_moduleScoped() {
         // test transitive dependency, ensure it ends up in FSM as well
 
