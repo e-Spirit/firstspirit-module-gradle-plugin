@@ -15,29 +15,25 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
+
 import groovy.io.FileType
 import groovy.transform.PackageScope
-import groovy.xml.XmlUtil
-import io.github.classgraph.ClassGraph
-import io.github.classgraph.ScanResult
 import org.gradle.api.Project
-import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.file.FileCollection
-import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
-import org.gradle.plugins.fsm.classloader.FsmComponentClassLoader
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
+import org.gradle.plugins.fsm.descriptor.ModuleDescriptor
+import org.jetbrains.annotations.Nullable
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.*
 import java.util.zip.ZipFile
 
-import static org.gradle.plugins.fsm.XmlTagAppender.*
 
 /**
  * Bundles the FSM using libraries from the internal {@link FileCollection} classpath
@@ -47,7 +43,7 @@ import static org.gradle.plugins.fsm.XmlTagAppender.*
 class FSM extends Jar {
 
     static final String FSM_EXTENSION = 'fsm'
-    static final String FSM_RESOURCES_PATH = 'src/main/fsm-resources'
+    static final String FSM_RESOURCES_PATH = FSMConfigurationsPlugin.FSM_RESOURCES_PATH
     /**
      * Output dir name for license reports of license report plugin.
      */
@@ -57,16 +53,6 @@ class FSM extends Jar {
      * The fsm runtime classpath. All libraries in this classpath will be copied to 'fsm/lib' folder
      */
     private FileCollection classpath
-
-    /**
-     * If set, overrides the classloader for the component scan.
-     * Intended to be used for unit tests.<br/>
-     *
-     * If {@code null}, the default class scanning behaviour is used
-     *
-     * @see #configureComponentScan(ClassGraph)
-     */
-    private ClassLoader componentClassLoader
 
     /**
      * Contains all resource file paths added with an fsm-resources folder.
@@ -81,51 +67,6 @@ class FSM extends Jar {
     Set<String> duplicateFsmResourceFiles = new HashSet<>()
 
     public FSMPluginExtension pluginExtension
-    private final List<String> moduleBlacklist = new ArrayList<>()
-
-    @Internal
-    protected List<String> getModuleBlacklist() {
-        moduleBlacklist
-    }
-
-    @Internal
-    ClassLoader getComponentClassLoader() {
-        componentClassLoader
-    }
-
-    void setComponentClassLoader(ClassLoader classLoader) {
-        this.componentClassLoader = classLoader
-    }
-
-    /**
-     * Configures how the component scan finds components.
-     * If {@link #componentClassLoader} is set (used in unit tests), the class loader
-     * is used to find components. <br/>
-     *
-     * Otherwise, the default class loading behaviour is used, which scans all java
-     * subprojects in this build which are part of the compile classpath
-     *
-     * @param classGraph The {@link ClassGraph} instance to configure
-     */
-    void configureComponentScan(ClassGraph classGraph) {
-        if (componentClassLoader) {
-            // If set, use the overridden class loader
-            classGraph.addClassLoader(componentClassLoader)
-        } else {
-            // Get current project + all subprojects for which we have a compile dependency and get their
-            // jar tasks' classpath
-            def compileClasspathConfiguration = project.configurations.compileClasspath
-            def projectDependencies = compileClasspathConfiguration.allDependencies.withType(ProjectDependency)
-                    .collect { it.dependencyProject }
-                    .findAll { it.plugins.hasPlugin(JavaPlugin) }
-            def allProjects = [project] + projectDependencies
-            def jarFiles = allProjects.collect {
-                def jarTask = it.tasks.getByName(JavaPlugin.JAR_TASK_NAME) as Jar
-                jarTask.archiveFile.get().asFile
-            }
-            classGraph.overrideClasspath(jarFiles)
-        }
-    }
 
     FSM() {
         archiveExtension.set(FSM_EXTENSION)
@@ -246,14 +187,6 @@ class FSM extends Jar {
         return ""
     }
 
-    static class XMLData {
-        String moduleTags = ""
-        String componentTags = ""
-        String resourcesTags = ""
-        String licenseTags = ""
-        boolean isolated
-    }
-
     /**
      * Helper method for executing Unit tests
      */
@@ -281,13 +214,11 @@ class FSM extends Jar {
                 boolean isolated
                 legacy: {
                     isolated = false
-                    XMLData moduleXml = getXMLTagsFromAppender(pluginExtension.appendDefaultMinVersion, isolated, moduleBlacklist)
-                    writeModuleDescriptorToBuildDirAndZipFile(fs, getUnfilteredModuleXml(zipFile, isolated), moduleXml)
+                    writeModuleDescriptorToZipFile(fs, getUnfilteredModuleXml(zipFile, isolated), isolated)
                 }
                 isolated: {
                     isolated = true
-                    XMLData moduleIsolatedXml = getXMLTagsFromAppender(pluginExtension.appendDefaultMinVersion, isolated, moduleBlacklist)
-                    writeModuleDescriptorToBuildDirAndZipFile(fs, getUnfilteredModuleXml(zipFile, isolated), moduleIsolatedXml)
+                    writeModuleDescriptorToZipFile(fs, getUnfilteredModuleXml(zipFile, isolated), isolated)
                 }
 			}
 		}
@@ -302,11 +233,32 @@ class FSM extends Jar {
         }
     }
 
-    void writeModuleDescriptorToBuildDirAndZipFile(FileSystem fs, String unfilteredModuleXml, XMLData moduleXML) {
-        String filteredModuleXml = XmlUtil.serialize(filterModuleXml(unfilteredModuleXml, moduleXML))
-        String fileName = "module${moduleXML.isolated ? "-isolated" : ""}.xml"
+    void writeModuleDescriptorToZipFile(FileSystem fs, String unfilteredModuleXml, Boolean isolated) {
+        String filteredModuleXml
 
-        Paths.get(destinationDirectory.get().toString(), fileName).toFile() << filteredModuleXml
+        def moduleDescriptor = new ModuleDescriptor(project, isolated)
+
+        if (unfilteredModuleXml != null) {
+            // Replace values in XML provided by user
+            def replacedXml = unfilteredModuleXml
+                    .replace('$name', pluginExtension.moduleName ?: project.name)
+                    .replace('$displayName', pluginExtension.displayName ?: project.name)
+                    .replace('$version', project.version.toString())
+                    .replace('$description', project.description ?: project.name)
+                    .replace('$vendor', pluginExtension.vendor ?: "")
+                    .replace('$artifact', project.jar.archiveName.toString())
+                    .replace('$class', moduleDescriptor.moduleClass.toString())
+                    .replace('$dependencies', moduleDescriptor.fsmDependencies())
+                    .replace('$resources', moduleDescriptor.resources.innerResourcesToString())
+                    .replace('$components', moduleDescriptor.components.innerComponentsToString())
+                    .replace('$licensesFile', "META-INF/licenses.csv")
+            filteredModuleXml = moduleDescriptor.reformat(replacedXml)
+        } else {
+            // Create descriptor from scratch
+            filteredModuleXml = moduleDescriptor.toString()
+        }
+
+        String fileName = "module${isolated ? "-isolated" : ""}.xml"
 
         Path nf = fs.getPath("/META-INF/" + fileName)
         Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE).withCloseable {
@@ -314,102 +266,18 @@ class FSM extends Jar {
         }
     }
 
-    String filterModuleXml(String unfilteredModuleXml, XMLData xmlData) {
-        String filteredModuleXml = unfilteredModuleXml.replace('$name', pluginExtension.moduleName ?: project.name)
-        filteredModuleXml = filteredModuleXml.replace('$displayName', pluginExtension.displayName?.toString() ?: project.name.toString())
-        filteredModuleXml = filteredModuleXml.replace('$version', project.version.toString())
-        filteredModuleXml = filteredModuleXml.replace('$description', project.description?.toString() ?: project.name.toString())
-        filteredModuleXml = filteredModuleXml.replace('$vendor', pluginExtension.vendor?.toString() ?: "")
-        filteredModuleXml = filteredModuleXml.replace('$artifact', project.jar.archiveName.toString())
-        filteredModuleXml = filteredModuleXml.replace('$class', xmlData.moduleTags)
-        filteredModuleXml = filteredModuleXml.replace('$dependencies', getFsmDependencyTags(project))
-        filteredModuleXml = filteredModuleXml.replace('$resources', xmlData.resourcesTags)
-        filteredModuleXml = filteredModuleXml.replace('$components', xmlData.componentTags)
-        filteredModuleXml = filteredModuleXml.replace('$licensesFile', xmlData.licenseTags)
-        getLogger().info("Generated module.xml: \n$filteredModuleXml")
-        filteredModuleXml
-    }
-
+    @Nullable
     String getUnfilteredModuleXml(ZipFile zipFile, boolean iso) {
         String isolated = iso ? "-isolated" : ""
         def unfilteredModuleXml
         def moduleXmlFile = zipFile.getEntry("META-INF/module${isolated}.xml")
         if (moduleXmlFile == null) {
             getLogger().info("module${isolated}.xml not found in ZipArchive ${zipFile.getName()}, using an empty one")
-            unfilteredModuleXml = getClass().getResource("/template-module${isolated}.xml").getText("utf-8")
+            unfilteredModuleXml = null
         } else {
             unfilteredModuleXml = zipFile.getInputStream(moduleXmlFile).getText("utf-8")
         }
         unfilteredModuleXml
-    }
-
-    XMLData getXMLTagsFromAppender(boolean appendDefaultMinVersion, boolean isolated, List<String> moduleBlacklist = new ArrayList<String>()) {
-        def moduleXml = new XMLData(isolated: isolated)
-
-        new FsmComponentClassLoader(project).withCloseable { classLoader ->
-            def classGraph = new ClassGraph()
-                    .enableClassInfo()
-                    .enableAnnotationInfo()
-            configureComponentScan(classGraph)
-
-            def scan = classGraph.scan()
-            scan.withCloseable {
-
-                WebXmlPaths webXmlPaths
-                components: {
-                    StringBuilder result = new StringBuilder()
-                    webXmlPaths = appendComponentsTag(project, classLoader, new ClassScannerResultDelegate(scan), appendDefaultMinVersion, result, isolated)
-                    moduleXml.componentTags = result.toString()
-                }
-
-                moduleAnnotation: {
-                    StringBuilder result = new StringBuilder()
-                    appendModuleAnnotationTags(classLoader, new ClassScannerResultDelegate(scan), result, moduleBlacklist)
-                    moduleXml.moduleTags = result.toString()
-                }
-
-                licenses: {
-                    String result = "META-INF/licenses.csv"
-                    moduleXml.licenseTags = result
-                }
-
-                moduleXml.resourcesTags = getResourcesTags(project, webXmlPaths, pluginExtension.resourceMode, pluginExtension.appendDefaultMinVersion, isolated)
-            }
-        }
-
-        return moduleXml
-    }
-
-    /**
-     * Simple class scanner interface facade to improve testability
-     */
-    interface ClassScannerResultProvider {
-
-        List<String> getNamesOfClassesImplementing(final Class<?> implementedInterface)
-
-        List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation)
-    }
-
-    /**
-     * Delegates to given io.github.lukehutch.fastclasspathscanner.scanner.ScanResult instance
-     */
-    private final class ClassScannerResultDelegate implements ClassScannerResultProvider {
-
-        private final ScanResult scan
-
-        ClassScannerResultDelegate(ScanResult scan) {
-            this.scan = scan
-        }
-
-        @Override
-        List<String> getNamesOfClassesImplementing(final Class<?> implementedInterface) {
-            return scan.getClassesImplementing(implementedInterface.name).getNames()
-        }
-
-        @Override
-        List<String> getNamesOfClassesWithAnnotation(final Class<?> annotation) {
-            return scan.getClassesWithAnnotation(annotation.name).getNames()
-        }
     }
 
     /**

@@ -1,7 +1,0 @@
-plugins {
-    id 'de.espirit.firstspirit-module-configurations'
-}
-
-dependencies {
-    compile fsDependency('junit:junit:4.12', true)
-}

@@ -362,12 +362,27 @@ or if one has a resource that should be added in the isolation configuration of 
 but not in the non-isolation case. For information about isolation in FirstSpirit scenarios, please
 take a look at the official FirstSpirit module development documentation.
 
-Configuration of the above mentioned aspects can be done in standard groovy style, for example:
+Configuration of the above-mentioned aspects can be done in standard groovy style, for example:
 
-```
+```groovy
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPluginKt
+
 dependencies {
-  fsModuleCompile fsDependency(dependency: 'joda-time:joda-time:2.10', skipInLegacy: true, minVersion: '1.0', maxVersion: '1.5')
-  fsModuleCompile fsDependency('commons-logging:commons-logging:1.2', true, '1.0', '1.5')
+  use (FSMConfigurationsPluginKt) {
+    fsModuleCompile fsDependency(dependency: 'joda-time:joda-time:2.10', skipInLegacy: true, minVersion: '1.0', maxVersion: '1.5')
+    fsModuleCompile fsDependency('commons-logging:commons-logging:1.2', true, '1.0', '1.5')
+  }
+}
+```
+
+For build scripts written in Kotlin, the syntax is even simpler:
+
+```kotlin
+import org.gradle.plugins.fsm.configurations.fsDependency
+
+dependencies {
+  fsModuleCompile(fsDependency(mapOf("dependency" to "joda-time:joda-time:2.10", "skipInLegacy" to true, "minVersion" to "1.0", "maxVersion" to "1.5")))
+  fsModuleCompile(fsDependency("commons-logging:commons-logging:1.2", true, "1.0", "1.5"))
 }
 ```
 
@@ -510,4 +525,4 @@ idea.module.scopes.COMPILE.plus += [configurations.fsProvidedRuntime]
 ## Requirements
 
 * [Java](http://www.java.com/en/download/) 1.8+
-* [Gradle](http://www.gradle.org/downloads) 4.2+
+* [Gradle](http://www.gradle.org/downloads) 6.8+

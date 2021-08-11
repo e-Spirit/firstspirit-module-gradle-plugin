@@ -1,0 +1,11 @@
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPluginKt
+
+plugins {
+    id 'de.espirit.firstspirit-module-configurations'
+}
+
+dependencies {
+    use (FSMConfigurationsPluginKt) {
+        implementation project.fsDependency('junit:junit:4.12', true)
+    }
+}

@@ -84,7 +84,10 @@ class FSMConfigurationsPluginSpecification extends Specification {
         when:
         project.apply plugin: FSMConfigurationsPlugin.NAME
         project.repositories.add(project.getRepositories().mavenCentral())
-        def resultingDependency = project.fsDependency("com.google.guava:guava:24.0-jre", true)
+        def resultingDependency = null
+        use(FSMConfigurationsPluginKt) {
+             resultingDependency = project.fsDependency("com.google.guava:guava:24.0-jre", true)
+        }
         def skippedInLegacyDependencies = project.configurations.getByName(FSMConfigurationsPlugin.FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME).dependencies.collect { it }
         def skippedDependency = skippedInLegacyDependencies.get(0)
 
@@ -101,7 +104,10 @@ class FSMConfigurationsPluginSpecification extends Specification {
         when:
         project.repositories.add(project.getRepositories().mavenCentral())
         project.apply plugin: FSMConfigurationsPlugin.NAME
-        def resultingDependency = project.fsDependency(dependency: "com.google.guava:guava:24.0-jre", skipInLegacy:  true, maxVersion: "31.0")
+        def resultingDependency = null
+        use (FSMConfigurationsPluginKt) {
+            resultingDependency = project.fsDependency(dependency: "com.google.guava:guava:24.0-jre", skipInLegacy: true, maxVersion: "31.0")
+        }
         def skippedInLegacyDependencies = project.configurations.getByName(FSMConfigurationsPlugin.FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME).dependencies.collect { it }
         def dependencyConfigurations = project.plugins.getPlugin(FSMConfigurationsPlugin.class).getDependencyConfigurations()
 
@@ -113,15 +119,17 @@ class FSMConfigurationsPluginSpecification extends Specification {
         skippedInLegacyDependencies.get(0).version == "24.0-jre"
 
         dependencyConfigurations.contains(
-                new FSMConfigurationsPlugin.MinMaxVersion("com.google.guava:guava:24.0-jre", null, "31.0"))
+                new MinMaxVersion("com.google.guava:guava:24.0-jre", null, "31.0"))
     }
 
     def 'fsDependency method fails for duplicated excluded dependency'() {
         when:
         project.repositories.add(project.getRepositories().mavenCentral())
         project.apply plugin: FSMConfigurationsPlugin.NAME
-        project.fsDependency(dependency: "com.google.guava:guava:24.0-jre", skipInLegacy:  true, maxVersion: "31.0")
-        project.fsDependency(dependency: "com.google.guava:guava:24.0-jre", minVersion: "2.0")
+        use (FSMConfigurationsPluginKt) {
+            project.fsDependency(dependency: "com.google.guava:guava:24.0-jre", skipInLegacy: true, maxVersion: "31.0")
+            project.fsDependency(dependency: "com.google.guava:guava:24.0-jre", minVersion: "2.0")
+        }
 
         then:
         thrown(IllegalArgumentException.class)
@@ -132,29 +140,35 @@ class FSMConfigurationsPluginSpecification extends Specification {
         when:
         project.repositories.add(project.getRepositories().mavenCentral())
         project.apply plugin: FSMConfigurationsPlugin.NAME
-        project.fsDependency("com.google.guava:guava:24.0-jre", "31.0")
+        use (FSMConfigurationsPluginKt) {
+            project.fsDependency("com.google.guava:guava:24.0-jre", "31.0")
+        }
 
         then:
-        thrown(IllegalArgumentException.class)
+        thrown(ClassCastException.class)
     }
 
     def 'fsDependency method fails on non-String type for minVersion argument'() {
         when:
         project.repositories.add(project.getRepositories().mavenCentral())
         project.apply plugin: FSMConfigurationsPlugin.NAME
-        project.fsDependency("com.google.guava:guava:24.0-jre", true, true)
+        use (FSMConfigurationsPluginKt) {
+            project.fsDependency("com.google.guava:guava:24.0-jre", true, true)
+        }
 
         then:
-        thrown(IllegalArgumentException.class)
+        thrown(ClassCastException.class)
     }
 
     def 'fsDependency method fails on non-String type for maxVersion argument'() {
         when:
         project.repositories.add(project.getRepositories().mavenCentral())
         project.apply plugin: FSMConfigurationsPlugin.NAME
-        project.fsDependency("com.google.guava:guava:24.0-jre", true, "1.0.0", true)
+        use (FSMConfigurationsPluginKt) {
+            project.fsDependency("com.google.guava:guava:24.0-jre", true, "1.0.0", true)
+        }
 
         then:
-        thrown(IllegalArgumentException.class)
+        thrown(ClassCastException.class)
     }
 }

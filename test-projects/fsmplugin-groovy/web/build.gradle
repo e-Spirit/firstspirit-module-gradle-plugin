@@ -1,0 +1,23 @@
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPluginKt
+
+plugins {
+    id 'de.espirit.firstspirit-module-configurations'
+    id 'de.espirit.firstspirit-module-annotations'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+}
+
+rootProject.ext {
+    webappIconName = 'com.espirit.moddev.example.icon.png'
+    commonsIOWebDependencyName = 'commons-io:commons-io'
+}
+
+dependencies {
+    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.200910'
+    use (FSMConfigurationsPluginKt) {
+        fsWebCompile fsDependency(dependency:'org.apache.commons:commons-lang3:3.8.1', skipInLegacy:true)
+    }
+    implementation "$commonsIOWebDependencyName:2.6"
+}

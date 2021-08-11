@@ -133,9 +133,6 @@ class ComponentHelper {
         }
     }
 
-    static boolean addTestModulesToBlacklist(FSM fsmTask) {
-        fsmTask.moduleBlacklist.addAll(TestModuleImpl.class.name, TestModuleImplWithConfiguration.class.name)
-    }
 }
 class CustomProjectAppComponent implements ProjectAppComponent {
     @Override
@@ -296,6 +293,14 @@ class TestProjectAppComponentWithoutConfigurable extends BaseProjectApp {
 
 }
 
+@ProjectAppComponent(name = "TestProjectAppComponentWithProperties",
+        displayName = "TestDisplayName",
+        description = "TestDescription",
+        configurable = TestConfigurable,
+        resources = [@Resource(path = "\$path", name = "\${project.jodaConvertDependency}", version = "\$version")])
+class TestProjectAppComponentWithProperties extends BaseProjectApp {
+}
+
 @WebAppComponent(name = "TestWebAppComponentName",
         displayName = "TestDisplayName",
         description = "TestDescription",
@@ -307,7 +312,7 @@ class TestWebAppComponent extends BaseWebApp {
     static class TestConfigurable extends BaseConfiguration { }
 }
 
-@WebAppComponent(name = "TestWebAppComponentName",
+@WebAppComponent(name = "TestWebAppComponentWithoutConfigurationName",
         displayName = "TestDisplayName",
         description = "TestDescription",
         webXml = "web0.xml",  // Please don't add leading slash, we want to test web.xml file handling without leading slash as well
@@ -325,15 +330,15 @@ class TestPublicComponent {
 class TestPublicComponentWithConfiguration {
 }
 
-@ScheduleTaskComponent(taskName = "Test task", displayName = "Test Task Display Name", description = "A task for test purpose")
+@ScheduleTaskComponent(taskName = "Test task without form", displayName = "Test Task Display Name", description = "A task for test purposes")
 class TestScheduleTaskComponentWithoutForm {
 }
 
-@ScheduleTaskComponent(taskName = "Test task", description = "A task for test purpose", configurable = TestConfigurable.class)
+@ScheduleTaskComponent(taskName = "Test task with configurable", description = "A task for test purposes", configurable = TestConfigurable.class)
 class TestScheduleTaskComponentWithConfigurable {
 }
 
-@ScheduleTaskComponent(taskName = "Test task", description = "A task for test purpose", formClass = TestScheduleTaskFormFactory.class )
+@ScheduleTaskComponent(taskName = "Test task with form", description = "A task for test purposes", formClass = TestScheduleTaskFormFactory.class )
 class TestScheduleTaskComponentWithForm {
 
 }
@@ -387,7 +392,7 @@ class TestGadgetComponentWithMoreThanOneFactory {
 
 }
 
-@GadgetComponent(name = "Test gadget", description = "The description", factories = [TestGadgetFactoryOne],
+@GadgetComponent(name = "Test gadget with all attributes", description = "The description", factories = [TestGadgetFactoryOne],
         valueEngineerFactory = TestValueEngineerFactory.class, scopes = Scope.DATA)
 class TestGadgetComponentWithAllAttributes {
 

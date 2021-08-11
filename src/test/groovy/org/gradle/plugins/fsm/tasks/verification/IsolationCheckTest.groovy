@@ -22,7 +22,6 @@ import java.util.zip.ZipOutputStream
 import static de.espirit.mavenplugins.fsmchecker.ComplianceLevel.*
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown
-import static org.gradle.plugins.fsm.ComponentHelper.addTestModulesToBlacklist
 import static org.gradle.plugins.fsm.util.TestProjectUtils.defineArtifactoryForProject
 import static org.gradle.plugins.fsm.util.TestProjectUtils.setArtifactoryCredentialsFromLocalProperties
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC
@@ -53,7 +52,6 @@ class IsolationCheckTest {
         isolationCheck.setFirstSpiritVersion("5.2.210210")
         isolationCheck.setDetectorUrl("https://fsdev.e-spirit.de/FsmDependencyDetector/")
         FSM fsm = project.tasks[FSMPlugin.FSM_TASK_NAME] as FSM
-        addTestModulesToBlacklist(fsm)
     }
 
 

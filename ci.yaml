@@ -5,4 +5,4 @@ responsible:
   - tarnowski
 docker:
   images:
-    - docker.artifactory.e-spirit.de/core-platform/base:jdk-8
+    - docker.artifactory.e-spirit.de/core-platform/base:jdk-11

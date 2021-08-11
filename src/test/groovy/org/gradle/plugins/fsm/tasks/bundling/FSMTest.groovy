@@ -19,9 +19,13 @@ package org.gradle.plugins.fsm.tasks.bundling
 import de.espirit.firstspirit.server.module.ModuleInfo
 import org.apache.commons.io.IOUtils
 import org.gradle.api.Project
+import org.gradle.api.plugins.JavaPlugin
+import org.gradle.jvm.tasks.Jar
 import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPluginKt
+import org.gradle.plugins.fsm.configurations.MinMaxVersion
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -30,15 +34,14 @@ import org.junit.jupiter.api.io.TempDir
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown
-import static org.gradle.plugins.fsm.ComponentHelper.addTestModulesToBlacklist
 import static org.gradle.plugins.fsm.util.TestProjectUtils.defineArtifactoryForProject
 import static org.gradle.plugins.fsm.util.TestProjectUtils.setArtifactoryCredentialsFromLocalProperties
-import static org.mockito.Mockito.spy
 
 class FSMTest {
 
@@ -59,13 +62,9 @@ class FSMTest {
 
 		fsm = project.tasks[FSMPlugin.FSM_TASK_NAME] as FSM
 
-		// Add component classes defined in ComponentTestHelper to component classes
-		fsm.componentClassLoader = FSMTest.classLoader
 		fsm.archiveBaseName.set('testbasename')
 		fsm.archiveAppendix.set('testappendix')
 		fsm.archiveVersion.set('1.0')
-
-		addTestModulesToBlacklist(fsm)
 	}
 
 	@Test
@@ -94,6 +93,7 @@ class FSMTest {
 		project.jar {
 			baseName = 'xxxxx'
 		}
+		copyTestJar()
 		fsm.execute()
 
 		assertThat(moduleXml())
@@ -191,38 +191,6 @@ class FSMTest {
 		assertThat(trimmedPath).is("a/directory/containing/a.dot/in/a/folder/name")
 	}
 
-	@Test
-	void module_name_should_be_equal_to_project_name_if_not_set() {
-		String projectName = "MyProjectName"
-		Project myProject = ProjectBuilder.builder().withProjectDir(testDir).withName(projectName).build()
-		myProject.apply plugin: FSMPlugin.NAME
-		FSM myFSM = myProject.tasks[FSMPlugin.FSM_TASK_NAME] as FSM
-		String xml = "<module><name>\$name</name></module>"
-		String expectedXML = "<module><name>${projectName}</name></module>"
-
-		String resultXML = myFSM.filterModuleXml(xml, new FSM.XMLData())
-
-		assertThat(resultXML).isEqualTo(expectedXML)
-	}
-
-	@Test
-	void module_name_should_be_equal_to_set_module_name() {
-		String projectName = "MyProjectName"
-		String moduleName = "MyModule"
-		Project myProjectSpy = spy(ProjectBuilder.builder().withProjectDir(testDir).withName(projectName).build())
-		myProjectSpy.apply plugin: FSMPlugin.NAME
-		FSM myFSM = myProjectSpy.tasks[FSMPlugin.FSM_TASK_NAME] as FSM
-		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
-		myFSM.pluginExtension = pluginExtension
-		pluginExtension.moduleName = moduleName
-		String xml = "<module><name>\$name</name></module>"
-		String expectedXML = "<module><name>${moduleName}</name></module>"
-
-		String resultXML = myFSM.filterModuleXml(xml, new FSM.XMLData())
-
-		assertThat(resultXML).isEqualTo(expectedXML)
-	}
-
     @Test
     void vendor() {
 		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
@@ -259,12 +227,14 @@ class FSMTest {
 	@Test
 	void resourceHasMinAndMaxVersionWhenConfigured() {
 		project.repositories.add(project.getRepositories().mavenCentral())
-		project.dependencies.add("fsModuleCompile", project.fsDependency("com.google.guava:guava:24.0-jre", false, "0.0.1", "99.0.0"))
+		use (FSMConfigurationsPluginKt) {
+			project.dependencies.add("fsModuleCompile", project.fsDependency("com.google.guava:guava:24.0-jre", false, "0.0.1", "99.0.0"))
+		}
 		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
 		pluginExtension.resourceMode = ModuleInfo.Mode.LEGACY
 
 		def dependencyConfigurations = project.plugins.getPlugin(FSMConfigurationsPlugin.class).getDependencyConfigurations()
-		assertThat(dependencyConfigurations).contains(new FSMConfigurationsPlugin.MinMaxVersion("com.google.guava:guava:24.0-jre", "0.0.1", "99.0.0"))
+		assertThat(dependencyConfigurations).contains(new MinMaxVersion("com.google.guava:guava:24.0-jre", "0.0.1", "99.0.0"))
 		assertThat(dependencyConfigurations.size()).isEqualTo(1)
 		fsm.execute()
 
@@ -275,7 +245,9 @@ class FSMTest {
 	void resourceIsSkippedInLegacyWhenConfigured() {
 		project.repositories.add(project.getRepositories().mavenCentral())
 		project.dependencies.add("fsModuleCompile", 'junit:junit:4.12')
-		project.dependencies.add("fsModuleCompile", project.fsDependency(dependency: 'com.google.guava:guava:24.0-jre', skipInLegacy: true))
+		use (FSMConfigurationsPluginKt) {
+			project.dependencies.add("fsModuleCompile", project.fsDependency(dependency: 'com.google.guava:guava:24.0-jre', skipInLegacy: true))
+		}
 		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
 		pluginExtension.resourceMode = ModuleInfo.Mode.LEGACY
 
@@ -284,13 +256,18 @@ class FSMTest {
 		assertThat(moduleXml()).contains("""<resource name="junit:junit" scope="module" mode="legacy" version="4.12" minVersion="4.12">lib/junit-4.12.jar</resource>""")
 		assertThat(moduleXml()).doesNotContain("""<resource name="com.google.guava:guava" scope="module" mode="legacy" version="24.0-jre" minVersion="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
 	}
+
 	@Test
 	void webResourceIsSkippedInLegacyWhenConfigured() {
 		project.repositories.add(project.getRepositories().mavenCentral())
-		project.dependencies.add("fsWebCompile", project.fsDependency(dependency: 'junit:junit:4.12', skipInLegacy: true))
-		project.dependencies.add("fsWebCompile", project.fsDependency(dependency: 'com.google.guava:guava:24.0-jre', skipInLegacy: false))
+		use (FSMConfigurationsPluginKt) {
+			project.dependencies.add("fsWebCompile", project.fsDependency(dependency: 'junit:junit:4.12', skipInLegacy: true))
+			project.dependencies.add("fsWebCompile", project.fsDependency(dependency: 'com.google.guava:guava:24.0-jre', skipInLegacy: false))
+		}
 		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
 		pluginExtension.resourceMode = ModuleInfo.Mode.LEGACY
+
+		copyTestJar()
 
 		fsm.execute()
 
@@ -332,6 +309,8 @@ class FSMTest {
 	@Test
 	void testFsmResourceFilesAreUsedForEachWebApp() {
 		project.version = "1.0.0"
+
+		copyTestJar()
 
 		// Create dummy test projects
 		def webProjectAFile = testDir.toPath().resolve("web_a").toFile()
@@ -455,6 +434,9 @@ class FSMTest {
 		 * they aren't regular fsm resources.
 		 */
 		project.version = "1.0.0"
+
+		copyTestJar()
+
 		Path fsmResourcesTestProjectFolder = fsm.project.file('src/main/fsm-resources').toPath()
 		Files.createDirectories(fsmResourcesTestProjectFolder)
 		Files.write(fsmResourcesTestProjectFolder.resolve("web.xml"), "<xml></xml>".getBytes(StandardCharsets.UTF_8))
@@ -476,7 +458,16 @@ class FSMTest {
 
 	}
 
-    private String moduleXml(boolean isolated = false) {
+	private void copyTestJar() {
+		def testJar = Paths.get(System.getProperty("testJar"))
+		def jar = project.tasks[JavaPlugin.JAR_TASK_NAME] as Jar
+		def archiveFile = jar.archiveFile.get().asFile.toPath()
+		Files.createDirectories(archiveFile.parent)
+		Files.copy(testJar, archiveFile)
+	}
+
+
+	private String moduleXml(boolean isolated = false) {
 		String isolationMode = isolated ? "-isolated" : ""
         final Path fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.archiveFile.get().asFile.name)
         assertThat(fsmFile).exists()

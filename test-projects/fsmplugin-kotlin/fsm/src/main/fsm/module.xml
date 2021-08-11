@@ -1,0 +1,27 @@
+<module>
+    <name>$name</name>
+    <version>$version</version>
+    <description>$description</description>
+    <licenses>$licensesFile</licenses>
+$class
+    <custom-module-xml>This is a custom module.xml</custom-module-xml>
+    <dependencies>
+        $dependencies
+    </dependencies>
+    <components>
+
+$components
+
+
+    	<!-- example -->
+        <library>
+            <resources>
+            	<!-- production code  -->
+                <!-- only edit for tests, normally you'd have to use versions -->
+                <resource>lib/$artifact</resource>
+                
+$resources
+            </resources>
+        </library>
+    </components>
+</module>

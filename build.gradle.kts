@@ -1,11 +1,11 @@
 import java.net.URI
 import java.nio.file.Files
-import java.util.Date
-import java.util.Properties
+import java.util.*
 import java.util.regex.Pattern
 
 plugins {
     id("groovy")
+    kotlin("jvm") version "1.4.31"
     id("maven-publish")
     id("idea")
     id("java-gradle-plugin")
@@ -15,10 +15,17 @@ plugins {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(8))
+    }
     withSourcesJar()
     withJavadocJar()
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
 }
 
 val fsmAnnotationsVersion = "1.9.7"
@@ -68,21 +75,22 @@ val fsRuntimeVersion = "5.2.210210" // FirstSpirit 2021-02
 dependencies {
     implementation(gradleApi())
     implementation(localGroovy())
-    implementation("io.github.classgraph:classgraph:4.8.102")
+    implementation("io.github.classgraph:classgraph:4.8.114")
     implementation("com.github.jk1:gradle-license-report:1.16")
+    implementation("org.redundent:kotlin-xml-builder:1.7.3")
     implementation("com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}")
     implementation("de.espirit.mavenplugins:fsmchecker:0.13")
     implementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
     testImplementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.1")
-    testImplementation("org.assertj:assertj-core:3.19.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
+    testImplementation("org.assertj:assertj-core:3.20.2")
     testImplementation("commons-io:commons-io:2.8.0")
-    testImplementation("org.mockito:mockito-junit-jupiter:3.7.7")
-    testImplementation("org.ow2.asm:asm:9.1")
+    testImplementation("org.mockito:mockito-junit-jupiter:3.12.1")
+    testImplementation("org.ow2.asm:asm:9.2")
     testImplementation(gradleTestKit())
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.1")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
 
-    testImplementation("org.spockframework:spock-core:2.0-M5-groovy-3.0") {
+    testImplementation("org.spockframework:spock-core:2.0-groovy-3.0") {
         exclude(group = "org.codehaus.groovy")
     }
 
@@ -115,6 +123,11 @@ val writePropertiesToResourceFile = tasks.create("writePropertiesToResourceFile"
     }
 }
 
+tasks.compileGroovy {
+    dependsOn(tasks.compileKotlin)
+    classpath += files(tasks.compileKotlin)
+}
+
 tasks.jar {
     dependsOn(writePropertiesToResourceFile)
 
@@ -128,31 +141,30 @@ tasks.jar {
     }
 }
 
+val testJar = tasks.create<Jar>("testJar") {
+    dependsOn(tasks.testClasses)
+    archiveClassifier.set("tests")
+    from("build/classes/groovy/test")
+    from("build/classes/java/test")
+    from("build/classes/kotlin/test")
+
+    // These files should only be visible for certain test cases and will be added when needed
+    exclude("org/gradle/plugins/fsm/TestModuleImpl.class")
+    exclude("org/gradle/plugins/fsm/TestWebAppWithProjectProperties.class")
+    exclude("org/gradle/plugins/fsm/TestProjectAppComponentWithProperties.class")
+}
+
 tasks.test {
     dependsOn(writePropertiesToResourceFile)
+    dependsOn(testJar)
     systemProperty("artifactory_username", findProperty("artifactory_username") as String)
     systemProperty("artifactory_password", findProperty("artifactory_password") as String)
     systemProperty("gradle.version", gradle.gradleVersion)
     systemProperty("version", version)
+    systemProperty("testJar", testJar.archiveFile.get().asFile.absolutePath)
+    systemProperty("classesDir", project.buildDir.resolve("classes").absolutePath)
     maxHeapSize = "2048m"
     useJUnitPlatform()
-}
-
-val integrationTest = tasks.create ("integrationTest") {
-    description = "Runs the integration tests."
-    group = "verification"
-
-    dependsOn("jar")
-
-    if (System.getProperty("isCI") != null) {
-        mustRunAfter(tasks.test)
-    }
-}
-
-if (System.getProperty("isCI") != null) {
-    tasks.check {
-        dependsOn(integrationTest)
-    }
 }
 
 publishing {

@@ -15,7 +15,6 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
 import static org.assertj.core.api.Assertions.assertThat
-import static org.gradle.plugins.fsm.ComponentHelper.addTestModulesToBlacklist
 import static org.gradle.plugins.fsm.util.TestProjectUtils.defineArtifactoryForProject
 import static org.gradle.plugins.fsm.util.TestProjectUtils.setArtifactoryCredentialsFromLocalProperties
 
@@ -41,8 +40,6 @@ class FSMTest_Resources {
         fsm.archiveBaseName.set('testbasename')
         fsm.archiveAppendix.set('testappendix')
         fsm.archiveVersion.set('1.0')
-
-        addTestModulesToBlacklist(fsm)
     }
 
     @Test
@@ -62,6 +59,7 @@ class FSMTest_Resources {
     }
 
     @Test
+    @Disabled("DEVEX-497 - Race Condition When Downloading Dependency Twice")
     void testResourceWithTransitiveDependency_serverScoped() {
         // has com.google.j2objc:j2objc-annotations:1.1
         project.dependencies.add("fsServerCompile", "com.google.guava:guava:24.0-jre")

@@ -1,0 +1,20 @@
+plugins {
+    id 'base'
+}
+
+subprojects {
+
+    version = '0.0.1-SNAPSHOT'
+
+	repositories {
+        maven {
+            url 'https://artifactory.e-spirit.de/artifactory/repo'
+            credentials {
+                username = "${artifactory_username}"
+                password = "${artifactory_password}"
+            }
+        }
+    }
+
+}
+
