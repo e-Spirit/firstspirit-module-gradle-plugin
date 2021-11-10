@@ -16,7 +16,6 @@ import org.gradle.api.logging.Logging
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.PrintOptions
 import org.redundent.kotlin.xml.xml
-import java.util.*
 import kotlin.reflect.KClass
 
 class Components(private val project: Project, private val scanResult: ScanResult, private val classLoader: ClassLoader,
@@ -119,10 +118,10 @@ class Components(private val project: Project, private val scanResult: ScanResul
                         }
 
                         if (annotation.scopes.contains(Scope.UNRESTRICTED)) {
-                            "scope" { attribute(Scope.UNRESTRICTED.name.toLowerCase(Locale.ROOT), "yes") }
+                            "scope" { attribute(Scope.UNRESTRICTED.name.lowercase(), "yes") }
                         } else {
                             "scope" {
-                                annotation.scopes.forEach { attribute(it.name.toLowerCase(Locale.ROOT), "yes") }
+                                annotation.scopes.forEach { attribute(it.name.lowercase(), "yes") }
                             }
                         }
                     }

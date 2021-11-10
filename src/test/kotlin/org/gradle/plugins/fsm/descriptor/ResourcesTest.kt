@@ -105,7 +105,7 @@ class ResourcesTest {
         val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
         assertThat(resource.attributes["minVersion"]).isEqualTo("1.7.32")
-        assertThat(resource.attributes["mode"]).isEqualTo(ModuleInfo.Mode.ISOLATED.name.toLowerCase())
+        assertThat(resource.attributes["mode"]).isEqualTo(ModuleInfo.Mode.ISOLATED.name.lowercase())
         assertThat(resource.textContent()).isEqualTo("lib/slf4j-api-1.7.32.jar")
     }
 
@@ -120,7 +120,7 @@ class ResourcesTest {
         val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
         assertThat(resource.hasAttribute("minVersion")).isFalse
-        assertThat(resource.attributes["mode"]).isEqualTo(ModuleInfo.Mode.ISOLATED.name.toLowerCase())
+        assertThat(resource.attributes["mode"]).isEqualTo(ModuleInfo.Mode.ISOLATED.name.lowercase())
         assertThat(resource.textContent()).isEqualTo("lib/slf4j-api-1.7.32.jar")
     }
 
@@ -136,7 +136,7 @@ class ResourcesTest {
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
         assertThat(resource.attributes["minVersion"]).isEqualTo("1.7")
         assertThat(resource.attributes["maxVersion"]).isEqualTo("1.8")
-        assertThat(resource.attributes["mode"]).isEqualTo(ModuleInfo.Mode.ISOLATED.name.toLowerCase())
+        assertThat(resource.attributes["mode"]).isEqualTo(ModuleInfo.Mode.ISOLATED.name.lowercase())
         assertThat(resource.textContent()).isEqualTo("lib/slf4j-api-1.7.32.jar")
     }
 
@@ -155,7 +155,7 @@ class ResourcesTest {
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
         assertThat(resource.attributes["minVersion"]).isEqualTo("1.7")
         assertThat(resource.attributes["maxVersion"]).isEqualTo("1.8")
-        assertThat(resource.attributes["mode"]).isEqualTo(ModuleInfo.Mode.ISOLATED.name.toLowerCase())
+        assertThat(resource.attributes["mode"]).isEqualTo(ModuleInfo.Mode.ISOLATED.name.lowercase())
         assertThat(resource.textContent()).isEqualTo("lib/slf4j-api-1.7.32.jar")
     }
 

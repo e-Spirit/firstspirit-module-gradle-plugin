@@ -246,7 +246,7 @@ class FSM extends Jar {
                     .replace('$version', project.version.toString())
                     .replace('$description', project.description ?: project.name)
                     .replace('$vendor', pluginExtension.vendor ?: "")
-                    .replace('$artifact', project.jar.archiveName.toString())
+                    .replace('$artifact', project.jar.archiveFileName.toString())
                     .replace('$class', moduleDescriptor.moduleClass.toString())
                     .replace('$dependencies', moduleDescriptor.fsmDependencies())
                     .replace('$resources', moduleDescriptor.resources.innerResourcesToString())

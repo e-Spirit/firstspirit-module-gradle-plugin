@@ -5,7 +5,7 @@ import java.util.regex.Pattern
 
 plugins {
     id("groovy")
-    kotlin("jvm") version "1.4.31"
+    kotlin("jvm") version "1.5.31"
     id("maven-publish")
     id("idea")
     id("java-gradle-plugin")

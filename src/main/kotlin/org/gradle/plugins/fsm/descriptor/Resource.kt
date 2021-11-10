@@ -5,7 +5,6 @@ import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.redundent.kotlin.xml.xml
-import java.util.*
 
 class Resource(val project: Project, val dependency: ResolvedArtifact, val scope: String, includeMode: Boolean = true) {
 
@@ -40,7 +39,7 @@ class Resource(val project: Project, val dependency: ResolvedArtifact, val scope
                 attribute("scope", scope)
             }
             if (mode != null) {
-                attribute("mode", mode.name.toLowerCase(Locale.ROOT))
+                attribute("mode", mode.name.lowercase())
             }
             attribute("version", dependencyId.version)
             if (appendDefaultMinVersion || optionalMinMaxVersion?.minVersion != null) {

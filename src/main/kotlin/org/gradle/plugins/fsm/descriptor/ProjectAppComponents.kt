@@ -7,7 +7,6 @@ import io.github.classgraph.ScanResult
 import org.gradle.api.Project
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.xml
-import java.util.*
 
 class ProjectAppComponents(
     project: Project, private val scanResult: ScanResult, private val classLoader: ClassLoader
@@ -70,8 +69,8 @@ class ProjectAppComponents(
                 if (resource.maxVersion.isNotEmpty()) {
                     attribute("maxVersion", resource.maxVersion)
                 }
-                attribute("scope", resource.scope.name.toLowerCase(Locale.ROOT))
-                attribute("mode", resource.mode.name.toLowerCase(Locale.ROOT))
+                attribute("scope", resource.scope.name.lowercase())
+                attribute("mode", resource.mode.name.lowercase())
                 -pathFromAnnotation
             })
         }

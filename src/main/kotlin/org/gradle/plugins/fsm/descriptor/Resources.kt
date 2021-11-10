@@ -17,7 +17,6 @@ import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.F
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.PrintOptions
 import org.redundent.kotlin.xml.xml
-import java.util.*
 
 class Resources(private val project: Project, private val webXmlPaths: List<String>,
                 private val isolatedModuleXml: Boolean) {
@@ -50,7 +49,7 @@ class Resources(private val project: Project, private val webXmlPaths: List<Stri
             attribute("name", "${project.group}:${project.name}")
             attribute("version", project.version)
             attribute("scope", "module")
-            attribute("mode", globalResourcesMode.name.toLowerCase(Locale.ROOT))
+            attribute("mode", globalResourcesMode.name.lowercase())
             val jarTask = project.tasks.getByName("jar") as Jar
             -"lib/${jarTask.archiveFileName.get()}"
         }
@@ -126,7 +125,7 @@ class Resources(private val project: Project, private val webXmlPaths: List<Stri
                 attribute("name", "${project.group}:${project.name}-${relativePath}")
                 attribute("version", project.version)
                 attribute("scope", scope)
-                attribute("mode", globalResourcesMode.name.toLowerCase(Locale.ROOT))
+                attribute("mode", globalResourcesMode.name.lowercase())
                 text(relativePath.toString())
             }
             fsmResources.add(relativePath.toString() to node)
