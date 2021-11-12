@@ -326,8 +326,8 @@ name | Description
 fsServerCompile | Same as the usual compile configuration, but the dependency and all transitive dependencies are added to the module.xml with server scope
 fsModuleCompile | Same as the usual compile configuration, but the dependency and all transitive dependencies are added to the module.xml with module scope
 fsWebCompile | Same as the usual compile configuration, but the dependency and all transitive dependencies are added to the web-resources tag in the module.xml
-fsProvidedCompile | Same as the usual compileOnly configuration - the dependency and all transitive dependencies are not added to the FSM archive.
-fsProvidedRuntime | Same scope as the usual runtime dependency. Use if you want to do some kind of integration testing without FirstSpirit server.
+fsProvidedCompile | *Deprecated* Replace with compileOnly. Same as the usual compileOnly configuration - the dependency and all transitive dependencies are not added to the FSM archive. 
+fsProvidedRuntime | *Deprecated* Replace with runtimeOnly. Same scope as the usual runtime dependency. Use if you want to do some kind of integration testing without FirstSpirit server.
 
 Dependencies with other scopes than these (for example the regular compile scope) are not treated as a resource to be used for module.xml file generation.
 That means if you use compile scope, you can compile your source files against it like in any other project, but the resource won't be listed in the module.xml.
@@ -339,9 +339,9 @@ In a multiproject build make sure to only use the dependency configurations in t
 
 ```groovy
 dependencies {
-  // Library required to compile the production source code of 
-  // this FSM which is provided by FirstSpirit. 
-  fsProvidedCompile ('commons-logging:commons-logging:1.1.3')
+  // Required to compile the production source code of 
+  // this FSM, provided by FirstSpirit at runtime. 
+  compileOnly ('de.espirit.firstspirit:fs-isolated-runtime:5.2.210210')
 
   // Embeds this and transitive deps as a server scoped resource
   fsServerCompile 'joda-time:joda-time:2.3'
@@ -495,7 +495,7 @@ dependencies {
     fsModuleCompile 'org.apache.activemq:activemq-all:5.14.2'
     fsWebCompile 'org.apache.activemq:activemq-all:5.14.2'
 
-	fsProvidedCompile "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}"
+	compileOnly "de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}"
 
 	testCompile 'junit:junit:4.12'
 

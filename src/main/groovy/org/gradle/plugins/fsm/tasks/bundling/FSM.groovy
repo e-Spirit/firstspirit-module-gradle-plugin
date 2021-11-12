@@ -21,6 +21,7 @@ import groovy.transform.PackageScope
 import org.gradle.api.Project
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.file.FileCollection
+import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
@@ -223,13 +224,16 @@ class FSM extends Jar {
 			}
 		}
 
+        // Test if any deprecated configurations were Used
+        reportDeprecatedConfigurations()
+
         // Test if any duplicate fsm-resources files could overwrite each other
         if (duplicateFsmResourceFiles.any()) {
             def warningMessage = new StringBuilder("Warning: Multiple files in fsm-resources with same path found! Files may be overwritten by each other in the FSM archive!\n")
             duplicateFsmResourceFiles.each {
                 warningMessage.append("- ${it}\n")
             }
-            getLogger().warn(warningMessage.toString())
+            logger.warn(warningMessage.toString())
         }
     }
 
@@ -309,5 +313,27 @@ class FSM extends Jar {
     void classpath(Object... classpath) {
         FileCollection oldClasspath = getClasspath()
         this.classpath = project.files(oldClasspath ?: [], classpath)
+    }
+
+    private void reportDeprecatedConfigurations() {
+        reportDeprecatedConfiguration(FSMConfigurationsPlugin.PROVIDED_COMPILE_CONFIGURATION_NAME, JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME)
+        reportDeprecatedConfiguration(FSMConfigurationsPlugin.PROVIDED_RUNTIME_CONFIGURATION_NAME, JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME)
+    }
+
+    // Reports a nag if the user added dependencies to a deprecated configuration...
+    private void reportDeprecatedConfiguration(String configurationName, String alternative) {
+        def deprecatedConfiguration = project.configurations.getByName(configurationName)
+        if (deprecatedConfiguration.allDependencies.any()) {
+            // construct warning message
+            def maxReportCount = 10
+            def sb = new StringBuilder("Warning: Deprecated configuration '$configurationName' used. Please use configuration '$alternative' instead.\n")
+            deprecatedConfiguration.allDependencies.take(maxReportCount).each {
+                sb.append("- $it.group:$it.name:$it.version\n")
+            }
+            if (deprecatedConfiguration.allDependencies.size() > maxReportCount) {
+                sb.append("- ...\n")
+            }
+            logger.warn(sb.toString())
+        }
     }
 }

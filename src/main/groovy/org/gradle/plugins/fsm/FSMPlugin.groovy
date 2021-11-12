@@ -17,6 +17,7 @@ package org.gradle.plugins.fsm
 
 
 import com.github.jk1.license.LicenseReportPlugin
+import com.github.jk1.license.render.CsvReportRenderer
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -80,7 +81,7 @@ class FSMPlugin implements Plugin<Project> {
             // Set output directory for the report data.
             outputDir = "${project.buildDir}/${FSM.LICENSES_DIR_NAME}"
             configurations = [JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME]
-            renderers = [new LicenseCsvRenderer()]
+            renderers = [new CsvReportRenderer()]
         }
     }
 
@@ -115,10 +116,7 @@ class FSMPlugin implements Plugin<Project> {
                 .findByName(JavaPlugin.JAR_TASK_NAME)
                 .getOutputs().getFiles()
 
-            final Configuration providedRuntime = project
-                .getConfigurations().getByName(
-                    FSMConfigurationsPlugin.PROVIDED_RUNTIME_CONFIGURATION_NAME)
-            return (runtimeClasspath - providedRuntime) + outputs
+            return runtimeClasspath + outputs
         })
 
         project.gradle.taskGraph.beforeTask { task ->

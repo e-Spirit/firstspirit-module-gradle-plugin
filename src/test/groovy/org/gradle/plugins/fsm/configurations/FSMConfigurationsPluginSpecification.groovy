@@ -69,13 +69,14 @@ class FSMConfigurationsPluginSpecification extends Specification {
         fsModuleCompileConfig.transitive
     }
 
-    def 'fsProvidedRuntime configuration extends compile configuration'() {
+    def 'runtimeOnly configuration extends fsProvidedRuntime configuration'() {
         when:
         project.apply plugin: FSMConfigurationsPlugin.NAME
         def providedRuntimeConfig = project.configurations.getByName(FSMConfigurationsPlugin.PROVIDED_RUNTIME_CONFIGURATION_NAME)
+        def runtimeOnlyConfig = project.configurations.getByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME)
 
         then:
-        providedRuntimeConfig.extendsFrom.collect { it.name } == [FSMConfigurationsPlugin.PROVIDED_COMPILE_CONFIGURATION_NAME]
+        runtimeOnlyConfig.extendsFrom providedRuntimeConfig
         !providedRuntimeConfig.visible
         providedRuntimeConfig.transitive
     }
@@ -98,7 +99,6 @@ class FSMConfigurationsPluginSpecification extends Specification {
         skippedDependency.name == "guava"
         skippedDependency.version == "24.0-jre"
     }
-
 
     def 'plugin exposes named arguments method for excluded dependencies'() {
         when:
@@ -133,7 +133,6 @@ class FSMConfigurationsPluginSpecification extends Specification {
 
         then:
         thrown(IllegalArgumentException.class)
-
     }
 
     def 'fsDependency method fails on non-boolean type for skipInLegacy argument'() {

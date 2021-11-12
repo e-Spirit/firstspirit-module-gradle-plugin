@@ -104,17 +104,17 @@ class FSMConfigurationsPlugin : Plugin<Project> {
             .setVisible(false)
             .setDescription("Those dependencies are not included in the module.xml, but in the module-isolated.xml")
 
-
         val provideCompileConfiguration = configurationContainer
             .create(PROVIDED_COMPILE_CONFIGURATION_NAME)
             .setVisible(false)
-            .setDescription("Additional compile classpath for libraries that should not be part of the FSM archive.")
+            .setDescription("Additional compile classpath for libraries that should not be part of the FSM archive.. " +
+                    "This configuration is deprecated and should be replaced with ${JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME}")
 
         val provideRuntimeConfiguration = configurationContainer
             .create(PROVIDED_RUNTIME_CONFIGURATION_NAME)
             .setVisible(false)
-            .extendsFrom(provideCompileConfiguration)
-            .setDescription("Additional runtime classpath for libraries that should not be part of the FSM archive.")
+            .setDescription("Additional runtime classpath for libraries that should not be part of the FSM archive. " +
+                    "This configuration is deprecated and should be replaced with ${JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME}")
 
         configurationContainer.getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME)
             .extendsFrom(provideCompileConfiguration)
@@ -130,7 +130,9 @@ class FSMConfigurationsPlugin : Plugin<Project> {
     companion object {
         val LOGGER: Logger = Logging.getLogger(FSMConfigurationsPlugin::class.java)
 
+        @Deprecated("Scheduled for removal, use ${JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME} instead", replaceWith = ReplaceWith(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME))
         const val PROVIDED_COMPILE_CONFIGURATION_NAME = "fsProvidedCompile"
+        @Deprecated("Scheduled for removal, use ${JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME} instead", replaceWith = ReplaceWith(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME))
         const val PROVIDED_RUNTIME_CONFIGURATION_NAME = "fsProvidedRuntime"
 
         const val FS_SERVER_COMPILE_CONFIGURATION_NAME = "fsServerCompile"

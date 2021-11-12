@@ -76,7 +76,7 @@ dependencies {
     implementation(gradleApi())
     implementation(localGroovy())
     implementation("io.github.classgraph:classgraph:4.8.114")
-    implementation("com.github.jk1:gradle-license-report:1.16")
+    implementation("com.github.jk1:gradle-license-report:2.0")
     implementation("org.redundent:kotlin-xml-builder:1.7.3")
     implementation("com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}")
     implementation("de.espirit.mavenplugins:fsmchecker:0.13")
