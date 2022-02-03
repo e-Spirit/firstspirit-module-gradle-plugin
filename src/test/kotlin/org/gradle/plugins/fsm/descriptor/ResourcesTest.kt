@@ -3,6 +3,7 @@ package org.gradle.plugins.fsm.descriptor
 import de.espirit.firstspirit.server.module.ModuleInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.gradle.api.Project
+import org.gradle.jvm.tasks.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_MODULE_COMPILE_CONFIGURATION_NAME
@@ -53,6 +54,37 @@ class ResourcesTest {
         val fsmResource = resources.children[1] as Node
         assertThat(fsmResource.attributes["name"]).isEqualTo("test:depProject-image.png")
         assertThat(fsmResource.textContent()).isEqualTo("image.png")
+    }
+
+
+    @Test
+    fun `create resource from project dependency with custom archive name`() {
+        val subProjectName = "subProject"
+        val subProject = ProjectBuilder.builder().withName(subProjectName).withParent(project).build()
+        subProject.plugins.apply("java")
+
+        // add subProject to the main project as a project dependency
+        val projectDependency = project.dependencies.project(mapOf("path" to ":${subProjectName}"))
+        project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(projectDependency)
+
+        // modify archiveBaseName
+        val jar = subProject.tasks.getByName("jar") as Jar
+        val customJarName = "myCustomJarName"
+        jar.archiveBaseName.set(customJarName)
+        val resources = Resources(project, ArrayList(), true).node
+
+        // finally resolve & filter
+        val nodes = resources.filter { node: Node ->
+            node.nodeName == "resource" && node.attributes["name"] == "${project.name}:${subProjectName}"
+        }
+
+        // verify
+        assertThat(nodes).isNotEmpty
+        val children = nodes[0].children
+        assertThat(children).isNotEmpty
+        val child = children[0]
+        assertThat(child).isInstanceOf(TextElement::class.java)
+        assertThat((child as TextElement).text).isEqualTo("lib/${customJarName}.jar")
     }
 
 

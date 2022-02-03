@@ -15,5 +15,5 @@ pluginManagement {
 
 rootProject.name = "multiple-webapps"
 
-include("fsm", "web_a", "web_b")
+include("fsm", "libModule", "web_a", "web_b")
 includeBuild("../../")

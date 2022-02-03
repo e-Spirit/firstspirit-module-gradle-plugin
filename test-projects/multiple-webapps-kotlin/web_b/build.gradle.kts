@@ -8,4 +8,12 @@ dependencies {
 
 	implementation("com.fasterxml.jackson.core:jackson-databind:2.10.0")
 	implementation("org.slf4j:slf4j-api:1.7.25")
+
+	implementation(project(":libModule"))
+}
+
+tasks {
+	jar {
+		archiveBaseName.set("my-web_b")
+	}
 }

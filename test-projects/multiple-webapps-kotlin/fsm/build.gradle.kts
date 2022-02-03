@@ -23,7 +23,7 @@ firstSpiritModule {
  * @param fsm               The FSM archive
  * @param moduleXmlFilename The filename of the module.xml, either META-INF/module.xml or META-INF/module-isolated.xml
  */
-fun testResourceEntries(fsm: java.util.zip.ZipFile, moduleXmlFilename: String) {
+fun testResourceEntries(fsm: ZipFile, moduleXmlFilename: String) {
 	// Test if all resource entries in module.xml are present in the archive
 	val moduleXml = fsm.getEntry(moduleXmlFilename)
 	fsm.getInputStream(moduleXml).bufferedReader().lines().forEach { line ->
@@ -42,7 +42,7 @@ fun testResourceEntries(fsm: java.util.zip.ZipFile, moduleXmlFilename: String) {
  * @param webAppName        The name of the webapp
  * @return A list containing the lines between the `<web-app>` and `</web-app>` tag of a web-app with the name `webAppName`
  */
-fun getWebAppXml(fsm: java.util.zip.ZipFile, moduleXmlFilename: String, webAppName: String): List<String> {
+fun getWebAppXml(fsm: ZipFile, moduleXmlFilename: String, webAppName: String): List<String> {
 	val moduleXmlText = fsm.getInputStream(fsm.getEntry(moduleXmlFilename)).bufferedReader().lines()
 	var currentWebAppTag = mutableListOf<String>()
 	var inWebAppTag = false
@@ -85,12 +85,15 @@ fun extractNameAndVersion(resource: String): Pair<String, String> {
 	return Pair(extractAttributeValue("name"), extractAttributeValue("version"))
 }
 
-fun assertFsmResourcesFolder(project: Project, fsm: java.util.zip.ZipFile) {
+fun assertFsmResourcesFolder(project: Project, fsm: ZipFile) {
 	// Tests if each file in a project's fsm-resource folder exists
 	val fsmResourcesPath = project.projectDir.resolve("src/main/fsm-resources")
 	if (fsmResourcesPath.exists()) {
 		fsmResourcesPath.walk().forEach {
-			assert(fsm.getEntry(fsmResourcesPath.toRelativeString(it)) != null)
+			val relativePath = it.toRelativeString(fsmResourcesPath).replace('\\', '/')
+			if (relativePath.isNotEmpty()) {
+				assert(fsm.getEntry(relativePath) != null)
+			}
 		}
 	}
 }
@@ -117,6 +120,7 @@ val testModuleXml by tasks.creating {
 			assert(webAppAResources.contains(Pair("org.joda:joda-convert", "2.1.2")))
 			assert(webAppAResources.contains(Pair("joda-time:joda-time", "2.10")))
 			assert(webAppAResources.contains(Pair("org.slf4j:slf4j-api", "1.7.25")))
+			assert(webAppAResources.contains(Pair("multiple-webapps:libModule", "0.0.1")))
 
 			// Don't want resources of the other subproject, no matter the version
 			val webAppAResourceNames = webAppAResources.map { it.first } // Get names only
@@ -136,6 +140,7 @@ val testModuleXml by tasks.creating {
 			assert(webAppBResources.contains(Pair("multiple-webapps:web_b", "0.0.1")))
 			assert(webAppBResources.contains(Pair("joda-time:joda-time", "2.10")))
 			assert(webAppBResources.contains(Pair("org.slf4j:slf4j-api", "1.7.25")))
+			assert(webAppAResources.contains(Pair("multiple-webapps:libModule", "0.0.1")))
 			assert(webAppBResources.contains(Pair("com.fasterxml.jackson.core:jackson-core", "2.10.0")))
 			assert(webAppBResources.contains(Pair("com.fasterxml.jackson.core:jackson-databind", "2.10.0")))
 			assert(webAppBResources.contains(Pair("com.fasterxml.jackson.core:jackson-annotations", "2.10.0")))
