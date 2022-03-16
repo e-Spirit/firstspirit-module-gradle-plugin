@@ -10,7 +10,7 @@ import org.gradle.plugins.fsm.classloader.FsmComponentClassLoader
 import org.redundent.kotlin.xml.*
 import java.io.ByteArrayInputStream
 
-class ModuleDescriptor(private val project: Project, private val isolatedModuleXml: Boolean) {
+class ModuleDescriptor(private val project: Project) {
 
     private val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
 
@@ -30,9 +30,9 @@ class ModuleDescriptor(private val project: Project, private val isolatedModuleX
         val componentsNode: Node
 
         classGraph.scan().use {
-            components = Components(project, it, classLoader, isolatedModuleXml)
+            components = Components(project, it, classLoader)
             componentsNode = components.node
-            resources = Resources(project, components.webXmlPaths, isolatedModuleXml)
+            resources = Resources(project, components.webXmlPaths)
             moduleClass = ModuleComponent(it, classLoader)
             dependencies = pluginExtension.fsmDependencies.map { xml("depends") { -it } }
 

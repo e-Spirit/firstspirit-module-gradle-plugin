@@ -6,6 +6,7 @@ import de.espirit.firstspirit.client.access.editor.ValueEngineerFactory
 import de.espirit.firstspirit.generate.FilenameFactory
 import de.espirit.firstspirit.generate.UrlCreatorSpecification
 import de.espirit.firstspirit.module.Configuration
+import de.espirit.firstspirit.module.GadgetFactory
 import de.espirit.firstspirit.module.GadgetSpecification
 import de.espirit.firstspirit.module.ScheduleTaskSpecification
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
@@ -18,8 +19,7 @@ import org.redundent.kotlin.xml.PrintOptions
 import org.redundent.kotlin.xml.xml
 import kotlin.reflect.KClass
 
-class Components(private val project: Project, private val scanResult: ScanResult, private val classLoader: ClassLoader,
-                 private val isolatedModuleXml: Boolean) {
+class Components(private val project: Project, private val scanResult: ScanResult, private val classLoader: ClassLoader) {
 
     lateinit var webXmlPaths: List<String>
     val node: Node
@@ -33,7 +33,7 @@ class Components(private val project: Project, private val scanResult: ScanResul
             components(ServiceComponent::class, ::nodesForServiceComponent, scanResult, classLoader).forEach(this::addNode)
             ProjectAppComponents(project, scanResult, classLoader).nodes.forEach(this::addNode)
 
-            val webAppComponents = WebAppComponents(project, scanResult, classLoader, isolatedModuleXml)
+            val webAppComponents = WebAppComponents(project, scanResult, classLoader)
             webAppComponents.nodes.forEach(this::addNode)
             webXmlPaths = webAppComponents.webXmlPaths
         }
@@ -110,7 +110,7 @@ class Components(private val project: Project, private val scanResult: ScanResul
                         "gom" { -gadgetComponent.name }
 
                         annotation.factories
-                            .filter { it != de.espirit.firstspirit.module.GadgetComponent.GadgetFactory::class }
+                            .filter { it != GadgetFactory::class }
                             .forEach { "factory" { -it.java.name } }
 
                         if (annotation.valueEngineerFactory != ValueEngineerFactory::class) {

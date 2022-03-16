@@ -1,6 +1,5 @@
 package org.gradle.plugins.fsm;
 
-import de.espirit.firstspirit.server.module.ModuleInfo;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.plugins.JavaPlugin;
@@ -41,11 +40,6 @@ class FSMPluginExtensionTest {
                 .filter(dependency -> dependency instanceof ProjectDependency)
                 .map(dependency -> ((ProjectDependency) dependency).getDependencyProject());
         assertThat(dependencyProjects).containsExactly(webAppSubprojectA, webAppSubprojectB);
-    }
-
-    @Test
-    void testIsolatedModeIsDefault() {
-        assertThat(testling.getResourceMode()).isEqualTo(ModuleInfo.Mode.ISOLATED);
     }
 
     @Test

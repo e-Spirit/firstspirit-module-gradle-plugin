@@ -15,8 +15,6 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
-
-import de.espirit.firstspirit.server.module.ModuleInfo
 import org.apache.commons.io.IOUtils
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
@@ -38,8 +36,7 @@ import java.nio.file.Paths
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
-import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown
+import static org.assertj.core.api.Assertions.*
 import static org.gradle.plugins.fsm.util.TestProjectUtils.defineArtifactoryForProject
 import static org.gradle.plugins.fsm.util.TestProjectUtils.setArtifactoryCredentialsFromLocalProperties
 
@@ -97,10 +94,10 @@ class FSMTest {
 		fsm.execute()
 
 		assertThat(moduleXml())
-			.as("module.xml should contain a 'global' resource with the correctly named jar task output in module scope!")
+			.as("module-isolated.xml should contain a 'global' resource with the correctly named jar task output in module scope!")
 			.contains("""<resource name="${project.group}:${project.name}" version="0.0.1-SNAPSHOT" scope="module" mode="isolated">lib/xxxxx-0.0.1-SNAPSHOT.jar</resource>""")
 		assertThat(moduleXml())
-			.as("module.xml should contain a web resource with the correctly named jar task output!")
+			.as("module-isolated.xml should contain a web resource with the correctly named jar task output!")
 			.contains("""<resource name="${project.group}:${project.name}" version="0.0.1-SNAPSHOT">lib/xxxxx-0.0.1-SNAPSHOT.jar</resource>""")
 	}
 
@@ -119,10 +116,11 @@ class FSMTest {
 
 		assertThat(moduleXml()).contains("""<displayname>${displayName}</displayname>""")
 	}
+
 	@Test
 	void moduleDirNameUsed() {
 		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
-		pluginExtension.moduleDirName = getClass().getClassLoader().getResource("module.xml").path
+		pluginExtension.moduleDirName = getClass().getClassLoader().getResource("module-isolated.xml").path
 
 		fsm.execute()
 
@@ -149,8 +147,7 @@ class FSMTest {
 
         fsm.execute()
 
-        assertThat(moduleXml()).contains("""<custom-tag>custom</custom-tag>""")
-        assertThat(moduleXml(true)).doesNotContain("""<custom-tag>custom</custom-tag>""")
+        assertThat(moduleXml()).contains("""<custom-tag>custom-legacy</custom-tag>""")
     }
 
     @Test
@@ -160,8 +157,7 @@ class FSMTest {
 
         fsm.execute()
 
-        assertThat(moduleXml(true)).contains("""<custom-tag>custom</custom-tag>""")
-        assertThat(moduleXml()).doesNotContain("""<custom-tag>custom</custom-tag>""")
+        assertThat(moduleXml()).contains("""<custom-tag>custom</custom-tag>""")
     }
 
 	@Test
@@ -169,10 +165,9 @@ class FSMTest {
 		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
 		pluginExtension.moduleDirName = getClass().getClassLoader().getResource("bothxml").path
 
-		fsm.execute()
-
-		assertThat(moduleXml(true)).contains("""<custom-tag>custom-isolated</custom-tag>""")
-		assertThat(moduleXml()).contains("""<custom-tag>custom-legacy</custom-tag>""")
+		assertThatThrownBy(() -> fsm.execute())
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("legacy modules are no longer supported")
 	}
 
 	@Test
@@ -213,69 +208,18 @@ class FSMTest {
 	}
 
 	@Test
-	void resourceIsConfiguredAsLegacyWhenConfigured() {
-		project.repositories.add(project.getRepositories().mavenCentral())
-		project.dependencies.add("fsModuleCompile", "com.google.guava:guava:24.0-jre")
-		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
-		pluginExtension.resourceMode = ModuleInfo.Mode.LEGACY
-
-		fsm.execute()
-
-		assertThat(moduleXml()).contains("""<resource name="com.google.guava:guava" scope="module" mode="legacy" version="24.0-jre" minVersion="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
-	}
-
-	@Test
 	void resourceHasMinAndMaxVersionWhenConfigured() {
 		project.repositories.add(project.getRepositories().mavenCentral())
 		use (FSMConfigurationsPluginKt) {
-			project.dependencies.add("fsModuleCompile", project.fsDependency("com.google.guava:guava:24.0-jre", false, "0.0.1", "99.0.0"))
+			project.dependencies.add("fsModuleCompile", project.fsDependency("com.google.guava:guava:24.0-jre", "0.0.1", "99.0.0"))
 		}
-		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
-		pluginExtension.resourceMode = ModuleInfo.Mode.LEGACY
 
 		def dependencyConfigurations = project.plugins.getPlugin(FSMConfigurationsPlugin.class).getDependencyConfigurations()
 		assertThat(dependencyConfigurations).contains(new MinMaxVersion("com.google.guava:guava:24.0-jre", "0.0.1", "99.0.0"))
 		assertThat(dependencyConfigurations.size()).isEqualTo(1)
 		fsm.execute()
 
-		assertThat(moduleXml()).contains("""<resource name="com.google.guava:guava" scope="module" mode="legacy" version="24.0-jre" minVersion="0.0.1" maxVersion="99.0.0">lib/guava-24.0-jre.jar</resource>""")
-	}
-
-	@Test
-	void resourceIsSkippedInLegacyWhenConfigured() {
-		project.repositories.add(project.getRepositories().mavenCentral())
-		project.dependencies.add("fsModuleCompile", 'junit:junit:4.12')
-		use (FSMConfigurationsPluginKt) {
-			project.dependencies.add("fsModuleCompile", project.fsDependency(dependency: 'com.google.guava:guava:24.0-jre', skipInLegacy: true))
-		}
-		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
-		pluginExtension.resourceMode = ModuleInfo.Mode.LEGACY
-
-		fsm.execute()
-
-		assertThat(moduleXml()).contains("""<resource name="junit:junit" scope="module" mode="legacy" version="4.12" minVersion="4.12">lib/junit-4.12.jar</resource>""")
-		assertThat(moduleXml()).doesNotContain("""<resource name="com.google.guava:guava" scope="module" mode="legacy" version="24.0-jre" minVersion="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
-	}
-
-	@Test
-	void webResourceIsSkippedInLegacyWhenConfigured() {
-		project.repositories.add(project.getRepositories().mavenCentral())
-		use (FSMConfigurationsPluginKt) {
-			project.dependencies.add("fsWebCompile", project.fsDependency(dependency: 'junit:junit:4.12', skipInLegacy: true))
-			project.dependencies.add("fsWebCompile", project.fsDependency(dependency: 'com.google.guava:guava:24.0-jre', skipInLegacy: false))
-		}
-		FSMPluginExtension pluginExtension = project.extensions.getByType(FSMPluginExtension.class)
-		pluginExtension.resourceMode = ModuleInfo.Mode.LEGACY
-
-		copyTestJar()
-
-		fsm.execute()
-
-		String legacy = moduleXml(false)
-		String isolated = moduleXml(true)
-		assertThat(legacy).contains("<resource name=\"com.google.guava:guava\" version=\"24.0-jre\" minVersion=\"24.0-jre\">lib/guava-24.0-jre.jar</resource>")
-		assertThat(isolated).contains("<resource name=\"com.google.guava:guava\" version=\"24.0-jre\" minVersion=\"24.0-jre\">lib/guava-24.0-jre.jar</resource>")
-		assertThat(legacy).doesNotContain("<resource name=\"junit:junit\" version=\"4.12\" minVersion=\"4.12\">lib/junit-4.12.jar</resource>")
+		assertThat(moduleXml()).contains("""<resource name="com.google.guava:guava" scope="module" mode="isolated" version="24.0-jre" minVersion="0.0.1" maxVersion="99.0.0">lib/guava-24.0-jre.jar</resource>""")
 	}
 
 	@Test
@@ -430,7 +374,7 @@ class FSMTest {
 	void testWebXmlResourcesAreExcludedFromResources() {
 		/**
 		 * web.xml and web0.xml files are used by our test webcomponent implementations.
-		 * Those should be excluded from the resources tags in the module.xml, because
+		 * Those should be excluded from the resources tags in the module-isolated.xml, because
 		 * they aren't regular fsm resources.
 		 */
 		project.version = "1.0.0"
@@ -467,13 +411,12 @@ class FSMTest {
 	}
 
 
-	private String moduleXml(boolean isolated = false) {
-		String isolationMode = isolated ? "-isolated" : ""
+	private String moduleXml() {
         final Path fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.archiveFile.get().asFile.name)
         assertThat(fsmFile).exists()
         final ZipFile zipFile = new ZipFile(fsmFile.toFile())
         zipFile.withCloseable {
-            String xmlFileName = "META-INF/module" + isolationMode + ".xml"
+            String xmlFileName = "META-INF/module-isolated.xml"
             ZipEntry moduleXmlEntry = zipFile.getEntry(xmlFileName)
             assertThat(moduleXmlEntry).isNotNull()
             zipFile.getInputStream(moduleXmlEntry).withCloseable {

@@ -17,16 +17,12 @@ import de.espirit.firstspirit.client.access.editor.ValueEngineerFactory
 import de.espirit.firstspirit.generate.FilenameFactory
 import de.espirit.firstspirit.generate.PathLookup
 import de.espirit.firstspirit.generate.UrlFactory
-import de.espirit.firstspirit.module.Configuration
-import de.espirit.firstspirit.module.GadgetContext
-import de.espirit.firstspirit.module.Module
-import de.espirit.firstspirit.module.ServerEnvironment
+import de.espirit.firstspirit.module.*
 import de.espirit.firstspirit.module.descriptor.ModuleDescriptor
 import de.espirit.firstspirit.module.descriptor.WebAppDescriptor
 import de.espirit.firstspirit.scheduling.ScheduleTaskForm
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
 import de.espirit.firstspirit.server.module.ModuleInfo
-import org.gradle.plugins.fsm.tasks.bundling.FSM
 import org.gradle.plugins.fsm.util.BaseConfiguration
 import org.gradle.plugins.fsm.util.BaseProjectApp
 import org.gradle.plugins.fsm.util.BaseService
@@ -35,8 +31,6 @@ import org.gradle.plugins.fsm.util.BaseWebApp
 import javax.swing.*
 import java.awt.*
 import java.lang.annotation.Annotation
-
-import static de.espirit.firstspirit.module.GadgetComponent.*
 
 class ComponentHelper {
     static Resource createResource(String path, String name, String version) {
@@ -69,11 +63,6 @@ class ComponentHelper {
             @Override
             ModuleInfo.Scope scope() {
                 return ModuleInfo.Scope.MODULE
-            }
-
-            @Override
-            ModuleInfo.Mode mode() {
-                return ModuleInfo.Mode.ISOLATED
             }
 
             @Override
@@ -119,11 +108,6 @@ class ComponentHelper {
             @Override
             ModuleInfo.Scope scope() {
                 return ModuleInfo.Scope.MODULE
-            }
-
-            @Override
-            ModuleInfo.Mode mode() {
-                return ModuleInfo.Mode.ISOLATED
             }
 
             @Override

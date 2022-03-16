@@ -32,7 +32,7 @@ class WebAppComponentsTest {
 
     @Test
     fun `web app should contain basic information`() {
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name" ) == "TestWebAppComponentName" }.single()
         assertThat(component.nodeName).isEqualTo("web-app")
@@ -44,7 +44,7 @@ class WebAppComponentsTest {
 
     @Test
     fun `web app with configurable`() {
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name" ) == "TestWebAppComponentName" }.single()
         assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestWebAppComponent")
@@ -54,7 +54,7 @@ class WebAppComponentsTest {
 
     @Test
     fun `web app without configurable`() {
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name" ) == "TestWebAppComponentWithoutConfigurationName" }.single()
         assertThat(component.childText("class")).endsWith(".TestWebAppComponentWithoutConfiguration")
@@ -63,7 +63,7 @@ class WebAppComponentsTest {
 
     @Test
     fun `web app resource with target path`() {
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name" ) == "TestWebAppComponentName" }.single()
         val webResources = component.filter("web-resources").single()
@@ -73,7 +73,7 @@ class WebAppComponentsTest {
 
     @Test
     fun `web app resource provided by project`() {
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name" ) == "TestWebAppComponentName" }.single()
         val webResources = component.filter("web-resources").single()
@@ -86,7 +86,7 @@ class WebAppComponentsTest {
 
     @Test
     fun `web app resources from annotation`() {
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name" ) == "TestWebAppComponentName" }.single()
         val webResourcesTag = component.filter("web-resources").single()
@@ -111,7 +111,7 @@ class WebAppComponentsTest {
         project.addClassToTestJar("org/gradle/plugins/fsm/TestWebAppWithProjectProperties.class")
         project.extensions.getByType(ExtraPropertiesExtension::class.java).set("myCustomVersionPropertyString", 5)
 
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name" ) == "WebApp with project properties" }.single()
         val webResourcesTag = component.filter("web-resources").single()
@@ -133,7 +133,7 @@ class WebAppComponentsTest {
         project.dependencies.add(FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, "joda-time:joda-time:2.3")
         project.dependencies.add(FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
 
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name" ) == "TestWebAppComponentName" }.single()
         val webResourcesTag = component.filter("web-resources").single()
@@ -143,11 +143,13 @@ class WebAppComponentsTest {
         assertThat(jodaTime.attributes["version"]).isEqualTo("2.3")
         assertThat(jodaTime.attributes["minVersion"]).isEqualTo("2.3")
         assertThat(jodaTime.hasAttribute("maxVersion")).isFalse
+        assertThat(jodaTime.hasAttribute("mode")).isFalse
         assertThat(jodaTime.textContent()).isEqualTo("lib/joda-time-2.3.jar")
 
         val jodaConvert = webResources.single { it.attributes["name"] == "org.joda:joda-convert" }
         assertThat(jodaConvert.attributes["version"]).isEqualTo("2.1.1")
         assertThat(jodaConvert.attributes["minVersion"]).isEqualTo("2.1.1")
+        assertThat(jodaConvert.hasAttribute("mode")).isFalse
         assertThat(jodaConvert.textContent()).isEqualTo("lib/joda-convert-2.1.1.jar")
     }
 
@@ -171,7 +173,7 @@ class WebAppComponentsTest {
         fsmPluginExtension.webAppComponent("TestWebAppA", webAppAProject)
         fsmPluginExtension.webAppComponent("TestWebAppB", webAppBProject)
 
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         println(components.toString(PrintOptions(singleLineTextElements = true)))
         val webAppComponentA = components.filter{ it.childText("name" ) == "TestWebAppA" }.single()
@@ -207,7 +209,7 @@ class WebAppComponentsTest {
         fsmPluginExtension.webAppComponent("not_existing", webAppAProject)
 
         assertThatExceptionOfType(GradleException::class.java)
-            .isThrownBy { ModuleDescriptor(project, true).node }
+            .isThrownBy { ModuleDescriptor(project).node }
             .withMessageContaining("not_existing")
     }
 

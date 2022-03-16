@@ -31,7 +31,7 @@ class ResourcesTest {
 
     @Test
     fun `plain project resource added`() {
-        val resources = Resources(project, emptyList(), true).node
+        val resources = Resources(project, emptyList()).node
 
         val jarName = (resources.children[0] as Node).children[0] as TextElement
         assertThat(jarName.text).isEqualTo("lib/test.jar")
@@ -49,7 +49,7 @@ class ResourcesTest {
         val projectDependency = project.dependencies.project(mapOf("path" to ":depProject"))
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(projectDependency)
 
-        val resources = Resources(project, emptyList(), true).node
+        val resources = Resources(project, emptyList()).node
 
         val fsmResource = resources.children[1] as Node
         assertThat(fsmResource.attributes["name"]).isEqualTo("test:depProject-image.png")
@@ -71,7 +71,7 @@ class ResourcesTest {
         val jar = subProject.tasks.getByName("jar") as Jar
         val customJarName = "myCustomJarName"
         jar.archiveBaseName.set(customJarName)
-        val resources = Resources(project, ArrayList(), true).node
+        val resources = Resources(project, ArrayList()).node
 
         // finally resolve & filter
         val nodes = resources.filter { node: Node ->
@@ -99,7 +99,7 @@ class ResourcesTest {
         val projectDependency = project.dependencies.project(mapOf("path" to ":depProject"))
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(projectDependency)
 
-        val resources = Resources(project, emptyList(), true).node
+        val resources = Resources(project, emptyList()).node
 
         val fsmResource = resources.children[1] as Node
         assertThat(fsmResource.attributes["name"]).isEqualTo("test:depProject-images")
@@ -119,7 +119,7 @@ class ResourcesTest {
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(projectDependency)
         project.configurations.getByName(FS_SERVER_COMPILE_CONFIGURATION_NAME).dependencies.add(projectDependency)
 
-        val resources = Resources(project, emptyList(), true).node
+        val resources = Resources(project, emptyList()).node
 
         assertThat(resources.children).hasSize(2)
         val fsmResource = resources.children[1] as Node
@@ -132,7 +132,7 @@ class ResourcesTest {
         val dependency = project.dependencies.create("org.slf4j:slf4j-api:1.7.32")
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
 
-        val resources = Resources(project, emptyList(), true).node
+        val resources = Resources(project, emptyList()).node
 
         val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
@@ -147,7 +147,7 @@ class ResourcesTest {
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
         project.extensions.getByType(FSMPluginExtension::class.java).appendDefaultMinVersion = false
 
-        val resources = Resources(project, emptyList(), true).node
+        val resources = Resources(project, emptyList()).node
 
         val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
@@ -158,11 +158,11 @@ class ResourcesTest {
 
     @Test
     fun `min and max version with fsDependency extension`() {
-        val fsDependency = project.fsDependency("org.slf4j:slf4j-api:1.7.32", false, "1.7", "1.8")
+        val fsDependency = project.fsDependency("org.slf4j:slf4j-api:1.7.32", "1.7", "1.8")
         val dependency = project.dependencies.create(fsDependency)
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
 
-        val resources = Resources(project, emptyList(), true).node
+        val resources = Resources(project, emptyList()).node
 
         val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
@@ -181,7 +181,7 @@ class ResourcesTest {
         val dependency = project.dependencies.create(fsDependency)
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
 
-        val resources = Resources(project, emptyList(), true).node
+        val resources = Resources(project, emptyList()).node
 
         val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
@@ -196,7 +196,7 @@ class ResourcesTest {
         val dependency = project.dependencies.create("org.slf4j:slf4j-api:1.7.32:debug")
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
 
-        val resources = Resources(project, emptyList(), true).node
+        val resources = Resources(project, emptyList()).node
 
         val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api:debug" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
@@ -208,7 +208,7 @@ class ResourcesTest {
         val dependency = project.dependencies.create("org.slf4j:slf4j-api:1.7.32@fsm")
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
 
-        val resources = Resources(project, emptyList(), true).node
+        val resources = Resources(project, emptyList()).node
 
         val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api@fsm" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
@@ -220,7 +220,7 @@ class ResourcesTest {
         val dependency = project.dependencies.create("org.slf4j:slf4j-api:1.7.32:debug@fsm")
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
 
-        val resources = Resources(project, emptyList(), true).node
+        val resources = Resources(project, emptyList()).node
 
         val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api:debug@fsm" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
@@ -235,7 +235,7 @@ class ResourcesTest {
         project.dependencies.add(FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
         project.dependencies.add(FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
 
-        val resources = Resources(project, emptyList(), true).node
+        val resources = Resources(project, emptyList()).node
 
         val jodaConvert = resources.filter { it.attributes["name"] == "org.joda:joda-convert" }.single()
         val slf4j = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
@@ -254,7 +254,7 @@ class ResourcesTest {
         project.dependencies.add(FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.0")
         project.dependencies.add(FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
 
-        val resources = Resources(project, emptyList(), true).node
+        val resources = Resources(project, emptyList()).node
 
         val slf4j = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
         assertThat(slf4j.attributes["scope"]).isEqualTo("server")
@@ -275,7 +275,7 @@ class ResourcesTest {
         project.dependencies.add(FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.1")
         project.dependencies.add(FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
 
-        val resources = Resources(project, emptyList(), true).node
+        val resources = Resources(project, emptyList()).node
 
         val slf4j = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
         assertThat(slf4j.attributes["scope"]).isEqualTo("server")
@@ -291,7 +291,7 @@ class ResourcesTest {
         val dependency = project.dependencies.create("org.slf4j:slf4j-api:1.7.32")
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
 
-        val resources = Resources(project, emptyList(), true)
+        val resources = Resources(project, emptyList())
 
         assertThat(resources.innerResourcesToString()).isEqualTo("""
             <resource name=":test" version="1.6" scope="module" mode="isolated">lib/test-1.6.jar</resource>

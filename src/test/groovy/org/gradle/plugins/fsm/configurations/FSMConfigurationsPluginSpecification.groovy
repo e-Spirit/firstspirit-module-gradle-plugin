@@ -36,28 +36,6 @@ class FSMConfigurationsPluginSpecification extends Specification {
         implementationConfig.transitive
     }
 
-    def 'jar runtimeOnly configuration extends FirstSpirit scopes'() {
-        when:
-        project.apply plugin: FSMConfigurationsPlugin.NAME
-        def runtimeConfig = project.configurations.getByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME)
-
-        then:
-        runtimeConfig.extendsFrom.collect { it.name } == [FSMConfigurationsPlugin.PROVIDED_RUNTIME_CONFIGURATION_NAME]
-        !runtimeConfig.visible
-        runtimeConfig.transitive
-    }
-
-    def 'jar compileOnly configuration extends FirstSpirit scopes'() {
-        when:
-        project.apply plugin: FSMConfigurationsPlugin.NAME
-        def runtimeConfig = project.configurations.getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME)
-
-        then:
-        runtimeConfig.extendsFrom.collect { it.name } == [JavaPlugin.COMPILE_ONLY_API_CONFIGURATION_NAME, FSMConfigurationsPlugin.PROVIDED_COMPILE_CONFIGURATION_NAME]
-        !runtimeConfig.visible
-        runtimeConfig.transitive
-    }
-
     def 'fsModuleCompile configuration extends fsServerCompile configuration'() {
         when:
         project.apply plugin: FSMConfigurationsPlugin.NAME
@@ -69,57 +47,17 @@ class FSMConfigurationsPluginSpecification extends Specification {
         fsModuleCompileConfig.transitive
     }
 
-    def 'runtimeOnly configuration extends fsProvidedRuntime configuration'() {
-        when:
-        project.apply plugin: FSMConfigurationsPlugin.NAME
-        def providedRuntimeConfig = project.configurations.getByName(FSMConfigurationsPlugin.PROVIDED_RUNTIME_CONFIGURATION_NAME)
-        def runtimeOnlyConfig = project.configurations.getByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME)
-
-        then:
-        runtimeOnlyConfig.extendsFrom providedRuntimeConfig
-        !providedRuntimeConfig.visible
-        providedRuntimeConfig.transitive
-    }
-
     def 'project provides and handles fsDependency method'() {
         when:
         project.apply plugin: FSMConfigurationsPlugin.NAME
         project.repositories.add(project.getRepositories().mavenCentral())
         def resultingDependency = null
         use(FSMConfigurationsPluginKt) {
-             resultingDependency = project.fsDependency("com.google.guava:guava:24.0-jre", true)
+             resultingDependency = project.fsDependency("com.google.guava:guava:24.0-jre")
         }
-        def skippedInLegacyDependencies = project.configurations.getByName(FSMConfigurationsPlugin.FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME).dependencies.collect { it }
-        def skippedDependency = skippedInLegacyDependencies.get(0)
 
         then:
         resultingDependency == "com.google.guava:guava:24.0-jre"
-        skippedInLegacyDependencies.size() == 1
-        skippedDependency.group == "com.google.guava"
-        skippedDependency.name == "guava"
-        skippedDependency.version == "24.0-jre"
-    }
-
-    def 'plugin exposes named arguments method for excluded dependencies'() {
-        when:
-        project.repositories.add(project.getRepositories().mavenCentral())
-        project.apply plugin: FSMConfigurationsPlugin.NAME
-        def resultingDependency = null
-        use (FSMConfigurationsPluginKt) {
-            resultingDependency = project.fsDependency(dependency: "com.google.guava:guava:24.0-jre", skipInLegacy: true, maxVersion: "31.0")
-        }
-        def skippedInLegacyDependencies = project.configurations.getByName(FSMConfigurationsPlugin.FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME).dependencies.collect { it }
-        def dependencyConfigurations = project.plugins.getPlugin(FSMConfigurationsPlugin.class).getDependencyConfigurations()
-
-        then:
-        resultingDependency == "com.google.guava:guava:24.0-jre"
-        skippedInLegacyDependencies.size() == 1
-        skippedInLegacyDependencies.get(0).group == "com.google.guava"
-        skippedInLegacyDependencies.get(0).name == "guava"
-        skippedInLegacyDependencies.get(0).version == "24.0-jre"
-
-        dependencyConfigurations.contains(
-                new MinMaxVersion("com.google.guava:guava:24.0-jre", null, "31.0"))
     }
 
     def 'fsDependency method fails for duplicated excluded dependency'() {
@@ -127,24 +65,12 @@ class FSMConfigurationsPluginSpecification extends Specification {
         project.repositories.add(project.getRepositories().mavenCentral())
         project.apply plugin: FSMConfigurationsPlugin.NAME
         use (FSMConfigurationsPluginKt) {
-            project.fsDependency(dependency: "com.google.guava:guava:24.0-jre", skipInLegacy: true, maxVersion: "31.0")
+            project.fsDependency(dependency: "com.google.guava:guava:24.0-jre", maxVersion: "31.0")
             project.fsDependency(dependency: "com.google.guava:guava:24.0-jre", minVersion: "2.0")
         }
 
         then:
         thrown(IllegalArgumentException.class)
-    }
-
-    def 'fsDependency method fails on non-boolean type for skipInLegacy argument'() {
-        when:
-        project.repositories.add(project.getRepositories().mavenCentral())
-        project.apply plugin: FSMConfigurationsPlugin.NAME
-        use (FSMConfigurationsPluginKt) {
-            project.fsDependency("com.google.guava:guava:24.0-jre", "31.0")
-        }
-
-        then:
-        thrown(ClassCastException.class)
     }
 
     def 'fsDependency method fails on non-String type for minVersion argument'() {

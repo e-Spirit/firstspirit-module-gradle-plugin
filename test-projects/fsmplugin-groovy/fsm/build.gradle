@@ -8,24 +8,24 @@ plugins {
     id 'de.espirit.firstspirit-module'
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = 11
+targetCompatibility = 11
 
 dependencies {
 //	fsProvidedCompile 'commons-logging:commons-logging:1.1.3'
 
-    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.200910'
+    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.220309'
 
     fsServerCompile project(':api')
     fsModuleCompile project(':impl')
     fsWebCompile project(':web')
     fsModuleCompile project(':web')
     use (FSMConfigurationsPluginKt) {
-        fsModuleCompile fsDependency(dependency: 'joda-time:joda-time:2.10', skipInLegacy: true)
-        fsModuleCompile fsDependency('commons-logging:commons-logging:1.2', true, '1.0', '1.5')
-        fsModuleCompile fsDependency('org.apache.activemq:activemq-all:5.14.2', true)
+        fsModuleCompile fsDependency(dependency: 'joda-time:joda-time:2.10')
+        fsModuleCompile fsDependency('commons-logging:commons-logging:1.2', '1.0', '1.5')
+        fsModuleCompile fsDependency('org.apache.activemq:activemq-all:5.14.2')
 
-        fsWebCompile fsDependency('org.apache.activemq:activemq-all:5.14.2', true)
+        fsWebCompile fsDependency('org.apache.activemq:activemq-all:5.14.2')
     }
 
     testImplementation 'junit:junit:4.12'
@@ -38,10 +38,9 @@ jar {
 firstSpiritModule {
     moduleDirName = 'src/main/fsm'
     displayName = 'test-project displayName'
-    resourceMode = "ISOLATED"
     isolationDetectorUrl = 'https://fsdev.e-spirit.de/FsmDependencyDetector/'
     complianceLevel = "MINIMAL"
-    firstSpiritVersion = '5.2.190507'
+    firstSpiritVersion = '5.2.220309'
     vendor = "e-Spirit AG"
     fsmDependencies = ['otherModuleName', 'yetAnotherModule']
 }
@@ -49,6 +48,8 @@ firstSpiritModule {
 def fsmArchivePath = Paths.get(project.buildDir.path, "fsm", "fsm-${project.version}.fsm")
 
 task testFsmIsProduced {
+    dependsOn assembleFSM
+
     doLast {
         logger.info("Searching for fsm file in $fsmArchivePath")
         assert fsmArchivePath.toFile().exists()
@@ -56,11 +57,13 @@ task testFsmIsProduced {
 }
 
 task testZipFileContainsModuleXml {
+    dependsOn assembleFSM
+
     doLast {
         ZipFile fsmFile = new ZipFile(fsmArchivePath.toString())
-        def moduleXml = fsmFile.entries().find { "META-INF/module.xml" == it.getName() }
+        def moduleXml = fsmFile.entries().find { "META-INF/module-isolated.xml" == it.getName() }
         assert moduleXml != null
     }
 }
 
-test.dependsOn tasks.assembleFSM, testFsmIsProduced, testZipFileContainsModuleXml
+test.dependsOn testFsmIsProduced, testZipFileContainsModuleXml

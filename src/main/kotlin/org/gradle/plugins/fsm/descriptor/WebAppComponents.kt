@@ -3,7 +3,6 @@ package org.gradle.plugins.fsm.descriptor
 import com.espirit.moddev.components.annotations.WebAppComponent
 import de.espirit.firstspirit.module.Configuration
 import de.espirit.firstspirit.module.WebApp
-import groovy.lang.MissingPropertyException
 import io.github.classgraph.ScanResult
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -22,8 +21,7 @@ import java.io.File
 import java.util.*
 
 class WebAppComponents(
-    project: Project, private val scanResult: ScanResult, private val classLoader: ClassLoader,
-    private val isolatedModuleXml: Boolean): ComponentsWithResources(project) {
+    project: Project, private val scanResult: ScanResult, private val classLoader: ClassLoader): ComponentsWithResources(project) {
 
     lateinit var webXmlPaths: List<String>
 
@@ -70,13 +68,6 @@ class WebAppComponents(
             .resolvedConfiguration.resolvedArtifacts
         val sharedWebCompileDependencies = getResolvedDependencies(project,
             FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, allCompileDependencies)
-        val providedCompileDependencies = getResolvedDependencies(project,
-            FSMConfigurationsPlugin.PROVIDED_COMPILE_CONFIGURATION_NAME, allCompileDependencies)
-        val skippedInLegacyDependencies = getAllSkippedInLegacyDependencies(project, allCompileDependencies)
-        if (!isolatedModuleXml) {
-            sharedWebCompileDependencies.removeAll(skippedInLegacyDependencies)
-            providedCompileDependencies.removeAll(skippedInLegacyDependencies)
-        }
 
         val webXmlPaths = mutableListOf<String>()
         val declaredWebApps = project.extensions.getByType(FSMPluginExtension::class.java).getWebApps()
@@ -108,9 +99,6 @@ class WebAppComponents(
                     // compile dependencies of web-app subproject -
                     // If we registered a subproject for a given web-app, evaluate its compile dependencies
                     val webAppProjectDependencies = getResolvedDependencies(webAppProject, JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, allCompileDependencies)
-                    if (!isolatedModuleXml) {
-                        webAppProjectDependencies.removeAll(skippedInLegacyDependencies)
-                    }
 
                     // Don't want duplicate resources
                     webAppProjectDependencies.removeAll(sharedWebCompileDependencies)
@@ -125,14 +113,12 @@ class WebAppComponents(
                     })
 
                     webAppProjectDependencies
-                        .filter { !providedCompileDependencies.contains(it) }
                         .map { Resource(project, it, "", false).node }
                         .forEach(webResources::add)
                 }
 
                 // fsWebCompile for all subprojects
                 sharedWebCompileDependencies
-                    .filter { !providedCompileDependencies.contains(it) }
                     .map { Resource(project, it, "", false).node }
                     .forEach(webResources::add)
 
@@ -188,18 +174,6 @@ class WebAppComponents(
         return allDependencies.filter { resource ->
             resolvedArtifacts.any { it.hasSameModuleAs(resource) }
         }.toMutableSet()
-    }
-
-    private fun getAllSkippedInLegacyDependencies(project: Project, allCompileDependencies: Set<ResolvedArtifact>): List<ResolvedArtifact> {
-        return project.rootProject.allprojects.flatMap {
-            try {
-                getResolvedDependencies(it,
-                    FSMConfigurationsPlugin.FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME, allCompileDependencies)
-            } catch (e: MissingPropertyException) {
-                LOGGER.trace("No skipInLegacy configuration found for project $it (probably not using fsm plugins at all)", e)
-                emptySet()
-            }
-        }
     }
 
     private fun fsmResources(project: Project): List<Node> {

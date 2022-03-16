@@ -6,7 +6,7 @@ plugins {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_11
 }
 
 rootProject.ext {
@@ -15,9 +15,9 @@ rootProject.ext {
 }
 
 dependencies {
-    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.200910'
+    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.220309'
     use (FSMConfigurationsPluginKt) {
-        fsWebCompile fsDependency(dependency:'org.apache.commons:commons-lang3:3.8.1', skipInLegacy:true)
+        fsWebCompile fsDependency(dependency:'org.apache.commons:commons-lang3:3.8.1')
     }
     implementation "$commonsIOWebDependencyName:2.6"
 }

@@ -1,6 +1,5 @@
 package org.gradle.plugins.fsm
 
-import de.espirit.firstspirit.server.module.ModuleInfo
 import de.espirit.mavenplugins.fsmchecker.ComplianceLevel
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
@@ -40,12 +39,12 @@ open class FSMPluginExtension(val project: Project) {
     }
 
     /**
-     * The name of the module that should be used in the module.xml instead of the project name
+     * The name of the module that should be used in the module-isolated.xml instead of the project name
      */
     var moduleName: String? = null
 
     /**
-     * The name of the directory containing the module.xml, relative to the project directory.
+     * The name of the directory containing the module-isolated.xml, relative to the project directory.
      */
     var moduleDirName: String? = null
 
@@ -58,11 +57,6 @@ open class FSMPluginExtension(val project: Project) {
      * Responsible vendor of the module
      */
     var vendor: String? = null
-
-    /**
-     * If set, this classloader isolation mode is used for all resources
-     */
-    var resourceMode: ModuleInfo.Mode = ModuleInfo.Mode.ISOLATED
 
     /**
      * If set, the plugin will use this username to connect to the FSM Dependency Detector

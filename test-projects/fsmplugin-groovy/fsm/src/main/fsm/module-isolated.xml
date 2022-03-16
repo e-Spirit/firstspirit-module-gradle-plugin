@@ -15,11 +15,8 @@ $components
 
     	<!-- example -->
         <library>
+            <name>example-lib</name>
             <resources>
-            	<!-- production code  -->
-                <!-- only edit for tests, normally you'd have to use versions -->
-                <resource>lib/$artifact</resource>
-                
 $resources
             </resources>
         </library>

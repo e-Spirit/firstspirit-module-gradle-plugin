@@ -26,6 +26,6 @@ dependencies {
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.0'
 
     // - compile classpath dependencies - should not be included in licenseInfo
-    fsProvidedCompile group: 'de.espirit.firstspirit', name: 'fs-isolated-runtime', version: '5.2.200910'
+    compileOnly group: 'de.espirit.firstspirit', name: 'fs-isolated-runtime', version: '5.2.220309'
     compileOnly group: 'joda-time', name: 'joda-time', version: '2.9'
 }

@@ -321,7 +321,7 @@ class IsolationCheckTestIT {
         fsmFile.toPath().parent.createDirectories()
 
         ZipOutputStream(fsmFile.outputStream()).use {
-            it.putNextEntry(ZipEntry("META-INF/module.xml"))
+            it.putNextEntry(ZipEntry("META-INF/module-isolated.xml"))
             it.write("<module><name>TestModule</name><version>0.1</version>".toByteArray())
             it.write("<components>".toByteArray())
             it.write("<web-app>".toByteArray())
@@ -333,7 +333,7 @@ class IsolationCheckTestIT {
             it.write("</web-app>".toByteArray())
             it.write("</components>".toByteArray())
             it.write("<resources>".toByteArray())
-            it.write("""<resource name="de.espirit:test" version="1.0" scope="module">test.jar</resource>""".toByteArray())
+            it.write("""<resource name="de.espirit:test" version="1.0" scope="module" mode="isolated">test.jar</resource>""".toByteArray())
             it.write("</resources></module>".toByteArray())
             it.putNextEntry(ZipEntry("test.jar"))
             it.write(jarFile.readBytes())

@@ -27,7 +27,7 @@ class ProjectAppComponentsTest {
 
     @Test
     fun `project app should contain basic information`() {
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name") == "TestProjectAppComponentName"}.single()
         assertThat(component.childText("displayname")).isEqualTo("TestDisplayName")
@@ -37,7 +37,7 @@ class ProjectAppComponentsTest {
 
     @Test
     fun `project app should have no configurable tag if no config class was set`() {
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name") == "TestProjectAppComponentWithoutConfigurableName"}.single()
         assertThat(component.childText("class")).endsWith(".TestProjectAppComponentWithoutConfigurable")
@@ -46,7 +46,7 @@ class ProjectAppComponentsTest {
 
     @Test
     fun `project app should not contain an empty resources tag when there are no resources`() {
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name") == "TestProjectAppComponentWithoutConfigurableName"}.single()
         assertThat(component.childText("class")).endsWith(".TestProjectAppComponentWithoutConfigurable")
@@ -55,7 +55,7 @@ class ProjectAppComponentsTest {
 
     @Test
     fun `project app with configurable`() {
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name") == "TestProjectAppComponentName"}.single()
         assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestProjectAppComponent")
@@ -65,7 +65,7 @@ class ProjectAppComponentsTest {
 
     @Test
     fun `project app with resource`() {
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name") == "TestProjectAppComponentName"}.single()
         assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestProjectAppComponent")
@@ -74,7 +74,7 @@ class ProjectAppComponentsTest {
         assertThat(resource.attributes["name"]).isEqualTo("com.google.guava:guava")
         assertThat(resource.attributes["version"]).isEqualTo("24.0")
         assertThat(resource.attributes["scope"]).isEqualTo("module")
-        assertThat(resource.attributes["mode"]).isEqualTo("legacy")
+        assertThat(resource.attributes["mode"]).isEqualTo("isolated")
         assertThat(resource.textContent()).isEqualTo("lib/guava-24.0.jar")
     }
 
@@ -84,7 +84,7 @@ class ProjectAppComponentsTest {
         project.extensions.getByType(ExtraPropertiesExtension::class.java).set("jodaConvertDependency", "org.joda:joda-convert")
         project.dependencies.add(FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
 
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
 
         val component = components.filter{ it.childText("name") == "TestProjectAppComponentWithProperties"}.single()

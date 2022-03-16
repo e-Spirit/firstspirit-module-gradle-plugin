@@ -11,7 +11,7 @@ plugins {
     id("java-gradle-plugin")
     id("com.dorongold.task-tree") version "1.5"
     id("net.researchgate.release") version "2.8.1"
-    id("org.ajoberstar.grgit") version "4.1.0"
+    id("org.ajoberstar.grgit") version "5.0.0"
 }
 
 java {
@@ -28,7 +28,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     }
 }
 
-val fsmAnnotationsVersion = "1.9.7"
+val fsmAnnotationsVersion = "2.0.0"
 
 try {
     val branchName = grgit.branch.current().name
@@ -44,8 +44,7 @@ description = "Gradle plugin to build FirstSpirit modules (FSMs)."
 group = "de.espirit.gradle"
 
 repositories {
-    maven {
-        setUrl("https://artifactory.e-spirit.de/artifactory/repo")
+    maven(url = "https://artifactory.e-spirit.de/artifactory/repo") {
         credentials {
             username = property("artifactory_username") as String
             password = property("artifactory_password") as String
@@ -70,27 +69,27 @@ gradlePlugin {
     }
 }
 
-val fsRuntimeVersion = "5.2.210210" // FirstSpirit 2021-02
+val fsRuntimeVersion = "5.2.220309" // FirstSpirit 2022-03
 
 dependencies {
     implementation(gradleApi())
     implementation(localGroovy())
-    implementation("io.github.classgraph:classgraph:4.8.114")
-    implementation("com.github.jk1:gradle-license-report:2.0")
+    implementation("io.github.classgraph:classgraph:4.8.140")
+    implementation("com.github.jk1:gradle-license-report:2.1")
     implementation("org.redundent:kotlin-xml-builder:1.7.3")
     implementation("com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}")
     implementation("de.espirit.mavenplugins:fsmchecker:0.14.0")
     implementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
     testImplementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
-    testImplementation("org.assertj:assertj-core:3.20.2")
-    testImplementation("commons-io:commons-io:2.8.0")
-    testImplementation("org.mockito:mockito-junit-jupiter:3.12.1")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
+    testImplementation("org.assertj:assertj-core:3.22.0")
+    testImplementation("commons-io:commons-io:2.11.0")
+    testImplementation("org.mockito:mockito-junit-jupiter:4.3.1")
     testImplementation("org.ow2.asm:asm:9.2")
     testImplementation(gradleTestKit())
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.2")
 
-    testImplementation("org.spockframework:spock-core:2.0-groovy-3.0") {
+    testImplementation("org.spockframework:spock-core:2.1-groovy-3.0") {
         exclude(group = "org.codehaus.groovy")
     }
 

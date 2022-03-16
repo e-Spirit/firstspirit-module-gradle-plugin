@@ -51,7 +51,7 @@ class FSMTest_Resources {
         project.dependencies.add("fsModuleCompile", "com.google.guava:guava:24.0-jre")
 
         fsm.execute()
-        def xml = moduleXml(true)
+        def xml = moduleXml()
         assertThat(xml).contains('<resource name="com.google.j2objc:j2objc-annotations" scope="module" mode="isolated" version="1.1" minVersion="1.1">lib/j2objc-annotations-1.1.jar</resource>')
         withFsmFile { ZipFile fsm ->
             assertThat(fsm.getEntry('lib/j2objc-annotations-1.1.jar')).isNotNull()
@@ -65,7 +65,7 @@ class FSMTest_Resources {
         project.dependencies.add("fsServerCompile", "com.google.guava:guava:24.0-jre")
 
         fsm.execute()
-        def xml = moduleXml(true)
+        def xml = moduleXml()
         assertThat(xml).contains('<resource name="com.google.j2objc:j2objc-annotations" scope="server" mode="isolated" version="1.1" minVersion="1.1">lib/j2objc-annotations-1.1.jar</resource>')
         withFsmFile { ZipFile fsm ->
             assertThat(fsm.getEntry('lib/j2objc-annotations-1.1.jar')).isNotNull()
@@ -76,14 +76,14 @@ class FSMTest_Resources {
     void testTransitiveDependencyVersionConflict_moduleLocalLtServer() {
         // If resource A has a transitive resource to resource B and we have a direct dependency to B as well,
         // there may be version conflicts. While the correct jar is packed into the FSM, we need to ensure
-        // the entry in the module.xml is valid as well
+        // the entry in the module-isolated.xml is valid as well
 
         // A. transitive dependency server scoped, direct dependency module scoped, transitive version > direct version
         project.dependencies.add("fsServerCompile", "com.google.guava:guava:24.0-jre")
         project.dependencies.add("fsModuleCompile", "com.google.j2objc:j2objc-annotations:0.9.8")
 
         fsm.execute()
-        def xml = moduleXml(true)
+        def xml = moduleXml()
         assertThat(xml).contains('<resource name="com.google.j2objc:j2objc-annotations" scope="server" mode="isolated" version="1.1" minVersion="1.1">lib/j2objc-annotations-1.1.jar</resource>')
         withFsmFile { ZipFile fsm ->
             assertThat(fsm.getEntry('lib/j2objc-annotations-1.1.jar')).isNotNull()
@@ -98,7 +98,7 @@ class FSMTest_Resources {
         project.dependencies.add("fsModuleCompile", "com.google.j2objc:j2objc-annotations:1.3")
 
         fsm.execute()
-        def xml = moduleXml(true)
+        def xml = moduleXml()
         assertThat(xml).contains('<resource name="com.google.j2objc:j2objc-annotations" scope="server" mode="isolated" version="1.3" minVersion="1.3">lib/j2objc-annotations-1.3.jar</resource>')
         withFsmFile { ZipFile fsm ->
             assertThat(fsm.getEntry('lib/j2objc-annotations-1.3.jar')).isNotNull()
@@ -113,7 +113,7 @@ class FSMTest_Resources {
         project.dependencies.add("fsServerCompile", "com.google.j2objc:j2objc-annotations:0.9.8")
 
         fsm.execute()
-        def xml = moduleXml(true)
+        def xml = moduleXml()
         assertThat(xml).contains('<resource name="com.google.j2objc:j2objc-annotations" scope="server" mode="isolated" version="1.1" minVersion="1.1">lib/j2objc-annotations-1.1.jar</resource>')
         withFsmFile { ZipFile fsm ->
             assertThat(fsm.getEntry('lib/j2objc-annotations-1.1.jar')).isNotNull()
@@ -128,7 +128,7 @@ class FSMTest_Resources {
         project.dependencies.add("fsServerCompile", "com.google.j2objc:j2objc-annotations:1.3")
 
         fsm.execute()
-        def xml = moduleXml(true)
+        def xml = moduleXml()
         assertThat(xml).contains('<resource name="com.google.j2objc:j2objc-annotations" scope="server" mode="isolated" version="1.3" minVersion="1.3">lib/j2objc-annotations-1.3.jar</resource>')
         withFsmFile { ZipFile fsm ->
             assertThat(fsm.getEntry('lib/j2objc-annotations-1.3.jar')).isNotNull()
@@ -136,13 +136,12 @@ class FSMTest_Resources {
         }
     }
 
-    private String moduleXml(boolean isolated = false) {
-        String isolationMode = isolated ? "-isolated" : ""
+    private String moduleXml() {
         final Path fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.archiveFile.get().asFile.name)
         assertThat(fsmFile).exists()
         final ZipFile zipFile = new ZipFile(fsmFile.toFile())
         zipFile.withCloseable {
-            String xmlFileName = "META-INF/module" + isolationMode + ".xml"
+            String xmlFileName = "META-INF/module-isolated.xml"
             ZipEntry moduleXmlEntry = zipFile.getEntry(xmlFileName)
             assertThat(moduleXmlEntry).isNotNull()
             zipFile.getInputStream(moduleXmlEntry).withCloseable {

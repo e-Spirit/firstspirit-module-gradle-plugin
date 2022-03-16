@@ -17,7 +17,7 @@ class ModuleDescriptorTest {
     @BeforeEach
     fun setup() {
         project.configure()
-        moduleDescriptor = ModuleDescriptor(project, true)
+        moduleDescriptor = ModuleDescriptor(project)
     }
 
     @Test
@@ -38,7 +38,7 @@ class ModuleDescriptorTest {
         val project = ProjectBuilder.builder().withName(projectName).build()
         project.configure()
 
-        moduleDescriptor = ModuleDescriptor(project, true)
+        moduleDescriptor = ModuleDescriptor(project)
 
         val nameNode = moduleDescriptor.node.filter("name").single()
         assertThat(nameNode.textContent()).isEqualTo(projectName)
@@ -54,7 +54,7 @@ class ModuleDescriptorTest {
         val extension = project.extensions.getByType(FSMPluginExtension::class.java)
         extension.moduleName = moduleName
 
-        moduleDescriptor = ModuleDescriptor(project, true)
+        moduleDescriptor = ModuleDescriptor(project)
 
         val nameNode = moduleDescriptor.node.filter("name").single()
         assertThat(nameNode.textContent()).isEqualTo(moduleName)
@@ -69,7 +69,7 @@ class ModuleDescriptorTest {
     @Test
     fun `module description should be equal to project description`() {
         project.description = "Test project"
-        moduleDescriptor = ModuleDescriptor(project, true)
+        moduleDescriptor = ModuleDescriptor(project)
         val descriptionTag = moduleDescriptor.node.filter("description").single()
         assertThat(descriptionTag.textContent()).isEqualTo(project.description)
     }
@@ -83,7 +83,7 @@ class ModuleDescriptorTest {
     @Test
     fun `module dependencies`() {
         project.extensions.getByType(FSMPluginExtension::class.java).fsmDependencies = listOf("oneFSM", "anotherFSM")
-        moduleDescriptor = ModuleDescriptor(project, true)
+        moduleDescriptor = ModuleDescriptor(project)
         val dependenciesNode = moduleDescriptor.node.filter("dependencies").single()
         val dependencies = dependenciesNode.filter("depends")
         assertThat(dependencies).hasSize(2)
@@ -94,14 +94,14 @@ class ModuleDescriptorTest {
     fun `module tag with two implementation classes`() {
         project.addClassToTestJar("org/gradle/plugins/fsm/TestModuleImpl.class")
         assertThatExceptionOfType(IllegalStateException::class.java)
-            .isThrownBy { ModuleDescriptor(project, true) }
+            .isThrownBy { ModuleDescriptor(project) }
             .withMessageStartingWith("The following classes implementing de.espirit.firstspirit.module.Module were found in your project:")
     }
 
     @Test
     fun `valid string representation of module dependencies`() {
         project.extensions.getByType(FSMPluginExtension::class.java).fsmDependencies = listOf("oneFSM", "anotherFSM")
-        moduleDescriptor = ModuleDescriptor(project, true)
+        moduleDescriptor = ModuleDescriptor(project)
 
         assertThat(moduleDescriptor.fsmDependencies()).isEqualTo("""
             |<depends>oneFSM</depends>

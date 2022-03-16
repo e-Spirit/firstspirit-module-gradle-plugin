@@ -5,5 +5,5 @@ plugins {
 }
 
 dependencies {
-    implementation(fsDependency("junit:junit:4.12", true))
+    implementation(fsDependency("junit:junit:4.12"))
 }

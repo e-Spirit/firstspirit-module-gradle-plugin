@@ -160,7 +160,7 @@ class FSMPlugin implements Plugin<Project> {
 
     private static void configureJarTask(Project project) {
         final Jar jarTask = (Jar) project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME)
-        jarTask.exclude("module.xml")
+        jarTask.exclude("module-isolated.xml")
     }
 
     private static void configureManifest(Project project) {

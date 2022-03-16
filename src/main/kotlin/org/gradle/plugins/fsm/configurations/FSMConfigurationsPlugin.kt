@@ -17,36 +17,26 @@ fun Project.fsDependency(vararg args: Any): String {
         fsDependencyFromMap(this, args[0] as Map<*, *>)
     } else {
         val argsStack = ArrayDeque(args.drop(1))
-        val skipInLegacy = argsStack.removeFirstOrNull() as Boolean? ?: false
         val minVersion = argsStack.removeFirstOrNull() as String?
         val maxVersion = argsStack.removeFirstOrNull() as String?
-        fsDependencyFromArgs(this, args[0] as String?, skipInLegacy, minVersion, maxVersion)
+        fsDependencyFromArgs(this, args[0] as String?, minVersion, maxVersion)
     }
 }
 
 fun fsDependencyFromMap(project: Project, map: Map<*, *>): String {
-    val skipInLegacy = map["skipInLegacy"] as Boolean? ?: false
-
     return fsDependencyFromArgs(
-        project, map["dependency"] as String?, skipInLegacy,
-        map["minVersion"] as String?, map["maxVersion"] as String?
+        project, map["dependency"] as String?, map["minVersion"] as String?, map["maxVersion"] as String?
     )
 }
 
 fun fsDependencyFromArgs(
     project: Project,
     dependency: String?,
-    skipInLegacy: Boolean = false,
     minVersion: String? = null,
     maxVersion: String? = null
 ): String {
     if (dependency.isNullOrBlank()) {
         error("You have to specify a non-empty dependency!")
-    }
-
-    if (skipInLegacy) {
-        FSMConfigurationsPlugin.LOGGER.debug("Adding dependency $dependency as skippedInLegacy for project $project")
-        project.dependencies.add(FSMConfigurationsPlugin.FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME, dependency)
     }
 
     if (minVersion != null || maxVersion != null) {
@@ -86,40 +76,18 @@ class FSMConfigurationsPlugin : Plugin<Project> {
         val fsServerCompileConfiguration = configurationContainer
             .create(FS_SERVER_COMPILE_CONFIGURATION_NAME)
             .setVisible(false)
-            .setDescription("Added automatically to module.xml with server scope")
+            .setDescription("Added automatically to module-isolated.xml with server scope")
 
         val fsModuleCompileConfiguration = configurationContainer
             .create(FS_MODULE_COMPILE_CONFIGURATION_NAME)
             .extendsFrom(fsServerCompileConfiguration)
             .setVisible(false)
-            .setDescription("Added automatically to module.xml with module scope")
+            .setDescription("Added automatically to module-isolated.xml with module scope")
 
         val fsWebCompileConfiguration = configurationContainer
             .create(FS_WEB_COMPILE_CONFIGURATION_NAME)
             .setVisible(false)
-            .setDescription("Added automatically to web resources of WebApp components in module.xml")
-
-        configurationContainer
-            .create(FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME)
-            .setVisible(false)
-            .setDescription("Those dependencies are not included in the module.xml, but in the module-isolated.xml")
-
-        val provideCompileConfiguration = configurationContainer
-            .create(PROVIDED_COMPILE_CONFIGURATION_NAME)
-            .setVisible(false)
-            .setDescription("Additional compile classpath for libraries that should not be part of the FSM archive.. " +
-                    "This configuration is deprecated and should be replaced with ${JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME}")
-
-        val provideRuntimeConfiguration = configurationContainer
-            .create(PROVIDED_RUNTIME_CONFIGURATION_NAME)
-            .setVisible(false)
-            .setDescription("Additional runtime classpath for libraries that should not be part of the FSM archive. " +
-                    "This configuration is deprecated and should be replaced with ${JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME}")
-
-        configurationContainer.getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME)
-            .extendsFrom(provideCompileConfiguration)
-        configurationContainer.getByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME)
-            .extendsFrom(provideRuntimeConfiguration)
+            .setDescription("Added automatically to web resources of WebApp components in module-isolated.xml")
 
         configurationContainer.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
             .extendsFrom(fsServerCompileConfiguration)
@@ -129,11 +97,6 @@ class FSMConfigurationsPlugin : Plugin<Project> {
 
     companion object {
         val LOGGER: Logger = Logging.getLogger(FSMConfigurationsPlugin::class.java)
-
-        @Deprecated("Scheduled for removal, use ${JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME} instead", replaceWith = ReplaceWith(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME))
-        const val PROVIDED_COMPILE_CONFIGURATION_NAME = "fsProvidedCompile"
-        @Deprecated("Scheduled for removal, use ${JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME} instead", replaceWith = ReplaceWith(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME))
-        const val PROVIDED_RUNTIME_CONFIGURATION_NAME = "fsProvidedRuntime"
 
         const val FS_SERVER_COMPILE_CONFIGURATION_NAME = "fsServerCompile"
         const val FS_MODULE_COMPILE_CONFIGURATION_NAME = "fsModuleCompile"
@@ -152,7 +115,6 @@ class FSMConfigurationsPlugin : Plugin<Project> {
             FS_WEB_COMPILE_CONFIGURATION_NAME
         )
 
-        const val FS_SKIPPED_IN_LEGACY_CONFIGURATION_NAME = "skippedInLegacy"
         const val NAME = "de.espirit.firstspirit-module-configurations"
 
         const val FSM_RESOURCES_PATH = "src/main/fsm-resources"

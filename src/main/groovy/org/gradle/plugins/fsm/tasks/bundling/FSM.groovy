@@ -15,13 +15,11 @@
  */
 package org.gradle.plugins.fsm.tasks.bundling
 
-
 import groovy.io.FileType
 import groovy.transform.PackageScope
 import org.gradle.api.Project
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.file.FileCollection
-import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
@@ -35,10 +33,9 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.*
 import java.util.zip.ZipFile
 
-
 /**
  * Bundles the FSM using libraries from the internal {@link FileCollection} classpath
- * and the configured module.xml.
+ * and the configured module-isolated.xml.
  *
  */
 class FSM extends Jar {
@@ -122,31 +119,29 @@ class FSM extends Jar {
             configure {
                 metaInf {
                     if (pluginExtension.moduleDirName != null) {
-                        // include module.xml's
+                        // include module-isolated.xml file
                         String moduleDirPath = trimPathToDirectory(pluginExtension.moduleDirName)
 
-                        def moduleXmlFileName = "module.xml"
+                        def deprecatedModuleXmlFileName = "module.xml"
                         def isolatedModuleXmlFileName = "module-isolated.xml"
-                        File moduleXml = project.file(moduleDirPath + "/" + moduleXmlFileName)
+                        File deprecatedModuleXml = project.file(moduleDirPath + "/" + deprecatedModuleXmlFileName)
                         File moduleIsolatedXml = project.file(moduleDirPath + "/" + isolatedModuleXmlFileName)
 
                         from moduleDirPath
-                        if (!moduleXml.exists() && !moduleIsolatedXml.exists()) {
+                        if (!deprecatedModuleXml.exists() && !moduleIsolatedXml.exists()) {
                             throw new IllegalArgumentException("No module.xml or module-isolated.xml found in moduleDir " + pluginExtension.moduleDirName)
                         }
-                        if (moduleXml.exists() && moduleIsolatedXml.exists()) {
-                            getLogger().info("Both xml files exist in moduleDir " + moduleDirPath)
-                            include moduleXmlFileName
-                            include isolatedModuleXmlFileName
+                        if (deprecatedModuleXml.exists() && moduleIsolatedXml.exists()) {
+                            throw new IllegalArgumentException("Both xml files exist in moduleDir " + moduleDirPath +
+                                    " but legacy modules are no longer supported. Please remove the old module.xml file.")
                         }
-                        else if (moduleXml.exists() && !moduleIsolatedXml.exists()) {
+                        else if (deprecatedModuleXml.exists() && !moduleIsolatedXml.exists()) {
                             getLogger().warn("Found only a module.xml in moduleDir " + moduleDirPath +
-                                             ". Using the default template-module-isolated.xml to replace the missing module-isolated.xml")
-                            include moduleXmlFileName
+                                             ". Renaming it to module-isolated.xml")
+                            include deprecatedModuleXmlFileName
+                            rename { filename -> filename.replace("module.xml", "module-isolated.xml") }
                         }
-                        else if (!moduleXml.exists() && moduleIsolatedXml.exists()) {
-                            getLogger().warn("Found only a module-isolated.xml in moduleDir " + moduleDirPath +
-                                             ". Using the default template-module.xml to replace the missing module.xml")
+                        else if (!deprecatedModuleXml.exists() && moduleIsolatedXml.exists()) {
                             include isolatedModuleXmlFileName
                         }
                     }
@@ -211,21 +206,9 @@ class FSM extends Jar {
         getLogger().info("Found archive ${archive.getPath()}")
         FileSystems.newFileSystem(archive.toPath(), getClass().getClassLoader()).withCloseable { fs ->
             new ZipFile(archive).withCloseable { zipFile ->
-
-                boolean isolated
-                legacy: {
-                    isolated = false
-                    writeModuleDescriptorToZipFile(fs, getUnfilteredModuleXml(zipFile, isolated), isolated)
-                }
-                isolated: {
-                    isolated = true
-                    writeModuleDescriptorToZipFile(fs, getUnfilteredModuleXml(zipFile, isolated), isolated)
-                }
-			}
+                writeModuleDescriptorToZipFile(fs, getUnfilteredModuleXml(zipFile))
+            }
 		}
-
-        // Test if any deprecated configurations were Used
-        reportDeprecatedConfigurations()
 
         // Test if any duplicate fsm-resources files could overwrite each other
         if (duplicateFsmResourceFiles.any()) {
@@ -237,10 +220,10 @@ class FSM extends Jar {
         }
     }
 
-    void writeModuleDescriptorToZipFile(FileSystem fs, String unfilteredModuleXml, Boolean isolated) {
+    void writeModuleDescriptorToZipFile(FileSystem fs, String unfilteredModuleXml) {
         String filteredModuleXml
 
-        def moduleDescriptor = new ModuleDescriptor(project, isolated)
+        def moduleDescriptor = new ModuleDescriptor(project)
 
         if (unfilteredModuleXml != null) {
             // Replace values in XML provided by user
@@ -262,21 +245,18 @@ class FSM extends Jar {
             filteredModuleXml = moduleDescriptor.toString()
         }
 
-        String fileName = "module${isolated ? "-isolated" : ""}.xml"
-
-        Path nf = fs.getPath("/META-INF/" + fileName)
+        Path nf = fs.getPath("/META-INF/module-isolated.xml")
         Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE).withCloseable {
             it.write(filteredModuleXml)
         }
     }
 
     @Nullable
-    String getUnfilteredModuleXml(ZipFile zipFile, boolean iso) {
-        String isolated = iso ? "-isolated" : ""
+    String getUnfilteredModuleXml(ZipFile zipFile) {
         def unfilteredModuleXml
-        def moduleXmlFile = zipFile.getEntry("META-INF/module${isolated}.xml")
+        def moduleXmlFile = zipFile.getEntry("META-INF/module-isolated.xml")
         if (moduleXmlFile == null) {
-            getLogger().info("module${isolated}.xml not found in ZipArchive ${zipFile.getName()}, using an empty one")
+            getLogger().info("module-isolated.xml not found in ZipArchive ${zipFile.getName()}, using an empty one")
             unfilteredModuleXml = null
         } else {
             unfilteredModuleXml = zipFile.getInputStream(moduleXmlFile).getText("utf-8")
@@ -313,27 +293,5 @@ class FSM extends Jar {
     void classpath(Object... classpath) {
         FileCollection oldClasspath = getClasspath()
         this.classpath = project.files(oldClasspath ?: [], classpath)
-    }
-
-    private void reportDeprecatedConfigurations() {
-        reportDeprecatedConfiguration(FSMConfigurationsPlugin.PROVIDED_COMPILE_CONFIGURATION_NAME, JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME)
-        reportDeprecatedConfiguration(FSMConfigurationsPlugin.PROVIDED_RUNTIME_CONFIGURATION_NAME, JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME)
-    }
-
-    // Reports a nag if the user added dependencies to a deprecated configuration...
-    private void reportDeprecatedConfiguration(String configurationName, String alternative) {
-        def deprecatedConfiguration = project.configurations.getByName(configurationName)
-        if (deprecatedConfiguration.allDependencies.any()) {
-            // construct warning message
-            def maxReportCount = 10
-            def sb = new StringBuilder("Warning: Deprecated configuration '$configurationName' used. Please use configuration '$alternative' instead.\n")
-            deprecatedConfiguration.allDependencies.take(maxReportCount).each {
-                sb.append("- $it.group:$it.name:$it.version\n")
-            }
-            if (deprecatedConfiguration.allDependencies.size() > maxReportCount) {
-                sb.append("- ...\n")
-            }
-            logger.warn(sb.toString())
-        }
     }
 }

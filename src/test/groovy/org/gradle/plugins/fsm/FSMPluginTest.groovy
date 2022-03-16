@@ -126,6 +126,6 @@ class FSMPluginTest {
 		new FSMPlugin().apply(project)
 		
 		Task jarTask = project.tasks[JavaPlugin.JAR_TASK_NAME]
-		assertThat(jarTask.excludes).contains("module.xml")
+		assertThat(jarTask.excludes).contains("module-isolated.xml")
 	}
 }

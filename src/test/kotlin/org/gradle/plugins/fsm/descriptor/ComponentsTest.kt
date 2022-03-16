@@ -24,7 +24,7 @@ class ComponentsTest {
         project.repositories.add(project.repositories.mavenCentral())
         project.copyTestJar()
 
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         components = moduleDescriptor.components.node
     }
 
@@ -221,7 +221,7 @@ class ComponentsTest {
 
     @Test
     fun `valid string representation of components`() {
-        val moduleDescriptor = ModuleDescriptor(project, true)
+        val moduleDescriptor = ModuleDescriptor(project)
         val inner = moduleDescriptor.components.innerComponentsToString()
         assertThat(inner).contains("""
             <public>

@@ -3,6 +3,7 @@ package org.gradle.plugins.fsm.descriptor
 import com.espirit.moddev.components.annotations.ProjectAppComponent
 import de.espirit.firstspirit.module.Configuration
 import de.espirit.firstspirit.module.ProjectApp
+import de.espirit.firstspirit.server.module.ModuleInfo.Mode
 import io.github.classgraph.ScanResult
 import org.gradle.api.Project
 import org.redundent.kotlin.xml.Node
@@ -70,7 +71,7 @@ class ProjectAppComponents(
                     attribute("maxVersion", resource.maxVersion)
                 }
                 attribute("scope", resource.scope.name.lowercase())
-                attribute("mode", resource.mode.name.lowercase())
+                attribute("mode", Mode.ISOLATED.name.lowercase())
                 -pathFromAnnotation
             })
         }

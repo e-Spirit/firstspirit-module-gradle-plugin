@@ -6,6 +6,6 @@ plugins {
 
 dependencies {
     use (FSMConfigurationsPluginKt) {
-        implementation project.fsDependency('junit:junit:4.12', true)
+        implementation project.fsDependency('junit:junit:4.12')
     }
 }

@@ -1,5 +1,6 @@
 package org.gradle.plugins.fsm.descriptor
 
+import de.espirit.firstspirit.server.module.ModuleInfo
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
@@ -10,7 +11,6 @@ import org.redundent.kotlin.xml.xml
 class Resource(val project: Project, val dependency: ResolvedArtifact, val scope: String, includeMode: Boolean = true) {
 
     private val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
-    private val mode = if (includeMode) { pluginExtension.resourceMode } else { null }
     private val appendDefaultMinVersion = pluginExtension.appendDefaultMinVersion
 
     val node by lazy {
@@ -43,8 +43,8 @@ class Resource(val project: Project, val dependency: ResolvedArtifact, val scope
             if (scope.isNotEmpty()) {
                 attribute("scope", scope)
             }
-            if (mode != null) {
-                attribute("mode", mode.name.lowercase())
+            if (includeMode) {
+                attribute("mode", ModuleInfo.Mode.ISOLATED.name.lowercase())
             }
             attribute("version", dependencyId.version)
             if (appendDefaultMinVersion || optionalMinMaxVersion?.minVersion != null) {

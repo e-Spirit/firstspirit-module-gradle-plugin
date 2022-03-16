@@ -5,7 +5,7 @@ plugins {
 }
 
 dependencies {
-	fsProvidedCompile("de.espirit.firstspirit:fs-isolated-runtime:5.2.200910")
+	compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.220309")
 	fsWebCompile("joda-time:joda-time:2.9")
 	fsModuleCompile("org.joda:joda-convert:2.1.2")
 }
@@ -21,11 +21,10 @@ firstSpiritModule {
 /**
  * Asserts that a resource entry in the module xml is also located in the lib directory
  * @param fsm               The FSM archive
- * @param moduleXmlFilename The filename of the module.xml, either META-INF/module.xml or META-INF/module-isolated.xml
  */
-fun testResourceEntries(fsm: ZipFile, moduleXmlFilename: String) {
-	// Test if all resource entries in module.xml are present in the archive
-	val moduleXml = fsm.getEntry(moduleXmlFilename)
+fun testResourceEntries(fsm: ZipFile) {
+	// Test if all resource entries in module-isolated.xml are present in the archive
+	val moduleXml = fsm.getEntry("META-INF/module-isolated.xml")
 	fsm.getInputStream(moduleXml).bufferedReader().lines().forEach { line ->
 		if (line.trim().startsWith("<resource ")) {
 			// Trim <resource> tags from filename and test if resource exists
@@ -38,12 +37,11 @@ fun testResourceEntries(fsm: ZipFile, moduleXmlFilename: String) {
 /**
  * Gets the text between a `<web-app>` and `</web-app>` tag for a given web-app
  * @param fsm               The FSM archive
- * @param moduleXmlFilename The filename of the module.xml, either META-INF/module.xml or META-INF/module-isolated.xml
  * @param webAppName        The name of the webapp
  * @return A list containing the lines between the `<web-app>` and `</web-app>` tag of a web-app with the name `webAppName`
  */
-fun getWebAppXml(fsm: ZipFile, moduleXmlFilename: String, webAppName: String): List<String> {
-	val moduleXmlText = fsm.getInputStream(fsm.getEntry(moduleXmlFilename)).bufferedReader().lines()
+fun getWebAppXml(fsm: ZipFile, webAppName: String): List<String> {
+	val moduleXmlText = fsm.getInputStream(fsm.getEntry("META-INF/module-isolated.xml")).bufferedReader().lines()
 	var currentWebAppTag = mutableListOf<String>()
 	var inWebAppTag = false
 	for (line in moduleXmlText) {
@@ -105,13 +103,12 @@ val testModuleXml by tasks.creating {
 		val fsmFile = tasks.assembleFSM.get().archiveFile.get().asFile
 		ZipFile(fsmFile).use { fsm ->
 			// Ensure all <resource> entries in module-xml are in lib directory
-			testResourceEntries(fsm, "META-INF/module.xml")
-			testResourceEntries(fsm, "META-INF/module-isolated.xml")
+			testResourceEntries(fsm)
 
 			// Test specific web resources
 
 			// WebApp A
-			val webAppAXml = getWebAppXml(fsm, "META-INF/module-isolated.xml", "WebAppA").map { it.trim() }
+			val webAppAXml = getWebAppXml(fsm, "WebAppA").map { it.trim() }
 			assertWebAppXml(webAppAXml)
 
 			// Resources of Web-App A
@@ -132,7 +129,7 @@ val testModuleXml by tasks.creating {
 
 
 			// WebApp B
-			val webAppBXml = getWebAppXml(fsm, "META-INF/module-isolated.xml", "WebAppB").map { it.trim() }
+			val webAppBXml = getWebAppXml(fsm, "WebAppB").map { it.trim() }
 			assertWebAppXml(webAppBXml)
 
 			// Resources of Web-App B

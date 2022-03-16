@@ -1,0 +1,38 @@
+# Upgrading from 3.x.x to 4.0.0
+
+With version 4.0.0, support for legacy modules has been dropped. Additionally, some
+deprecated features were removed.
+
+## Support for legacy modules dropped
+
+Since the "legacy mode" of FirstSpirit has been dropped with 2022-03 and the "isolation mode" being the
+default for new installations for some time now, legacy modules can no longer be created with this
+plug-in. For most users creating "hybrid" modules until now, a few changes need to be made during
+the upgrade:
+
+* When using a custom template for the module descriptor, it has to be named `module-isolated.xml`. If
+  there is also a `module.xml`, this has to be deleted.
+* The `resourceMode` of the `firstSpiritModule` extension is no longer available.
+* Annotating a class with `@Resource` or `@WebResource` does not support the `mode` attribute anymore.
+* When specifying a dependency with a configuration like `fsModuleCompile`, the `skipInLegacy` attribute
+is no longer evaluated.
+
+## New version of the annotations dependency: 2.0.0
+
+The annotations dependency is added automatically added but may also be defined in subprojects. Please
+ensure using at least version 2.0.0. 
+
+## Removed deprecated configurations
+
+Since version 3.0.2, the configurations `fsProvidedCompile` and `fsProvidedRuntime` were marked as deprecated
+and are now removed entirely. When upgrading older modules, replace both of them with `compileOnly`.
+
+## GadgetComponent
+
+In FirstSpirit 2021-08 the `GadgetComponent` API has changed. After upgrading this plugin to 4.0.0 or later, only
+the new version of the API will be supported. If you still need support for detecting older GadgetComponents,
+you have to stick with version 3.x.x of this plug-in until your FirstSpirit libraries can be upgraded.
+
+## Minimum JDK version: 11
+
+Building modules with JDK 8 is no longer supported, the new minimum version is 11.

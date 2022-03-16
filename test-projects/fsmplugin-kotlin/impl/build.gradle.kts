@@ -7,14 +7,14 @@ plugins {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_11
 }
 
 val guavaProperty = rootProject.extra["guavaProperty"] as String
 val guavaVersionProperty = rootProject.extra["guavaVersionProperty"] as String
 
 dependencies {
-    implementation(fsDependency("junit:junit:4.12", true))
-    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.200910")
+    implementation(fsDependency("junit:junit:4.12"))
+    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.220309")
     implementation("$guavaProperty:$guavaVersionProperty")
 }

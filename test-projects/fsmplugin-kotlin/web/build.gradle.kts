@@ -6,7 +6,7 @@ plugins {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_11
 }
 
 val commonsIOWebDependencyName = "commons-io:commons-io"
@@ -14,7 +14,7 @@ rootProject.extra["webappIconName"] = "com.espirit.moddev.example.icon.png"
 rootProject.extra["commonsIOWebDependencyName"] = commonsIOWebDependencyName
 
 dependencies {
-    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.200910")
-    fsWebCompile(fsDependency(mapOf("dependency" to "org.apache.commons:commons-lang3:3.8.1", "skipInLegacy" to true)))
+    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.220309")
+    fsWebCompile(fsDependency(mapOf("dependency" to "org.apache.commons:commons-lang3:3.8.1")))
     implementation("$commonsIOWebDependencyName:2.6")
 }
