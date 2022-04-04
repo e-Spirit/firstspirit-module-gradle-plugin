@@ -1,6 +1,7 @@
 package org.gradle.plugins.fsm.descriptor
 
 import org.gradle.api.Project
+import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.jvm.tasks.Jar
 import org.redundent.kotlin.xml.Node
@@ -30,6 +31,23 @@ fun Project.addClassToTestJar(pathToClassFile: String) {
     FileSystems.newFileSystem(URI.create("jar:${testJar.toURI()}"), emptyMap<String, Any>()).use {
         val newClass = it.getPath(pathToClassFile)
         Files.copy(classToAdd, newClass)
+    }
+}
+
+fun Project.setArtifactoryCredentialsFromLocalProperties() {
+    val ext = project.extensions.getByType(ExtraPropertiesExtension::class.java)
+
+    ext.set("artifactory_username", System.getProperty("artifactory_username"))
+    ext.set("artifactory_password", System.getProperty("artifactory_password"))
+}
+
+fun Project.defineArtifactoryForProject() {
+    this.repositories.maven { repo ->
+        repo.setUrl("https://artifactory.e-spirit.de/artifactory/repo")
+        repo.credentials { credentials ->
+            credentials.username = property("artifactory_username") as String
+            credentials.password = property("artifactory_password") as String
+        }
     }
 }
 

@@ -16,7 +16,7 @@ plugins {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(8))
+        languageVersion.set(JavaLanguageVersion.of(11))
     }
     withSourcesJar()
     withJavadocJar()
@@ -24,7 +24,7 @@ java {
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "11"
     }
 }
 
@@ -79,7 +79,7 @@ dependencies {
     implementation("com.github.jk1:gradle-license-report:2.0")
     implementation("org.redundent:kotlin-xml-builder:1.7.3")
     implementation("com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}")
-    implementation("de.espirit.mavenplugins:fsmchecker:0.13")
+    implementation("de.espirit.mavenplugins:fsmchecker:0.14.0")
     implementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
     testImplementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
@@ -157,6 +157,9 @@ val testJar = tasks.create<Jar>("testJar") {
 tasks.test {
     dependsOn(writePropertiesToResourceFile)
     dependsOn(testJar)
+    filter {
+        excludeTestsMatching("*IT")
+    }
     systemProperty("artifactory_username", findProperty("artifactory_username") as String)
     systemProperty("artifactory_password", findProperty("artifactory_password") as String)
     systemProperty("gradle.version", gradle.gradleVersion)
@@ -164,6 +167,15 @@ tasks.test {
     systemProperty("testJar", testJar.archiveFile.get().asFile.absolutePath)
     systemProperty("classesDir", project.buildDir.resolve("classes").absolutePath)
     maxHeapSize = "2048m"
+    useJUnitPlatform()
+}
+
+val integrationTest by tasks.creating(Test::class.java) {
+    filter {
+        includeTestsMatching("*IT")
+    }
+    systemProperty("artifactory_username", findProperty("artifactory_username") as String)
+    systemProperty("artifactory_password", findProperty("artifactory_password") as String)
     useJUnitPlatform()
 }
 
