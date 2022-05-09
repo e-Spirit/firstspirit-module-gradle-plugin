@@ -1,3 +1,10 @@
+# Upgrading from 4.0.0 to 4.1.0
+
+* Resources defined with the `@Resource` annotation now use
+`com.espirit.moddev.components.annotations.params.resource.Scope` instead of
+`de.espirit.firstspirit.server.module.ModuleInfo.Scope`.
+* The `@WebResource` annotation no longer defines a scope because it is not necessary.
+
 # Upgrading from 3.x.x to 4.0.0
 
 With version 4.0.0, support for legacy modules has been dropped. Additionally, some

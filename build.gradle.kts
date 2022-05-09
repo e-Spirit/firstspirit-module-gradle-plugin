@@ -28,7 +28,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     }
 }
 
-val fsmAnnotationsVersion = "2.0.0"
+val fsmAnnotationsVersion = "2.1.0"
 
 try {
     val branchName = grgit.branch.current().name

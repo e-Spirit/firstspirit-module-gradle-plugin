@@ -22,7 +22,6 @@ import de.espirit.firstspirit.module.descriptor.ModuleDescriptor
 import de.espirit.firstspirit.module.descriptor.WebAppDescriptor
 import de.espirit.firstspirit.scheduling.ScheduleTaskForm
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
-import de.espirit.firstspirit.server.module.ModuleInfo
 import org.gradle.plugins.fsm.util.BaseConfiguration
 import org.gradle.plugins.fsm.util.BaseProjectApp
 import org.gradle.plugins.fsm.util.BaseService
@@ -61,8 +60,8 @@ class ComponentHelper {
             }
 
             @Override
-            ModuleInfo.Scope scope() {
-                return ModuleInfo.Scope.MODULE
+            com.espirit.moddev.components.annotations.params.resource.Scope scope() {
+                return com.espirit.moddev.components.annotations.params.resource.Scope.MODULE
             }
 
             @Override
@@ -103,11 +102,6 @@ class ComponentHelper {
             @Override
             String targetPath() {
                 return "myTargetPath"
-            }
-
-            @Override
-            ModuleInfo.Scope scope() {
-                return ModuleInfo.Scope.MODULE
             }
 
             @Override
