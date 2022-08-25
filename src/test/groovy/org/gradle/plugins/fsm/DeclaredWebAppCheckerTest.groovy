@@ -1,6 +1,7 @@
 package org.gradle.plugins.fsm
 
-
+import com.espirit.moddev.components.annotations.WebAppComponent
+import io.github.classgraph.ClassGraph
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
@@ -45,16 +46,20 @@ class DeclaredWebAppCheckerTest {
 
     @Test
     void testMissingDeclaredWebApps() {
-        def webAppAnnotations = [TestWebAppA, TestWebAppB].collect { it.name }
-        def classLoader = new URLClassLoader(new URL[0], getClass().classLoader)
-        def webAppClasses = webAppAnnotations.collect { classLoader.loadClass(it) }
-        def webAppChecker = new DeclaredWebAppChecker(project, webAppClasses)
+        def classGraph = new ClassGraph()
+            .enableClassInfo()
+            .enableAnnotationInfo()
+            .acceptClasses(TestWebAppA.name, TestWebAppB.name)
+        classGraph.scan().withCloseable { scan ->
+            def annotations = scan.getClassesWithAnnotation(WebAppComponent)
+            def webAppChecker = new DeclaredWebAppChecker(project, annotations)
 
-        def annotationsWithoutDeclaration = webAppChecker.webAppAnnotationsWithoutDeclaration
-        assertThat(annotationsWithoutDeclaration.collect { it.name() }).containsExactly("TestWebAppB")
+            def annotationsWithoutDeclaration = webAppChecker.webAppAnnotationsWithoutDeclaration
+            assertThat(annotationsWithoutDeclaration.collect { it.parameterValues.getValue("name") }).containsExactly("TestWebAppB")
 
-        def declarationsWithoutAnnotation = webAppChecker.declaredProjectsWithoutAnnotation
-        assertThat(declarationsWithoutAnnotation).containsExactly("TestWebAppC")
+            def declarationsWithoutAnnotation = webAppChecker.declaredProjectsWithoutAnnotation
+            assertThat(declarationsWithoutAnnotation).containsExactly("TestWebAppC")
+        }
     }
 }
 

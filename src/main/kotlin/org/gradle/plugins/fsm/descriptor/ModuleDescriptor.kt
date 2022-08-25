@@ -6,7 +6,6 @@ import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.jvm.tasks.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
-import org.gradle.plugins.fsm.classloader.FsmComponentClassLoader
 import org.redundent.kotlin.xml.*
 import java.io.ByteArrayInputStream
 
@@ -26,14 +25,13 @@ class ModuleDescriptor(private val project: Project) {
             .enableAnnotationInfo()
         configureComponentScan(classGraph)
 
-        val classLoader = FsmComponentClassLoader(project)
         val componentsNode: Node
 
         classGraph.scan().use {
-            components = Components(project, it, classLoader)
+            components = Components(project, it)
             componentsNode = components.node
             resources = Resources(project, components.webXmlPaths)
-            moduleClass = ModuleComponent(it, classLoader)
+            moduleClass = ModuleComponent(it)
             dependencies = pluginExtension.fsmDependencies.map { xml("depends") { -it } }
 
             node = xml("module") {
@@ -77,7 +75,9 @@ class ModuleDescriptor(private val project: Project) {
             val jarTask = it.tasks.getByName(JavaPlugin.JAR_TASK_NAME) as Jar
             jarTask.archiveFile.get().asFile
         }
-        classGraph.overrideClasspath(jarFiles)
+        // Must include annotations dependency to get default values for annotations
+        val annotationsDependency = project.configurations.getByName("fsmAnnotations").singleFile
+        classGraph.overrideClasspath(jarFiles + annotationsDependency)
     }
 
 

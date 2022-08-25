@@ -5,6 +5,7 @@ import de.espirit.firstspirit.module.ScheduleTaskSpecification
 import org.assertj.core.api.Assertions.assertThat
 import org.gradle.api.Project
 import org.gradle.plugins.fsm.FSMPluginExtension
+import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
@@ -19,13 +20,24 @@ class ComponentsTest {
     @BeforeEach
     fun setup() {
         project.plugins.apply("java-library")
+        project.plugins.apply(FSMAnnotationsPlugin::class.java)
         project.plugins.apply(FSMConfigurationsPlugin::class.java)
         project.extensions.create("fsmPlugin", FSMPluginExtension::class.java)
-        project.repositories.add(project.repositories.mavenCentral())
+        project.setArtifactoryCredentialsFromLocalProperties()
+        project.defineArtifactoryForProject()
         project.copyTestJar()
 
         val moduleDescriptor = ModuleDescriptor(project)
         components = moduleDescriptor.components.node
+    }
+
+    @Test
+    fun `minimal public component`() {
+        val component = componentWithName("TestMinimalPublicComponentName")
+        assertThat(component.childText("displayname")).isEmpty()
+        assertThat(component.childText("description")).isEmpty()
+        assertThat(component.exists("configurable")).isFalse
+        assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestMinimalPublicComponent")
     }
 
     @Test
@@ -43,6 +55,17 @@ class ComponentsTest {
         assertThat(component.childText("description")).isEmpty()
         assertThat(component.childText("configurable")).isEqualTo("org.gradle.plugins.fsm.TestConfigurable")
         assertThat(component.childText("class")).endsWith(".TestPublicComponentWithConfiguration")
+    }
+
+    @Test
+    fun `minimal schedule task component`() {
+        val component = componentWithName("Test task without display name")
+        assertThat(component.exists("displayname")).isFalse
+        assertThat(component.childText("description")).isEmpty()
+        assertThat(component.childText("class")).isEqualTo(ScheduleTaskSpecification::class.java.name)
+        val configuration = component.filter("configuration").single()
+        assertThat(configuration.childText("application")).endsWith(".TestMinimalScheduleTaskComponent")
+        assertThat(configuration.filter("form")).isEmpty()
     }
 
     @Test
@@ -99,7 +122,6 @@ class ComponentsTest {
         val configuration = component.filter("configuration").single()
         assertThat(configuration.filter("form")).isEmpty()
     }
-
 
     @Test
     fun `gadgetComponent should have GadgetSpecification as class`() {
@@ -180,6 +202,18 @@ class ComponentsTest {
     }
 
     @Test
+    fun `minimal url creator`() {
+        val component = componentWithName("TestMinimalUrlFactoryComponentName")
+        assertThat(component.childText("class")).isEqualTo("de.espirit.firstspirit.generate.UrlCreatorSpecification")
+        assertThat(component.childText("displayname")).isEmpty()
+        assertThat(component.childText("description")).isEmpty()
+        val configuration = component.filter("configuration").single()
+        assertThat(configuration.childText("UrlFactory")).endsWith(".TestMinimalUrlFactoryComponent")
+        assertThat(configuration.childText("UseRegistry")).isEqualTo("true")
+        assertThat(configuration.filter("FilenameFactory")).isEmpty()
+    }
+
+    @Test
     fun `url creator without filename factory`() {
         val component = componentWithName("TestUrlFactoryComponentName")
         assertThat(component.childText("class")).isEqualTo("de.espirit.firstspirit.generate.UrlCreatorSpecification")
@@ -198,6 +232,14 @@ class ComponentsTest {
         assertThat(configuration.childText("UrlFactory")).endsWith(".TestUrlFactoryWithFilenameFactory")
         assertThat(configuration.childText("UseRegistry")).isEqualTo("true")
         assertThat(configuration.childText("FilenameFactory")).endsWith("TestFilenameFactory")
+    }
+
+    @Test
+    fun `minimal service component`() {
+        val component = componentWithName("TestMinimalServiceComponentName")
+        assertThat(component.childText("displayname")).isEmpty()
+        assertThat(component.childText("description")).isEmpty()
+        assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestMinimalServiceComponent")
     }
 
     @Test
@@ -223,7 +265,16 @@ class ComponentsTest {
     fun `valid string representation of components`() {
         val moduleDescriptor = ModuleDescriptor(project)
         val inner = moduleDescriptor.components.innerComponentsToString()
-        assertThat(inner).contains("""
+        assertThat(inner).containsIgnoringWhitespaces("""
+            <public>
+            	<name>TestMinimalPublicComponentName</name> 
+            	<displayname/>
+            	<description/>
+            	<class>org.gradle.plugins.fsm.TestMinimalPublicComponent</class>
+            </public>
+        """.trimIndent())
+
+        assertThat(inner).containsIgnoringWhitespaces("""
             <public>
             	<name>TestPublicComponentWithConfigName</name>
             	<displayname>TestDisplayName</displayname>
@@ -231,7 +282,9 @@ class ComponentsTest {
             	<class>org.gradle.plugins.fsm.TestPublicComponentWithConfiguration</class>
             	<configurable>org.gradle.plugins.fsm.TestConfigurable</configurable>
             </public>
+        """.trimIndent())
 
+        assertThat(inner).containsIgnoringWhitespaces("""
             <public>
             	<name>Test task with configurable</name>
             	<description>A task for test purposes</description>

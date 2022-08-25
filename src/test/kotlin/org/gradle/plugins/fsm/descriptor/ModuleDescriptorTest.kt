@@ -4,6 +4,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.gradle.api.Project
 import org.gradle.plugins.fsm.FSMPluginExtension
+import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
@@ -111,9 +112,11 @@ class ModuleDescriptorTest {
 
     private fun Project.configure() {
         plugins.apply("java-library")
+        plugins.apply(FSMAnnotationsPlugin::class.java)
         plugins.apply(FSMConfigurationsPlugin::class.java)
         extensions.create("fsmPlugin", FSMPluginExtension::class.java)
-        repositories.add(project.repositories.mavenCentral())
+        project.setArtifactoryCredentialsFromLocalProperties()
+        project.defineArtifactoryForProject()
         copyTestJar()
     }
 

@@ -4,40 +4,35 @@ import com.espirit.moddev.components.annotations.ProjectAppComponent
 import de.espirit.firstspirit.module.Configuration
 import de.espirit.firstspirit.module.ProjectApp
 import de.espirit.firstspirit.server.module.ModuleInfo.Mode
+import io.github.classgraph.AnnotationInfo
+import io.github.classgraph.ClassInfo
 import io.github.classgraph.ScanResult
 import org.gradle.api.Project
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.xml
 
-class ProjectAppComponents(
-    project: Project, private val scanResult: ScanResult, private val classLoader: ClassLoader
-) : ComponentsWithResources(project) {
+class ProjectAppComponents(project: Project, private val scanResult: ScanResult) : ComponentsWithResources(project) {
 
     val nodes by lazy {
-        scanResult
-            .getClassesImplementing(ProjectApp::class.java.name).names
-            .map(classLoader::loadClass)
+        scanResult.getClassesImplementing(ProjectApp::class.java.name)
             .mapNotNull(this::nodeForProjectApp)
     }
 
     @Suppress("DuplicatedCode") // No refactoring possible because of incompatible annotations
-    private fun nodeForProjectApp(projectApp: Class<*>): Node? {
+    private fun nodeForProjectApp(projectApp: ClassInfo): Node? {
         if (projectApp.name in PROJECT_APP_BLACKLIST) {
             return null
         }
 
-        return projectApp.annotations
-            .filterIsInstance<ProjectAppComponent>()
+        return projectApp.annotationInfo
+            .filter { it.isClass(ProjectAppComponent::class) }
             .map { annotation ->
                 xml("project-app") {
-                    "name" { -annotation.name }
-                    "displayname" { -annotation.displayName }
-                    "description" { -annotation.description }
+                    "name" { -annotation.getString("name") }
+                    "displayname" { -annotation.getString("displayName") }
+                    "description" { -annotation.getString("description") }
                     "class" { -projectApp.name }
-
-                    if (annotation.configurable != Configuration::class) {
-                        "configurable" { -annotation.configurable.java.name }
-                    }
+                    annotation.getClassNameOrNull("configurable", Configuration::class)?.let { "configurable" { -it } }
 
                     val resources = nodesForResources(annotation)
                     if (resources.isNotEmpty()) {
@@ -50,27 +45,23 @@ class ProjectAppComponents(
             .firstOrNull()
     }
 
-    private fun nodesForResources(annotation: ProjectAppComponent): List<Node> {
-        val resources = annotation.resources
+    private fun nodesForResources(annotation: AnnotationInfo): List<Node> {
+        val resources = annotation.getAnnotationValues("resources")
         val nodes = mutableListOf<Node>()
 
         resources.forEach { resource ->
-            val nameFromAnnotation = expand(resource.name, mutableMapOf("project" to project))
+            val nameFromAnnotation = expand(resource.getString("name"), mutableMapOf("project" to project))
             val dependencyForName = getCompileDependencyForName(nameFromAnnotation)
             val context = getContextForCurrentResource(dependencyForName)
-            val versionFromAnnotation = expandVersion(resource.version, context, nameFromAnnotation, annotation.name)
-            val pathFromAnnotation = expand(resource.path, context)
+            val versionFromAnnotation = expandVersion(resource.getString("version"), context, nameFromAnnotation, annotation.getString("name"))
+            val pathFromAnnotation = expand(resource.getString("path"), context)
 
             nodes.add(xml("resource") {
                 attribute("name", nameFromAnnotation)
                 attribute("version", versionFromAnnotation)
-                if (resource.minVersion.isNotEmpty()) {
-                    attribute("minVersion", resource.minVersion)
-                }
-                if (resource.maxVersion.isNotEmpty()) {
-                    attribute("maxVersion", resource.maxVersion)
-                }
-                attribute("scope", resource.scope.name.lowercase())
+                resource.getStringOrNull("minVersion", "")?.let { attribute("minVersion", it) }
+                resource.getStringOrNull("maxVersion", "")?.let { attribute("maxVersion", it) }
+                attribute("scope", resource.getEnumValue("scope").valueName.lowercase())
                 attribute("mode", Mode.ISOLATED.name.lowercase())
                 -pathFromAnnotation
             })

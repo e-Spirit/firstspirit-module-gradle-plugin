@@ -1,7 +1,6 @@
 package org.gradle.plugins.fsm.descriptor
 
 import com.espirit.moddev.components.annotations.*
-import com.espirit.moddev.components.annotations.params.gadget.Scope
 import de.espirit.firstspirit.client.access.editor.ValueEngineerFactory
 import de.espirit.firstspirit.generate.FilenameFactory
 import de.espirit.firstspirit.generate.UrlCreatorSpecification
@@ -10,6 +9,7 @@ import de.espirit.firstspirit.module.GadgetFactory
 import de.espirit.firstspirit.module.GadgetSpecification
 import de.espirit.firstspirit.module.ScheduleTaskSpecification
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
+import io.github.classgraph.ClassInfo
 import io.github.classgraph.ScanResult
 import org.gradle.api.Project
 import org.gradle.api.logging.Logger
@@ -19,21 +19,21 @@ import org.redundent.kotlin.xml.PrintOptions
 import org.redundent.kotlin.xml.xml
 import kotlin.reflect.KClass
 
-class Components(private val project: Project, private val scanResult: ScanResult, private val classLoader: ClassLoader) {
+class Components(private val project: Project, private val scanResult: ScanResult) {
 
     lateinit var webXmlPaths: List<String>
     val node: Node
 
     init {
         node = xml("components") {
-            components(PublicComponent::class, ::nodesForPublicComponent, scanResult, classLoader).forEach(this::addNode)
-            components(ScheduleTaskComponent::class, ::nodesForScheduleTaskComponent, scanResult, classLoader).forEach(this::addNode)
-            components(GadgetComponent::class, ::nodesForGadgetComponent, scanResult, classLoader).forEach(this::addNode)
-            components(UrlFactoryComponent::class, ::nodesForUrlFactoryComponent, scanResult, classLoader).forEach(this::addNode)
-            components(ServiceComponent::class, ::nodesForServiceComponent, scanResult, classLoader).forEach(this::addNode)
-            ProjectAppComponents(project, scanResult, classLoader).nodes.forEach(this::addNode)
+            components(PublicComponent::class, ::nodesForPublicComponent, scanResult).forEach(this::addNode)
+            components(ScheduleTaskComponent::class, ::nodesForScheduleTaskComponent, scanResult).forEach(this::addNode)
+            components(GadgetComponent::class, ::nodesForGadgetComponent, scanResult).forEach(this::addNode)
+            components(UrlFactoryComponent::class, ::nodesForUrlFactoryComponent, scanResult).forEach(this::addNode)
+            components(ServiceComponent::class, ::nodesForServiceComponent, scanResult).forEach(this::addNode)
+            ProjectAppComponents(project, scanResult).nodes.forEach(this::addNode)
 
-            val webAppComponents = WebAppComponents(project, scanResult, classLoader)
+            val webAppComponents = WebAppComponents(project, scanResult)
             webAppComponents.nodes.forEach(this::addNode)
             webXmlPaths = webAppComponents.webXmlPaths
         }
@@ -47,125 +47,106 @@ class Components(private val project: Project, private val scanResult: ScanResul
         return node.filter{ true }.joinToString("\n\n") { it.toString(PRINT_OPTIONS) }
     }
 
-    private fun components(
-        type: KClass<*>, transform: (Class<*>) -> List<Node>, scanResult: ScanResult,
-        classLoader: ClassLoader
-    ): List<Node> {
+    private fun components(type: KClass<*>, transform: (ClassInfo) -> List<Node>, scanResult: ScanResult): List<Node> {
         return scanResult
-            .getClassesWithAnnotation(type.java.name).names
-            .map(classLoader::loadClass)
+            .getClassesWithAnnotation(type.java.name)
             .flatMap(transform)
     }
 
     @Suppress("DuplicatedCode") // No refactoring possible because of incompatible annotations
-    private fun nodesForPublicComponent(publicComponentClass: Class<*>): List<Node> {
-        return publicComponentClass.annotations
-            .filterIsInstance<PublicComponent>()
+    private fun nodesForPublicComponent(publicComponent: ClassInfo): List<Node> {
+        return publicComponent.annotationInfo
+            .filter { it.isClass(PublicComponent::class) }
             .map { annotation ->
                 xml("public") {
-                    "name" { -annotation.name }
-                    "displayname" { -annotation.displayName }
-                    "description" { -annotation.description }
-                    "class" { -publicComponentClass.name }
-                    if (annotation.configurable != Configuration::class) {
-                        "configurable" { -annotation.configurable.java.name }
-                    }
+                    "name" { -annotation.getString("name") }
+                    "displayname" { -annotation.getString("displayName")  }
+                    "description" { -annotation.getString("description") }
+                    "class" { -publicComponent.name }
+                    annotation.getClassNameOrNull("configurable", Configuration::class)?.let { "configurable" { -it } }
                 }
             }
     }
 
-    private fun nodesForScheduleTaskComponent(scheduleTaskComponent: Class<*>): List<Node> {
-        return scheduleTaskComponent.annotations
-            .filterIsInstance<ScheduleTaskComponent>()
+    private fun nodesForScheduleTaskComponent(scheduleTaskComponent: ClassInfo): List<Node> {
+        return scheduleTaskComponent.annotationInfo
+            .filter { it.isClass(ScheduleTaskComponent::class) }
             .map { annotation ->
                 xml("public") {
-                    "name" { -annotation.taskName }
-                    if (annotation.displayName.isNotEmpty()) {
-                        "displayname" { -annotation.displayName }
-                    }
-                    "description" { -annotation.description }
+                    "name" { -annotation.getString("taskName") }
+                    annotation.getStringOrNull("displayName", "")?.let { "displayname" { -it } }
+                    "description" { -annotation.getString("description") }
                     "class" { -ScheduleTaskSpecification::class.java.name }
                     "configuration" {
                         "application" { -scheduleTaskComponent.name }
-                        if (annotation.formClass != ScheduleTaskFormFactory::class) {
-                            "form" { -annotation.formClass.java.name }
-                        }
+                        annotation.getClassNameOrNull("formClass", ScheduleTaskFormFactory::class)?.let { "form" { -it } }
                     }
-                    if (annotation.configurable != Configuration::class) {
-                        "configurable" { -annotation.configurable.java.name }
-                    }
+                    annotation.getClassNameOrNull("configurable", Configuration::class)?.let { "configurable" { -it } }
                 }
             }
     }
 
-    private fun nodesForGadgetComponent(gadgetComponent: Class<*>): List<Node> {
-        return gadgetComponent.annotations
-            .filterIsInstance<GadgetComponent>()
+    private fun nodesForGadgetComponent(gadgetComponent: ClassInfo): List<Node> {
+        return gadgetComponent.annotationInfo
+            .filter { it.isClass(GadgetComponent::class) }
             .map { annotation ->
                 xml("public") {
-                    "name" { -annotation.name }
-                    "description" { -annotation.description }
+                    "name" { -annotation.getString("name") }
+                    "description" { -annotation.getString("description") }
                     "class" { -GadgetSpecification::class.java.name }
                     "configuration" {
                         "gom" { -gadgetComponent.name }
 
-                        annotation.factories
-                            .filter { it != GadgetFactory::class }
-                            .forEach { "factory" { -it.java.name } }
+                        annotation.getClassNames("factories")
+                                .filter { it.name != GadgetFactory::class.qualifiedName }
+                                .forEach { "factory" { -it.name } }
 
-                        if (annotation.valueEngineerFactory != ValueEngineerFactory::class) {
-                            "value" { -annotation.valueEngineerFactory.java.name }
-                        }
+                        annotation.getClassNameOrNull("valueEngineerFactory", ValueEngineerFactory::class)?.let { "value" { -it } }
 
-                        if (annotation.scopes.contains(Scope.UNRESTRICTED)) {
-                            "scope" { attribute(Scope.UNRESTRICTED.name.lowercase(), "yes") }
+                        val scopes = annotation.getEnumValues("scopes")
+                        if (scopes.any { it.valueName == "UNRESTRICTED" }) {
+                            "scope" { attribute("unrestricted", "yes") }
                         } else {
                             "scope" {
-                                annotation.scopes.forEach { attribute(it.name.lowercase(), "yes") }
+                                scopes.forEach { attribute(it.valueName.lowercase(), "yes") }
                             }
                         }
                     }
 
-                    if (annotation.configurable != Configuration::class) {
-                        "configurable" { -annotation.configurable.java.name }
-                    }
+                    annotation.getClassNameOrNull("configurable", Configuration::class)?.let { "configurable" { -it } }
                 }
             }
     }
 
-    private fun nodesForUrlFactoryComponent(urlFactoryComponent: Class<*>): List<Node> {
-        return urlFactoryComponent.annotations
-            .filterIsInstance<UrlFactoryComponent>()
+    private fun nodesForUrlFactoryComponent(urlFactoryComponent: ClassInfo): List<Node> {
+        return urlFactoryComponent.annotationInfo
+            .filter { it.isClass(UrlFactoryComponent::class) }
             .map { annotation ->
                 xml("public") {
-                    "name" { -annotation.name }
-                    "displayname" { -annotation.displayName }
-                    "description" { -annotation.description }
+                    "name" { -annotation.getString("name") }
+                    "displayname" { -annotation.getString("displayName") }
+                    "description" { -annotation.getString("description") }
                     "class" { -UrlCreatorSpecification::class.java.name }
                     "configuration" {
                         "UrlFactory" { -urlFactoryComponent.name }
-                        "UseRegistry" { -annotation.useRegistry.toString() }
-                        if (annotation.filenameFactory != FilenameFactory::class) {
-                            "FilenameFactory" { -annotation.filenameFactory.java.name }
-                        }
+                        "UseRegistry" { -annotation.getString("useRegistry") }
+                        annotation.getClassNameOrNull("filenameFactory", FilenameFactory::class)?.let { "FilenameFactory" { -it } }
                     }
                 }
             }
     }
 
     @Suppress("DuplicatedCode") // No refactoring possible because of incompatible annotations
-    private fun nodesForServiceComponent(serviceComponent: Class<*>): List<Node> {
-        return serviceComponent.annotations
-            .filterIsInstance<ServiceComponent>()
+    private fun nodesForServiceComponent(serviceComponent: ClassInfo): List<Node> {
+        return serviceComponent.annotationInfo
+            .filter { it.isClass(ServiceComponent::class) }
             .map { annotation ->
                 xml("service") {
-                    "name" { -annotation.name }
-                    "displayname" { -annotation.displayName }
-                    "description" { -annotation.description }
+                    "name" { -annotation.getString("name") }
+                    "displayname" { -annotation.getString("displayName") }
+                    "description" { -annotation.getString("description") }
                     "class" { -serviceComponent.name }
-                    if (annotation.configurable != Configuration::class) {
-                        "configurable" { -annotation.configurable.java.name }
-                    }
+                    annotation.getClassNameOrNull("configurable", Configuration::class)?.let { "configurable" { -it } }
                 }
             }
     }

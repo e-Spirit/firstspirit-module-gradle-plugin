@@ -6,6 +6,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.plugins.fsm.FSMPluginExtension
+import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
@@ -22,12 +23,25 @@ class WebAppComponentsTest {
         project.version = VERSION
 
         project.plugins.apply("java-library")
+        project.plugins.apply(FSMAnnotationsPlugin::class.java)
         project.plugins.apply(FSMConfigurationsPlugin::class.java)
         project.extensions.create("fsmPlugin", FSMPluginExtension::class.java)
-        project.repositories.add(project.repositories.mavenCentral())
+        project.setArtifactoryCredentialsFromLocalProperties()
+        project.defineArtifactoryForProject()
 
         project.copyTestJar()
+    }
 
+    @Test
+    fun `minimal web app component`() {
+        val moduleDescriptor = ModuleDescriptor(project)
+        val components = moduleDescriptor.components.node
+        val component = components.filter{ it.childText("name" ) == "TestMinimalWebAppComponentName" }.single()
+        assertThat(component.nodeName).isEqualTo("web-app")
+        assertThat(component.childText("displayname")).isEmpty()
+        assertThat(component.childText("description")).isEmpty()
+        assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestMinimalWebAppComponent")
+        assertThat(component.childText("web-xml")).isEqualTo("/web.xml")
     }
 
     @Test
@@ -36,6 +50,7 @@ class WebAppComponentsTest {
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name" ) == "TestWebAppComponentName" }.single()
         assertThat(component.nodeName).isEqualTo("web-app")
+        assertThat(component.attributes["scopes"].toString().split(",")).containsExactlyInAnyOrder("PROJECT", "GLOBAL")
         assertThat(component.childText("displayname")).isEqualTo("TestDisplayName")
         assertThat(component.childText("description")).isEqualTo("TestDescription")
         assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestWebAppComponent")

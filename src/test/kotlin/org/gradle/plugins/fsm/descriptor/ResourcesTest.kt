@@ -5,6 +5,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.gradle.api.Project
 import org.gradle.jvm.tasks.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
+import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_MODULE_COMPILE_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_SERVER_COMPILE_CONFIGURATION_NAME
@@ -24,9 +25,11 @@ class ResourcesTest {
     @BeforeEach
     fun setup() {
         project.plugins.apply("java-library")
+        project.plugins.apply(FSMAnnotationsPlugin::class.java)
         project.plugins.apply(FSMConfigurationsPlugin.NAME)
         project.extensions.create("fsmPlugin", FSMPluginExtension::class.java)
-        project.repositories.add(project.repositories.mavenCentral())
+        project.setArtifactoryCredentialsFromLocalProperties()
+        project.defineArtifactoryForProject()
     }
 
     @Test

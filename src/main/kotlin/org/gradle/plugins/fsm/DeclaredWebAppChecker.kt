@@ -1,14 +1,18 @@
 package org.gradle.plugins.fsm
 
 import com.espirit.moddev.components.annotations.WebAppComponent
+import io.github.classgraph.AnnotationInfo
+import io.github.classgraph.ClassInfo
 import org.gradle.api.Project
+import org.gradle.plugins.fsm.descriptor.getString
+import org.gradle.plugins.fsm.descriptor.isClass
 
 /**
  * Checks correspondence of classes annotated with [WebAppComponent] annotation to gradle subprojects
- * declared in [FSMPluginExtension#getWebApps()]. Reports web app annotations that do not have a corresponding
+ * declared in [FSMPluginExtension.getWebApps]. Reports web app annotations that do not have a corresponding
  * declaration or vice-versa.
  */
-class DeclaredWebAppChecker(val project: Project, webAppClasses: Collection<Class<*>>) {
+class DeclaredWebAppChecker(val project: Project, webAppClasses: Collection<ClassInfo>) {
 
     private val classes = webAppClasses.toMutableList()
 
@@ -20,7 +24,7 @@ class DeclaredWebAppChecker(val project: Project, webAppClasses: Collection<Clas
         return field
     }
 
-    var webAppAnnotationsWithoutDeclaration: Set<WebAppComponent>? = null
+    var webAppAnnotationsWithoutDeclaration: Set<AnnotationInfo>? = null
         get() {
             if (field == null) {
                 scanWebApps()
@@ -32,12 +36,14 @@ class DeclaredWebAppChecker(val project: Project, webAppClasses: Collection<Clas
         val declaredWebapps = project.extensions.getByType(FSMPluginExtension::class.java).getWebApps()
 
         val projects = declaredWebapps.keys.toMutableSet()
-        val annotations = mutableSetOf<WebAppComponent>()
+        val annotations = mutableSetOf<AnnotationInfo>()
 
         classes.forEach { webAppClass ->
-            val annotation = webAppClass.annotations.filterIsInstance<WebAppComponent>().firstOrNull()
+            val annotation = webAppClass.annotationInfo
+                    .filter { it.isClass(WebAppComponent::class) }
+                    .firstOrNull()
             if (annotation != null) {
-                val webAppName = annotation.name
+                val webAppName = annotation.getString("name")
                 if (declaredWebapps.containsKey(webAppName)) {
                     projects.remove(webAppName)
                 } else {

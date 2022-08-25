@@ -4,6 +4,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.plugins.fsm.FSMPluginExtension
+import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_MODULE_COMPILE_CONFIGURATION_NAME
 import org.gradle.testfixtures.ProjectBuilder
@@ -17,13 +18,24 @@ class ProjectAppComponentsTest {
     @BeforeEach
     fun setup() {
         project.plugins.apply("java-library")
+        project.plugins.apply(FSMAnnotationsPlugin::class.java)
         project.plugins.apply(FSMConfigurationsPlugin::class.java)
         project.extensions.create("fsmPlugin", FSMPluginExtension::class.java)
-        project.repositories.add(project.repositories.mavenCentral())
+        project.setArtifactoryCredentialsFromLocalProperties()
+        project.defineArtifactoryForProject()
         project.copyTestJar()
-
-
     }
+
+    @Test
+    fun `minimal project app`() {
+        val moduleDescriptor = ModuleDescriptor(project)
+        val components = moduleDescriptor.components.node
+        val component = components.filter{ it.childText("name") == "TestMinimalProjectAppComponentName"}.single()
+        assertThat(component.childText("displayname")).isEmpty()
+        assertThat(component.childText("description")).isEmpty()
+        assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestMinimalProjectAppComponent")
+    }
+
 
     @Test
     fun `project app should contain basic information`() {

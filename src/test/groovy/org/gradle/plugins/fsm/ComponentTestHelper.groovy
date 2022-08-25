@@ -19,7 +19,6 @@ import de.espirit.firstspirit.generate.PathLookup
 import de.espirit.firstspirit.generate.UrlFactory
 import de.espirit.firstspirit.module.*
 import de.espirit.firstspirit.module.descriptor.ModuleDescriptor
-import de.espirit.firstspirit.module.descriptor.WebAppDescriptor
 import de.espirit.firstspirit.scheduling.ScheduleTaskForm
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
 import org.gradle.plugins.fsm.util.BaseConfiguration
@@ -29,141 +28,7 @@ import org.gradle.plugins.fsm.util.BaseWebApp
 
 import javax.swing.*
 import java.awt.*
-import java.lang.annotation.Annotation
 
-class ComponentHelper {
-    static Resource createResource(String path, String name, String version) {
-        return new Resource() {
-            @Override
-            String path() {
-                return path
-            }
-
-            @Override
-            String name() {
-                return name
-            }
-
-            @Override
-            String version() {
-                return version
-            }
-
-            @Override
-            String minVersion() {
-                return "myMinVersion"
-            }
-
-            @Override
-            String maxVersion() {
-                return "myMaxVersion"
-            }
-
-            @Override
-            com.espirit.moddev.components.annotations.params.resource.Scope scope() {
-                return com.espirit.moddev.components.annotations.params.resource.Scope.MODULE
-            }
-
-            @Override
-            Class<? extends Annotation> annotationType() {
-                return Resource.class
-            }
-        }
-    }
-
-    static WebResource createWebResource(String path, String name, String version) {
-        return new WebResource() {
-
-            @Override
-            String path() {
-                return path
-            }
-
-            @Override
-            String name() {
-                return name
-            }
-
-            @Override
-            String version() {
-                return version
-            }
-
-            @Override
-            String minVersion() {
-                return "myMinVersion"
-            }
-
-            @Override
-            String maxVersion() {
-                return "myMaxVersion"
-            }
-
-            @Override
-            String targetPath() {
-                return "myTargetPath"
-            }
-
-            @Override
-            Class<? extends Annotation> annotationType() {
-                return WebResource
-            }
-        }
-    }
-
-}
-class CustomProjectAppComponent implements ProjectAppComponent {
-    @Override
-    String name() {
-        return "CustomProjectAppComponent"
-    }
-
-    @Override
-    String displayName() {
-        return "CustomProjectAppComponent"
-    }
-
-    @Override
-    String description() {
-        return "CustomProjectAppComponent"
-    }
-
-    @Override
-    Class<? extends Configuration> configurable() {
-        return null
-    }
-
-    @Override
-    Resource[] resources() {
-        return new Resource[0]
-    }
-
-    @Override
-    Class<? extends Annotation> annotationType() {
-        return ProjectAppComponent
-    }
-}
-
-class CustomWebAppComponent implements WebAppComponent {
-    @Override String name() { return "MyWebApp" }
-
-    @Override String displayName() { return "MyWebApp" }
-
-    @Override String description() { return "MyDescription" }
-
-    @Override Class<? extends Configuration> configurable() { return null }
-
-    @Override String webXml() { return "web.xml" }
-
-    @Override WebAppDescriptor.WebAppScope[] scope() { return new WebAppDescriptor.WebAppScope[0] }
-
-    @Override
-    WebResource[] webResources() {
-        return []
-    }
-
-    @Override Class<? extends Annotation> annotationType() { return WebAppComponent }
-}
 
 @ModuleComponent
 class TestModuleImpl implements Module {
@@ -189,6 +54,7 @@ class TestModuleImpl implements Module {
     }
 
 }
+
 @ModuleComponent(configurable = TestConfigurable.class)
 class TestModuleImplWithConfiguration implements Module {
     @Override
@@ -255,6 +121,10 @@ class TestConfigurable implements Configuration<ServerEnvironment> {
     }
 }
 
+@ProjectAppComponent(name = "TestMinimalProjectAppComponentName")
+class TestMinimalProjectAppComponent extends BaseProjectApp {
+}
+
 @ProjectAppComponent(name = "TestProjectAppComponentName",
         displayName = "TestDisplayName",
         description = "TestDescription",
@@ -279,6 +149,10 @@ class TestProjectAppComponentWithoutConfigurable extends BaseProjectApp {
 class TestProjectAppComponentWithProperties extends BaseProjectApp {
 }
 
+@WebAppComponent(name = "TestMinimalWebAppComponentName", webXml = "/web.xml")
+class TestMinimalWebAppComponent extends BaseWebApp {
+}
+
 @WebAppComponent(name = "TestWebAppComponentName",
         displayName = "TestDisplayName",
         description = "TestDescription",
@@ -300,12 +174,20 @@ class TestWebAppComponentWithoutConfiguration extends BaseWebApp {
     static class TestConfigurable extends BaseConfiguration { }
 }
 
+@PublicComponent(name = "TestMinimalPublicComponentName")
+class TestMinimalPublicComponent {
+}
+
 @PublicComponent(name = "TestPublicComponentName", displayName = "TestDisplayName", description = "Component Description")
 class TestPublicComponent {
 }
 
 @PublicComponent(name = "TestPublicComponentWithConfigName", displayName = "TestDisplayName", configurable = TestConfigurable.class)
 class TestPublicComponentWithConfiguration {
+}
+
+@ScheduleTaskComponent(taskName = "Test task without display name")
+class TestMinimalScheduleTaskComponent {
 }
 
 @ScheduleTaskComponent(taskName = "Test task without form", displayName = "Test Task Display Name", description = "A task for test purposes")
@@ -316,7 +198,7 @@ class TestScheduleTaskComponentWithoutForm {
 class TestScheduleTaskComponentWithConfigurable {
 }
 
-@ScheduleTaskComponent(taskName = "Test task with form", description = "A task for test purposes", formClass = TestScheduleTaskFormFactory.class )
+@ScheduleTaskComponent(taskName = "Test task with form", description = "A task for test purposes", formClass = TestScheduleTaskFormFactory.class)
 class TestScheduleTaskComponentWithForm {
 
 }
@@ -384,6 +266,10 @@ class TestScheduleTaskFormFactory implements ScheduleTaskFormFactory {
     }
 }
 
+@ServiceComponent(name = "TestMinimalServiceComponentName")
+class TestMinimalServiceComponent extends BaseService {
+}
+
 @ServiceComponent(name = "TestServiceComponentName",
         displayName = "TestDisplayName",
         description = "TestDescription",
@@ -401,11 +287,8 @@ class TestServiceComponentWithoutConfigurable extends BaseService {
 
 }
 
-@UrlFactoryComponent(name = "TestUrlFactoryComponentName",
-        displayName = "TestDisplayName",
-        description = "TestDescription",
-        useRegistry = true)
-class TestUrlFactoryComponent implements UrlFactory {
+@UrlFactoryComponent(name = "TestMinimalUrlFactoryComponentName")
+class TestMinimalUrlFactoryComponent implements UrlFactory {
     @Override
     void init(Map<String, String> map, PathLookup pathLookup) {
 
@@ -422,27 +305,20 @@ class TestUrlFactoryComponent implements UrlFactory {
     }
 }
 
+@UrlFactoryComponent(name = "TestUrlFactoryComponentName",
+        displayName = "TestDisplayName",
+        description = "TestDescription",
+        useRegistry = true)
+class TestUrlFactoryComponent extends TestMinimalUrlFactoryComponent {
+}
+
 
 @UrlFactoryComponent(name = "TestUrlFactoryWithFilenameFactoryComponentName",
         displayName = "TestDisplayName",
         description = "TestDescription",
         filenameFactory = TestFilenameFactory.class,
         useRegistry = true)
-class TestUrlFactoryWithFilenameFactory implements UrlFactory {
-    @Override
-    void init(Map<String, String> map, PathLookup pathLookup) {
-
-    }
-
-    @Override
-    String getUrl(ContentProducer contentProducer, TemplateSet templateSet, Language language, PageParams pageParams) {
-        return null
-    }
-
-    @Override
-    String getUrl(Media media, Language language, Resolution resolution) {
-        return null
-    }
+class TestUrlFactoryWithFilenameFactory extends TestMinimalUrlFactoryComponent {
 }
 
 class TestFilenameFactory implements FilenameFactory {

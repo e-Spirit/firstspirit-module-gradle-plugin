@@ -172,11 +172,11 @@ class FSM extends Jar {
         }
     }
 
-    //checks if a path contains a filename and removes the filename
-    static String trimPathToDirectory(String path){
+    // Checks if a path contains a filename and removes the filename
+    static String trimPathToDirectory(String path) {
         if (path != null) {
             if (path.lastIndexOf("/") < path.lastIndexOf(".")) {
-                return path.substring(0,path.lastIndexOf("/"))
+                return path.substring(0, path.lastIndexOf("/"))
             }
             return path
         }
