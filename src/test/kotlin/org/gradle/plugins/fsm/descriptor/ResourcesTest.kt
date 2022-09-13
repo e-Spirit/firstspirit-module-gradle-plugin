@@ -30,6 +30,7 @@ class ResourcesTest {
         project.extensions.create("fsmPlugin", FSMPluginExtension::class.java)
         project.setArtifactoryCredentialsFromLocalProperties()
         project.defineArtifactoryForProject()
+        project.writeJarFileWithEntries("de/espirit/Test.class")
     }
 
     @Test
@@ -38,6 +39,15 @@ class ResourcesTest {
 
         val jarName = (resources.children[0] as Node).children[0] as TextElement
         assertThat(jarName.text).isEqualTo("lib/test.jar")
+    }
+
+
+    @Test
+    fun `project resource not added when jar is empty`() {
+        project.writeJarFileWithEntries()
+
+        val resources = Resources(project, emptyList()).node
+        assertThat(resources.children).isEmpty()
     }
 
 
@@ -291,6 +301,7 @@ class ResourcesTest {
     @Test
     fun `valid string representation of resources`() {
         project.version = "1.6"
+        project.writeJarFileWithEntries("de/espirit/Test.class")
         val dependency = project.dependencies.create("org.slf4j:slf4j-api:1.7.32")
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
 

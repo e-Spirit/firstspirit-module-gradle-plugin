@@ -13,12 +13,14 @@ import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.F
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.PrintOptions
 import org.redundent.kotlin.xml.xml
+import java.io.File
+import java.util.jar.JarFile
 
 class Resources(private val project: Project, private val webXmlPaths: List<String>) {
 
     val node by lazy {
         xml("resources") {
-            addNode(projectResource())
+            projectResource()?.let(this::addNode)
             fsmResources().forEach(this::addNode)
             dependencies().forEach(this::addNode)
         }
@@ -35,13 +37,22 @@ class Resources(private val project: Project, private val webXmlPaths: List<Stri
     /**
      * The jar file assembled for the current project
      */
-    private fun projectResource(): Node {
+    private fun projectResource(): Node? {
+        val jarTask = project.tasks.named("jar", Jar::class.java).get()
+        val jarFile = jarTask.archiveFile.get().asFile
+        if (!jarFile.exists()) {
+            LOGGER.warn("Jar file '$jarFile' not found!")
+            return null
+        } else if (isEmptyJarFile(jarFile)) {
+            LOGGER.info("Skipping empty Jar file.")
+            return null
+        }
+
         return xml("resource") {
             attribute("name", "${project.group}:${project.name}")
             attribute("version", project.version)
             attribute("scope", "module")
             attribute("mode", Mode.ISOLATED.name.lowercase())
-            val jarTask = project.tasks.getByName("jar") as Jar
             -"lib/${jarTask.archiveFileName.get()}"
         }
     }
@@ -167,6 +178,20 @@ class Resources(private val project: Project, private val webXmlPaths: List<Stri
     companion object {
         val LOGGER: Logger = Logging.getLogger(Resources::class.java)
         private val PRINT_OPTIONS = PrintOptions(singleLineTextElements = true)
+
+        fun isEmptyJarFile(file: File): Boolean {
+            JarFile(file).use { jar ->
+                val entries = jar.entries()
+                val ignored = listOf("META-INF/", "META-INF/MANIFEST.MF")
+                while (entries.hasMoreElements()) {
+                    if (!ignored.contains(entries.nextElement().name)) {
+                        return false
+                    }
+                }
+            }
+
+            return true
+        }
     }
 
 }

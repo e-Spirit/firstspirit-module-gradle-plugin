@@ -5,7 +5,7 @@ import java.util.regex.Pattern
 
 plugins {
     id("groovy")
-    kotlin("jvm") version "1.5.31"
+    kotlin("jvm") version "1.7.10"
     id("maven-publish")
     id("idea")
     id("java-gradle-plugin")
@@ -74,22 +74,22 @@ val fsRuntimeVersion = "5.2.220309" // FirstSpirit 2022-03
 dependencies {
     implementation(gradleApi())
     implementation(localGroovy())
-    implementation("io.github.classgraph:classgraph:4.8.140")
+    implementation("io.github.classgraph:classgraph:4.8.149")
     implementation("com.github.jk1:gradle-license-report:2.1")
-    implementation("org.redundent:kotlin-xml-builder:1.7.3")
+    implementation("org.redundent:kotlin-xml-builder:1.8.0")
     implementation("com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}")
     implementation("de.espirit.mavenplugins:fsmchecker:0.14.0")
     implementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
     testImplementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
-    testImplementation("org.assertj:assertj-core:3.22.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
+    testImplementation("org.assertj:assertj-core:3.23.1")
     testImplementation("commons-io:commons-io:2.11.0")
-    testImplementation("org.mockito:mockito-junit-jupiter:4.3.1")
-    testImplementation("org.ow2.asm:asm:9.2")
+    testImplementation("org.mockito:mockito-junit-jupiter:4.8.0")
+    testImplementation("org.ow2.asm:asm:9.3")
     testImplementation(gradleTestKit())
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.0")
 
-    testImplementation("org.spockframework:spock-core:2.1-groovy-3.0") {
+    testImplementation("org.spockframework:spock-core:2.2-groovy-3.0") {
         exclude(group = "org.codehaus.groovy")
     }
 

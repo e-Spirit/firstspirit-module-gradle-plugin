@@ -11,7 +11,6 @@ import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.redundent.kotlin.xml.PrintOptions
 
 class WebAppComponentsTest {
 
@@ -190,7 +189,6 @@ class WebAppComponentsTest {
 
         val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
-        println(components.toString(PrintOptions(singleLineTextElements = true)))
         val webAppComponentA = components.filter{ it.childText("name" ) == "TestWebAppA" }.single()
         val webResourcesTagA = webAppComponentA.filter("web-resources").single()
         val webResourcesA = webResourcesTagA.filter("resource")
@@ -208,6 +206,48 @@ class WebAppComponentsTest {
         val slf4jB = webResourcesB.single { it.attributes["name"] == "org.slf4j:slf4j-api" }
         assertThat(webAppComponentB.childText("web-xml")).isEqualTo("b/web.xml")
         assertThat(slf4jB.attributes["version"]).isEqualTo("1.7.25")
+    }
+
+    @Test
+    fun `include jar of dependency web-app project`() {
+        val webAppProject = ProjectBuilder.builder().withParent(project).withName("web").build()
+        webAppProject.plugins.apply("java")
+        webAppProject.version = "0.1"
+        webAppProject.repositories.add(webAppProject.repositories.mavenCentral())
+        webAppProject.writeJarFileWithEntries("de/espirit/Test.class")
+
+        val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+        fsmPluginExtension.webAppComponent("TestWebAppA", webAppProject)
+
+        val moduleDescriptor = ModuleDescriptor(project)
+        val components = moduleDescriptor.components.node
+        val webAppComponent = components.filter{ it.childText("name" ) == "TestWebAppA" }.single()
+        val webResourcesTag = webAppComponent.filter("web-resources").single()
+        val webResources = webResourcesTag.filter("resource")
+
+        val jarTaskOutput = webResources.single { it.attributes["name"] == "webapps-test-project:web" }
+        assertThat(jarTaskOutput.attributes["version"]).isEqualTo(webAppProject.version)
+    }
+
+    @Test
+    fun `do not include empty jar of dependency web-app project`() {
+        val webAppProject = ProjectBuilder.builder().withParent(project).withName("web").build()
+        webAppProject.plugins.apply("java")
+        webAppProject.version = "0.1"
+        webAppProject.repositories.add(webAppProject.repositories.mavenCentral())
+        webAppProject.writeJarFileWithEntries()
+
+        val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+        fsmPluginExtension.webAppComponent("TestWebAppA", webAppProject)
+
+        val moduleDescriptor = ModuleDescriptor(project)
+        val components = moduleDescriptor.components.node
+        val webAppComponent = components.filter{ it.childText("name" ) == "TestWebAppA" }.single()
+        val webResourcesTag = webAppComponent.filter("web-resources").single()
+        val webResources = webResourcesTag.filter("resource")
+
+        val jarTaskOutput = webResources.filter { it.attributes["name"] == "webapps-test-project:web" }
+        assertThat(jarTaskOutput).isEmpty()
     }
 
     @Test

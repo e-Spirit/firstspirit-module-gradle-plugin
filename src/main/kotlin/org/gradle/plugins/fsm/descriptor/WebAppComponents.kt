@@ -106,14 +106,20 @@ class WebAppComponents(project: Project, private val scanResult: ScanResult): Co
                     webAppProjectDependencies.removeAll(sharedWebCompileDependencies)
 
                     val jarTask = webAppProject.tasks.findByName("jar") as Jar
+                    val jarFile = jarTask.archiveFile.get().asFile
+                    if (!jarFile.exists()) {
+                        Resources.LOGGER.warn("Jar file '$jarFile' not found!")
+                    } else if (Resources.isEmptyJarFile(jarFile)) {
+                        Resources.LOGGER.info("Skipping empty Jar file.")
+                    } else {
+                        webResources.add(xml("resource") {
+                            attribute("name", "${webAppProject.group}:${webAppProject.name}")
+                            attribute("version", webAppProject.version)
+                            -"lib/${jarTask.archiveFileName.get()}"
+                        })
+                    }
 
                     // Add dependencies
-                    webResources.add(xml("resource") {
-                        attribute("name", "${webAppProject.group}:${webAppProject.name}")
-                        attribute("version", webAppProject.version)
-                        -"lib/${jarTask.archiveFileName.get()}"
-                    })
-
                     webAppProjectDependencies
                         .map { Resource(project, it, "", false).node }
                         .forEach(webResources::add)
@@ -139,11 +145,13 @@ class WebAppComponents(project: Project, private val scanResult: ScanResult): Co
                     annotation.getClassNameOrNull("configurable", Configuration::class)?.let { "configurable" { -it } }
                     "web-xml" { -webXmlPath }
                     "web-resources" {
-                        "resource" {
-                            attribute("name", "${project.group}:${project.name}")
-                            attribute("version", project.version)
-                            val jarTask = project.tasks.findByName("jar") as Jar
-                            -"lib/${jarTask.archiveFileName.get()}"
+                        val jarTask = project.tasks.findByName("jar") as Jar
+                        if (!Resources.isEmptyJarFile(jarTask.archiveFile.get().asFile)) {
+                            "resource" {
+                                attribute("name", "${project.group}:${project.name}")
+                                attribute("version", project.version)
+                                -"lib/${jarTask.archiveFileName.get()}"
+                            }
                         }
 
                         nodesForWebResources(annotation).forEach(this::addNode)
