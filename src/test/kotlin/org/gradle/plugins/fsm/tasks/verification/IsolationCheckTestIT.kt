@@ -40,8 +40,8 @@ class IsolationCheckTestIT {
         project.defineArtifactoryForProject()
         project.plugins.apply(FSMPlugin.NAME)
         isolationCheck = project.tasks.getByName(FSMPlugin.ISOLATION_CHECK_TASK_NAME) as IsolationCheck
-        isolationCheck.firstSpiritVersion = "5.2.220409"
-        isolationCheck.detectorUrl = "https://fsdev.e-spirit.de/FsmDependencyDetector/"
+        isolationCheck.setFirstSpiritVersion("5.2.220409")
+        isolationCheck.setDetectorUrl("https://fsdev.e-spirit.de/FsmDependencyDetector/")
         fsm = project.tasks.getByName(FSMPlugin.FSM_TASK_NAME) as FSM
     }
 
@@ -55,7 +55,7 @@ class IsolationCheckTestIT {
 
     @Test
     fun `default compliance level`() {
-        assertThat(isolationCheck.complianceLevel).isSameAs(DEFAULT)
+        assertThat(isolationCheck.getComplianceLevel()).isSameAs(DEFAULT)
     }
 
     @Test
@@ -65,7 +65,7 @@ class IsolationCheckTestIT {
 
         fsm.execute()
 
-        isolationCheck.complianceLevel = HIGHEST
+        isolationCheck.setComplianceLevel(HIGHEST)
         isolationCheck.check()
     }
 
@@ -76,7 +76,7 @@ class IsolationCheckTestIT {
 
         fsm.execute()
 
-        isolationCheck.complianceLevel = DEFAULT
+        isolationCheck.setComplianceLevel(DEFAULT)
         isolationCheck.check()
     }
 
@@ -87,7 +87,7 @@ class IsolationCheckTestIT {
 
         fsm.execute()
 
-        isolationCheck.complianceLevel = MINIMAL
+        isolationCheck.setComplianceLevel(MINIMAL)
         isolationCheck.check()
     }
 
@@ -95,7 +95,7 @@ class IsolationCheckTestIT {
     fun `FSM without dependencies with highest compliance`() {
         writeSingleClassToFsmFile(JDK_CLASS)
 
-        isolationCheck.complianceLevel = HIGHEST
+        isolationCheck.setComplianceLevel(HIGHEST)
         isolationCheck.check()
     }
 
@@ -103,7 +103,7 @@ class IsolationCheckTestIT {
     fun `FSM without dependencies with default compliance`() {
         writeSingleClassToFsmFile(JDK_CLASS)
 
-        isolationCheck.complianceLevel = DEFAULT
+        isolationCheck.setComplianceLevel(DEFAULT)
         isolationCheck.check()
     }
 
@@ -111,7 +111,7 @@ class IsolationCheckTestIT {
     fun `FSM without dependencies with minimal compliance`() {
         writeSingleClassToFsmFile(JDK_CLASS)
 
-        isolationCheck.complianceLevel = MINIMAL
+        isolationCheck.setComplianceLevel(MINIMAL)
         isolationCheck.check()
     }
 
@@ -119,7 +119,7 @@ class IsolationCheckTestIT {
     fun `FSM with deprecated API with highest compliance`() {
         writeSingleClassToFsmFile(DEPRECATED_API_CLASS)
 
-        isolationCheck.complianceLevel = HIGHEST
+        isolationCheck.setComplianceLevel(HIGHEST)
 
         assertThatThrownBy { isolationCheck.check() }
             .hasMessageContaining(asQualified(DEPRECATED_API_CLASS) + " (1 usages)")
@@ -129,7 +129,7 @@ class IsolationCheckTestIT {
     fun `FSM with deprecated API with default compliance`() {
         writeSingleClassToFsmFile(DEPRECATED_API_CLASS)
 
-        isolationCheck.complianceLevel = DEFAULT
+        isolationCheck.setComplianceLevel(DEFAULT)
         isolationCheck.check()
     }
 
@@ -137,7 +137,7 @@ class IsolationCheckTestIT {
     fun `FSM with deprecated API with minimal compliance`() {
         writeSingleClassToFsmFile(DEPRECATED_API_CLASS)
 
-        isolationCheck.complianceLevel = MINIMAL
+        isolationCheck.setComplianceLevel(MINIMAL)
         isolationCheck.check()
     }
 
@@ -145,7 +145,7 @@ class IsolationCheckTestIT {
     fun `FSM with API dependency with highest compliance`() {
         writeSingleClassToFsmFile(API_CLASS)
 
-        isolationCheck.complianceLevel = HIGHEST
+        isolationCheck.setComplianceLevel(HIGHEST)
         isolationCheck.check()
     }
 
@@ -153,7 +153,7 @@ class IsolationCheckTestIT {
     fun `FSM with API dependency with default compliance`() {
         writeSingleClassToFsmFile(API_CLASS)
 
-        isolationCheck.complianceLevel = DEFAULT
+        isolationCheck.setComplianceLevel(DEFAULT)
         isolationCheck.check()
     }
 
@@ -161,7 +161,7 @@ class IsolationCheckTestIT {
     fun `FSM with API dependency with minimal compliance`() {
         writeSingleClassToFsmFile(API_CLASS)
 
-        isolationCheck.complianceLevel = MINIMAL
+        isolationCheck.setComplianceLevel(MINIMAL)
         isolationCheck.check()
     }
 
@@ -169,7 +169,7 @@ class IsolationCheckTestIT {
     fun `FSM with runtime dependency with highest compliance`() {
         writeSingleClassToFsmFile(RUNTIME_CLASS)
 
-        isolationCheck.complianceLevel = HIGHEST
+        isolationCheck.setComplianceLevel(HIGHEST)
 
         assertThatThrownBy { isolationCheck.check() }.hasMessageContaining(asQualified(RUNTIME_CLASS) + " (1 usages)")
     }
@@ -178,7 +178,7 @@ class IsolationCheckTestIT {
     fun `FSM with runtime dependency with default compliance`() {
         writeSingleClassToFsmFile(RUNTIME_CLASS)
 
-        isolationCheck.complianceLevel = DEFAULT
+        isolationCheck.setComplianceLevel(DEFAULT)
 
         assertThatThrownBy { isolationCheck.check() }.hasMessageContaining(asQualified(RUNTIME_CLASS) + " (1 usages)")
     }
@@ -187,7 +187,7 @@ class IsolationCheckTestIT {
     fun `FSM with runtime dependency with minimal compliance`() {
         writeSingleClassToFsmFile(RUNTIME_CLASS)
 
-        isolationCheck.complianceLevel = MINIMAL
+        isolationCheck.setComplianceLevel(MINIMAL)
         isolationCheck.check()
     }
 
@@ -196,7 +196,7 @@ class IsolationCheckTestIT {
     fun `FSM with impl dependency but no URL set`() {
         writeSingleClassToFsmFile(IMPL_CLASS)
 
-        isolationCheck.detectorUrl = ""
+        isolationCheck.setDetectorUrl("")
         isolationCheck.check()
     }
 
@@ -205,7 +205,7 @@ class IsolationCheckTestIT {
     fun `FSM with impl dependency with highest compliance`() {
         writeSingleClassToFsmFile(IMPL_CLASS)
 
-        isolationCheck.complianceLevel = HIGHEST
+        isolationCheck.setComplianceLevel(HIGHEST)
 
         assertThatThrownBy { isolationCheck.check() }.hasMessageContaining(asQualified(IMPL_CLASS) + " (1 usages)")
     }
@@ -214,7 +214,7 @@ class IsolationCheckTestIT {
     fun `FSM with impl dependency with default compliance`() {
         writeSingleClassToFsmFile(IMPL_CLASS)
 
-        isolationCheck.complianceLevel = DEFAULT
+        isolationCheck.setComplianceLevel(DEFAULT)
 
         assertThatThrownBy { isolationCheck.check() }.hasMessageContaining(asQualified(IMPL_CLASS) + " (1 usages)")
     }
@@ -223,7 +223,7 @@ class IsolationCheckTestIT {
     fun `FSM with impl dependency with minimal compliance`() {
         writeSingleClassToFsmFile(IMPL_CLASS)
 
-        isolationCheck.complianceLevel = MINIMAL
+        isolationCheck.setComplianceLevel(MINIMAL)
 
         assertThatThrownBy { isolationCheck.check() }.hasMessageContaining(asQualified(IMPL_CLASS) + " (1 usages)")
     }
@@ -232,8 +232,8 @@ class IsolationCheckTestIT {
     fun `ignore resource`() {
         writeSingleClassToFsmFile(IMPL_CLASS)
 
-        isolationCheck.complianceLevel = DEFAULT
-        isolationCheck.whitelistedResources = listOf("de.espirit:test:1.0")
+        isolationCheck.setComplianceLevel(DEFAULT)
+        isolationCheck.setWhitelistedResources(listOf("de.espirit:test:1.0"))
         isolationCheck.check()
     }
 
@@ -242,8 +242,8 @@ class IsolationCheckTestIT {
     fun contentCreatorConflict() {
         writeSingleClassToFsmFile(IMPL_CLASS)
 
-        isolationCheck.complianceLevel = DEFAULT
-        isolationCheck.contentCreatorComponents = listOf("contentCreatorComponent")
+        isolationCheck.setComplianceLevel(DEFAULT)
+        isolationCheck.setContentCreatorComponents(listOf("contentCreatorComponent"))
 
         assertThatThrownBy { isolationCheck.check() }
             .hasMessageContaining("com.fasterxml.jackson.annotation.JacksonAnnotation (1 usages)")

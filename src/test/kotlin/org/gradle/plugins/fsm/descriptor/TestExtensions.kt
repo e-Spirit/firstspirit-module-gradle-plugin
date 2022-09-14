@@ -29,7 +29,7 @@ fun Project.addClassToTestJar(pathToClassFile: String) {
     val jar = tasks.getByName(JavaPlugin.JAR_TASK_NAME) as Jar
     val testJar = jar.archiveFile.get().asFile
     val classesDir = Paths.get(System.getProperty("classesDir"))
-    val classToAdd = classesDir.resolve("groovy/test/$pathToClassFile")
+    val classToAdd = classesDir.resolve("kotlin/test/$pathToClassFile")
     FileSystems.newFileSystem(URI.create("jar:${testJar.toURI()}"), emptyMap<String, Any>()).use {
         val newClass = it.getPath(pathToClassFile)
         Files.copy(classToAdd, newClass)
