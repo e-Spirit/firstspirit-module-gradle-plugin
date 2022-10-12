@@ -18,7 +18,6 @@ pluginManagement {
                 password = artifactory_password
             }
         }
-        gradlePluginPortal()
     }
 }
 ```
@@ -27,14 +26,44 @@ pluginManagement {
 // Kotlin
 
 pluginManagement {
+    val artifactory_username: String by settings
+    val artifactory_password: String by settings
+
     repositories {
         maven(url = "https://artifactory.e-spirit.de/artifactory/repo") {
             credentials {
-                username = property("artifactory_username") as String
-                password = property("artifactory_password") as String
+                username = artifactory_username
+                password = artifactory_password
             }
         }
-        gradlePluginPortal()
+    }
+}
+```
+
+The repository also needs to be defined in your `build.gradle(.kts)`:
+
+```groovy
+// Groovy
+
+repositories {
+    maven {
+        url = 'https://artifactory.e-spirit.de/artifactory/repo/'
+        credentials {
+            username = artifactory_username
+            password = artifactory_password
+        }
+    }
+}
+```
+```kotlin
+// Kotlin
+
+repositories {
+    maven(url = "https://artifactory.e-spirit.de/artifactory/repo") {
+        credentials {
+            username = property("artifactory_username") as String
+            password = property("artifactory_password") as String
+        }
     }
 }
 ```
@@ -60,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "4.2.1"
+    id("de.espirit.firstspirit-module") version "4.2.2"
 }
 ```
 
@@ -88,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "4.2.1"
+    id("de.espirit.firstspirit-module-configurations") version "4.2.2"
 }
 ```
 
@@ -162,7 +191,7 @@ firstSpiritModule {
     isolationDetectorUsername = property("isolation_detector_username") as String  // Read sensitive credentials from external properties file
     isolationDetectorPassword = property("isolation_detector_password") as String  
     isolationDetectorWhitelist = listOf("org.freemarker:freemarker:2.3.28")
-    firstSpiritVersion = "5.2.220309"
+    firstSpiritVersion = "5.2.221008"
     complianceLevel = HIGHEST
 }
 ```
@@ -480,7 +509,7 @@ You can use the following snippet as a starting point:
 // Groovy
 
 plugins {
-    id 'de.espirit.firstspirit-module' version '4.2.1'
+    id 'de.espirit.firstspirit-module' version '4.2.2'
 }
 
 description = 'Example FSM Gradle build'
@@ -515,7 +544,7 @@ firstSpiritModule {
 // Kotlin
 
 plugins {
-    id("de.espirit.firstspirit-module") version "4.2.1"
+    id("de.espirit.firstspirit-module") version "4.2.2"
 }
 
 description = "Example FSM Gradle build"
