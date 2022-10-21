@@ -89,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "4.2.5"
+    id("de.espirit.firstspirit-module") version "4.3.0"
 }
 ```
 
@@ -117,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "4.2.5"
+    id("de.espirit.firstspirit-module-configurations") version "4.3.0"
 }
 ```
 
@@ -168,7 +168,7 @@ Property | Type | Default | Description
 :-------:|:----:|:-------:| -----------
 moduleName			        | String        | *unset* (project name)	|  The name of the module. If not set the project name is used
 displayName                 | String        | *unset*             		|  Human-readable name of the module
-moduleDirName               | String        | src/main/resources  		|  The name of the directory containing the module-isolated.xml, relative to the project directory.
+moduleDirName               | String        | *unset*             		|  The name of the directory containing the module-isolated.xml, relative to the project directory.
 isolationDetectorUrl        | String        | *unset*             		|  If set, this URL is used to connect to the FSM Dependency Detector
 isolationDetectorUsername   | String        | *unset*             		|  If set, this username is used to connect to the FSM Dependency Detector
 isolationDetectorPassword   | String        | *unset*             		|  If set, this password is used to connect to the FSM Dependency Detector
@@ -509,7 +509,7 @@ You can use the following snippet as a starting point:
 // Groovy
 
 plugins {
-    id 'de.espirit.firstspirit-module' version '4.2.5'
+    id 'de.espirit.firstspirit-module' version '4.3.0'
 }
 
 description = 'Example FSM Gradle build'
@@ -544,7 +544,7 @@ firstSpiritModule {
 // Kotlin
 
 plugins {
-    id("de.espirit.firstspirit-module") version "4.2.5"
+    id("de.espirit.firstspirit-module") version "4.3.0"
 }
 
 description = "Example FSM Gradle build"

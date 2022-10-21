@@ -75,7 +75,7 @@ class FSMTest {
 
         assertThat(moduleXml())
             .describedAs("module-isolated.xml should contain a 'global' resource with the correctly named jar task output in module scope!")
-            .contains("""<resource name="${project.group}:${project.name}" version="0.0.1-SNAPSHOT" scope="module" mode="isolated">lib/xxxxx-0.0.1-SNAPSHOT.jar</resource>""")
+            .contains("""<resource mode="isolated" name="${project.group}:${project.name}" scope="module" version="0.0.1-SNAPSHOT">lib/xxxxx-0.0.1-SNAPSHOT.jar</resource>""")
         assertThat(moduleXml())
             .describedAs("module-isolated.xml should contain a web resource with the correctly named jar task output!")
             .contains("""<resource name="${project.group}:${project.name}" version="0.0.1-SNAPSHOT">lib/xxxxx-0.0.1-SNAPSHOT.jar</resource>""")
@@ -181,7 +181,7 @@ class FSMTest {
 
         fsm.execute()
 
-        assertThat(moduleXml()).contains("""<resource name="com.google.guava:guava" scope="module" mode="isolated" version="24.0-jre" minVersion="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
+        assertThat(moduleXml()).contains("""<resource minVersion="24.0-jre" mode="isolated" name="com.google.guava:guava" scope="module" version="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
     }
 
     @Test
@@ -193,7 +193,7 @@ class FSMTest {
         assertThat(dependencyConfigurations).containsExactly(MinMaxVersion("com.google.guava:guava:24.0-jre", "0.0.1", "99.0.0"))
         fsm.execute()
 
-        assertThat(moduleXml()).contains("""<resource name="com.google.guava:guava" scope="module" mode="isolated" version="24.0-jre" minVersion="0.0.1" maxVersion="99.0.0">lib/guava-24.0-jre.jar</resource>""")
+        assertThat(moduleXml()).contains("""<resource maxVersion="99.0.0" minVersion="0.0.1" mode="isolated" name="com.google.guava:guava" scope="module" version="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
     }
 
     @Test
@@ -215,8 +215,8 @@ class FSMTest {
 
         fsm.execute()
 
-        assertThat(moduleXml()).contains("""<resource name="${project.group}:${project.name}-testResource.txt" version="1.0.0" scope="module" mode="isolated">testResource.txt</resource>""")
-        assertThat(moduleXml()).contains("""<resource name="${project.group}:${project.name}-resourcesFolder" version="1.0.0" scope="module" mode="isolated">resourcesFolder</resource>""")
+        assertThat(moduleXml()).contains("""<resource mode="isolated" name="${project.group}:${project.name}-testResource.txt" scope="module" version="1.0.0">testResource.txt</resource>""")
+        assertThat(moduleXml()).contains("""<resource mode="isolated" name="${project.group}:${project.name}-resourcesFolder" scope="module" version="1.0.0">resourcesFolder</resource>""")
 
         withFsmFile { fsm ->
             assertThat(fsm.getEntry("testResource.txt")).isNotNull
@@ -363,9 +363,9 @@ class FSMTest {
         fsm.execute()
 
         val moduleXml = moduleXml()
-        assertThat(moduleXml).doesNotContain("<resource name=\"${project.group}:${project.name}-web.xml\" version=\"1.0.0\" scope=\"module\" mode=\"isolated\">web.xml</resource>")
-        assertThat(moduleXml).doesNotContain("<resource name=\"${project.group}:${project.name}-web0.xml\" version=\"1.0.0\" scope=\"module\" mode=\"isolated\">web0.xml</resource>")
-        assertThat(moduleXml).contains("<resource name=\"${project.group}:${project.name}-web1.xml\" version=\"1.0.0\" scope=\"module\" mode=\"isolated\">web1.xml</resource>")
+        assertThat(moduleXml).doesNotContain("""<resource mode="isolated" name="${project.group}:${project.name}-web.xml" scope="module" version="1.0.0">web.xml</resource>""")
+        assertThat(moduleXml).doesNotContain("""<resource mode="isolated" name="${project.group}:${project.name}-web0.xml" scope="module" version="1.0.0">web0.xml</resource>""")
+        assertThat(moduleXml).contains("""<resource mode="isolated" name="${project.group}:${project.name}-web1.xml" scope="module" version="1.0.0">web1.xml</resource>""")
 
         withFsmFile { fsm ->
             assertThat(fsm.getEntry("web.xml")).isNotNull

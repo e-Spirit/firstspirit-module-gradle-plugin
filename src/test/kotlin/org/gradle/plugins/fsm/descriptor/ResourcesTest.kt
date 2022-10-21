@@ -206,38 +206,26 @@ class ResourcesTest {
 
     @Test
     fun `dependency jar with classifier`() {
-        val dependency = project.dependencies.create("org.slf4j:slf4j-api:1.7.32:debug")
+        val dependency = project.dependencies.create("de.espirit.firstspirit:fs-api:5.2.221111:javadoc")
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
 
         val resources = Resources(project, emptyList()).node
 
-        val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api:debug" }.single()
-        assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
-        assertThat(resource.textContent()).isEqualTo("lib/slf4j-api-1.7.32-debug.jar")
+        val resource = resources.filter { it.attributes["name"] == "de.espirit.firstspirit:fs-api:javadoc" }.single()
+        assertThat(resource.attributes["version"]).isEqualTo("5.2.221111")
+        assertThat(resource.textContent()).isEqualTo("lib/fs-api-5.2.221111-javadoc.jar")
     }
 
     @Test
     fun `dependency fsm without classifier`() {
-        val dependency = project.dependencies.create("org.slf4j:slf4j-api:1.7.32@fsm")
+        val dependency = project.dependencies.create("com.espirit.moddev.basicworkflows:basicworkflows-fsm:1.3.846@fsm")
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
 
         val resources = Resources(project, emptyList()).node
 
-        val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api@fsm" }.single()
-        assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
-        assertThat(resource.textContent()).isEqualTo("lib/slf4j-api-1.7.32.fsm")
-    }
-
-    @Test
-    fun `dependency fsm with classifier`() {
-        val dependency = project.dependencies.create("org.slf4j:slf4j-api:1.7.32:debug@fsm")
-        project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
-
-        val resources = Resources(project, emptyList()).node
-
-        val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api:debug@fsm" }.single()
-        assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
-        assertThat(resource.textContent()).isEqualTo("lib/slf4j-api-1.7.32-debug.fsm")
+        val resource = resources.filter { it.attributes["name"] == "com.espirit.moddev.basicworkflows:basicworkflows-fsm@fsm" }.single()
+        assertThat(resource.attributes["version"]).isEqualTo("1.3.846")
+        assertThat(resource.textContent()).isEqualTo("lib/basicworkflows-fsm-1.3.846.fsm")
     }
 
     @Disabled("DEVEX-497 - Race Condition When Downloading Dependency Twice")

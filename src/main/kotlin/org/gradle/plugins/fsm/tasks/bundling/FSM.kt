@@ -171,7 +171,7 @@ abstract class FSM: Jar() {
 
         if (unfilteredModuleXml != null) {
             // Replace values in XML provided by user
-            val replacedXml = unfilteredModuleXml
+            filteredModuleXml = unfilteredModuleXml
                 .replace("\$name", pluginExtension.moduleName ?: project.name)
                 .replace("\$displayName", pluginExtension.displayName ?: project.name)
                 .replace("\$version", project.version.toString())
@@ -183,7 +183,6 @@ abstract class FSM: Jar() {
                 .replace("\$resources", moduleDescriptor.resources.innerResourcesToString())
                 .replace("\$components", moduleDescriptor.components.innerComponentsToString())
                 .replace("\$licensesFile", "META-INF/licenses.csv")
-            filteredModuleXml = moduleDescriptor.reformat(replacedXml)
         } else {
             // Create descriptor from scratch
             filteredModuleXml = moduleDescriptor.toString()
@@ -191,7 +190,7 @@ abstract class FSM: Jar() {
 
         val moduleXmlFile = fs.getPath("/META-INF/module-isolated.xml")
         Files.newBufferedWriter(moduleXmlFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE).use {
-            it.write(filteredModuleXml)
+            it.write(moduleDescriptor.reformat(filteredModuleXml))
         }
     }
 

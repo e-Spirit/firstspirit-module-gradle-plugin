@@ -77,7 +77,7 @@ class FSMTestResources {
 
         fsm.execute()
         val xml = moduleXml()
-        assertThat(xml).contains("""<resource name="com.google.j2objc:j2objc-annotations" scope="server" mode="isolated" version="1.1" minVersion="1.1">lib/j2objc-annotations-1.1.jar</resource>""")
+        assertThat(xml).contains("""<resource minVersion="1.1" mode="isolated" name="com.google.j2objc:j2objc-annotations" scope="server" version="1.1">lib/j2objc-annotations-1.1.jar</resource>""")
         withFsmFile { fsm ->
             assertThat(fsm.getEntry("lib/j2objc-annotations-1.1.jar")).isNotNull
             assertThat(fsm.getEntry("lib/j2objc-annotations-0.9.8.jar")).isNull()
@@ -92,7 +92,7 @@ class FSMTestResources {
 
         fsm.execute()
         val xml = moduleXml()
-        assertThat(xml).contains("""<resource name="com.google.j2objc:j2objc-annotations" scope="server" mode="isolated" version="1.3" minVersion="1.3">lib/j2objc-annotations-1.3.jar</resource>""")
+        assertThat(xml).contains("""<resource minVersion="1.3" mode="isolated" name="com.google.j2objc:j2objc-annotations" scope="server" version="1.3">lib/j2objc-annotations-1.3.jar</resource>""")
         withFsmFile { fsm ->
             assertThat(fsm.getEntry("lib/j2objc-annotations-1.3.jar")).isNotNull
             assertThat(fsm.getEntry("lib/j2objc-annotations-1.1.jar")).isNull()
@@ -107,7 +107,7 @@ class FSMTestResources {
 
         fsm.execute()
         val xml = moduleXml()
-        assertThat(xml).contains("""<resource name="com.google.j2objc:j2objc-annotations" scope="server" mode="isolated" version="1.1" minVersion="1.1">lib/j2objc-annotations-1.1.jar</resource>""")
+        assertThat(xml).contains("""<resource minVersion="1.1" mode="isolated" name="com.google.j2objc:j2objc-annotations" scope="server" version="1.1">lib/j2objc-annotations-1.1.jar</resource>""")
         withFsmFile { fsm ->
             assertThat(fsm.getEntry("lib/j2objc-annotations-1.1.jar")).isNotNull
             assertThat(fsm.getEntry("lib/j2objc-annotations-0.9.8.jar")).isNull()
@@ -122,7 +122,7 @@ class FSMTestResources {
 
         fsm.execute()
         val xml = moduleXml()
-        assertThat(xml).contains("""<resource name="com.google.j2objc:j2objc-annotations" scope="server" mode="isolated" version="1.3" minVersion="1.3">lib/j2objc-annotations-1.3.jar</resource>""")
+        assertThat(xml).contains("""<resource minVersion="1.3" mode="isolated" name="com.google.j2objc:j2objc-annotations" scope="server" version="1.3">lib/j2objc-annotations-1.3.jar</resource>""")
         withFsmFile { fsm ->
             assertThat(fsm.getEntry("lib/j2objc-annotations-1.3.jar")).isNotNull()
             assertThat(fsm.getEntry("lib/j2objc-annotations-1.1.jar")).isNull()

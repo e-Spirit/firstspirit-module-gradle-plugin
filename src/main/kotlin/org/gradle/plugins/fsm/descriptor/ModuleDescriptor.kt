@@ -1,6 +1,7 @@
 package org.gradle.plugins.fsm.descriptor
 
 import io.github.classgraph.ClassGraph
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.plugins.JavaPlugin
@@ -53,6 +54,10 @@ class ModuleDescriptor(private val project: Project) {
     }
 
     fun reformat(xml: String): String {
+        if (xml.isBlank()) {
+            throw GradleException("Module descriptor is empty.")
+        }
+
         val bytes = ByteArrayInputStream(xml.toByteArray())
         val parsedNode = parse(bytes)
         parsedNode.includeXmlProlog = true

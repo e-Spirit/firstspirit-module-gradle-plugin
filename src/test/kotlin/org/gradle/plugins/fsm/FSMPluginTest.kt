@@ -75,6 +75,36 @@ class FSMPluginTest {
     }
 
     @Test
+    fun `validate-task uses FSM output as input`() {
+        project.plugins.apply(FSMPlugin.NAME)
+
+        val fsm = project.tasks.getByName(FSMPlugin.FSM_TASK_NAME)
+        val fsmFile = fsm.outputs.files.singleFile
+        val validateDescriptor = project.tasks.getByName(FSMPlugin.VALIDATE_DESCRIPTOR_TASK_NAME)
+
+        assertThat(validateDescriptor.inputs.files.singleFile).isEqualTo(fsmFile)
+    }
+
+    @Test
+    fun `validate-task depends on FSM-task`() {
+        project.plugins.apply(FSMPlugin.NAME)
+
+        val fsmTask = project.tasks.getByName(FSMPlugin.FSM_TASK_NAME)
+        val validateDescriptor = project.tasks.getByName(FSMPlugin.VALIDATE_DESCRIPTOR_TASK_NAME)
+
+        assertThat(validateDescriptor).dependsOn(fsmTask.name)
+    }
+
+    @Test
+    fun `validate-task called automatically for assembleFSM`() {
+        project.plugins.apply(FSMPlugin.NAME)
+
+        val fsmTask = project.tasks.getByName(FSMPlugin.FSM_TASK_NAME)
+        val finalizers = fsmTask.finalizedBy.getDependencies(fsmTask)
+        assertThat(finalizers.stream().anyMatch { it.name == FSMPlugin.VALIDATE_DESCRIPTOR_TASK_NAME }).isTrue
+    }
+
+    @Test
     fun `isolation-check-task uses FSM output as input`() {
         project.plugins.apply(FSMPlugin.NAME)
 

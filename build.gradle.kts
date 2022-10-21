@@ -6,7 +6,7 @@ import java.util.*
 import java.util.regex.Pattern
 
 plugins {
-    kotlin("jvm") version "1.7.10"
+    kotlin("jvm") version "1.7.20"
     id("maven-publish")
     id("idea")
     id("java-gradle-plugin")
