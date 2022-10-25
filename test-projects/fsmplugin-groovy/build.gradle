@@ -15,10 +15,10 @@ allprojects {
 
     repositories {
         maven {
-            url 'https://artifactory.e-spirit.de/artifactory/repo'
+            url 'https://artifactory.e-spirit.hosting/artifactory/repo'
             credentials {
-                username = "${artifactory_username}"
-                password = "${artifactory_password}"
+                username = "${artifactory_hosting_username}"
+                password = "${artifactory_hosting_password}"
             }
         }
     }

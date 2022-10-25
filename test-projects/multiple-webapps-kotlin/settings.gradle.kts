@@ -1,15 +1,13 @@
 pluginManagement {
 	repositories {
-		val artifactory_username: String by settings
-		val artifactory_password: String by settings
-		maven {
-			setUrl("https://artifactory.e-spirit.de/artifactory/repo/")
+		val artifactory_hosting_username: String by settings
+		val artifactory_hosting_password: String by settings
+		maven(url = "https://artifactory.e-spirit.hosting/artifactory/repo/") {
 			credentials {
-				username = artifactory_username
-				password = artifactory_password
+				username = artifactory_hosting_username
+				password = artifactory_hosting_password
 			}
 		}
-		gradlePluginPortal()
 	}
 }
 

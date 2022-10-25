@@ -12,10 +12,10 @@ Define a `pluginManagement` block in your `settings.gradle(.kts)` using this sni
 pluginManagement {
     repositories {
         maven {
-            url = 'https://artifactory.e-spirit.de/artifactory/repo/'
+            url = 'https://artifactory.e-spirit.hosting/artifactory/repo/'
             credentials {
-                username = artifactory_username
-                password = artifactory_password
+                username = artifactory_hosting_username
+                password = artifactory_hosting_password
             }
         }
     }
@@ -26,14 +26,14 @@ pluginManagement {
 // Kotlin
 
 pluginManagement {
-    val artifactory_username: String by settings
-    val artifactory_password: String by settings
+    val artifactory_hosting_username: String by settings
+    val artifactory_hosting_password: String by settings
 
     repositories {
-        maven(url = "https://artifactory.e-spirit.de/artifactory/repo") {
+        maven(url = "https://artifactory.e-spirit.hosting/artifactory/repo") {
             credentials {
-                username = artifactory_username
-                password = artifactory_password
+                username = artifactory_hosting_username
+                password = artifactory_hosting_password
             }
         }
     }
@@ -47,10 +47,10 @@ The repository also needs to be defined in your `build.gradle(.kts)`:
 
 repositories {
     maven {
-        url = 'https://artifactory.e-spirit.de/artifactory/repo/'
+        url = 'https://artifactory.e-spirit.hosting/artifactory/repo/'
         credentials {
-            username = artifactory_username
-            password = artifactory_password
+            username = artifactory_hosting_username
+            password = artifactory_hosting_password
         }
     }
 }
@@ -59,17 +59,17 @@ repositories {
 // Kotlin
 
 repositories {
-    maven(url = "https://artifactory.e-spirit.de/artifactory/repo") {
+    maven(url = "https://artifactory.e-spirit.hosting/artifactory/repo") {
         credentials {
-            username = property("artifactory_username") as String
-            password = property("artifactory_password") as String
+            username = property("artifactory_hosting_username") as String
+            password = property("artifactory_hosting_password") as String
         }
     }
 }
 ```
 
 There are three plugins you can use for slightly different purposes:
-[firstspirit-module-annotations](https://git.e-spirit.de/projects/DEVEX/repos/fsmannotations/), firstspirit-module-configurations and firstspirit-module.
+firstspirit-module-annotations, firstspirit-module-configurations and firstspirit-module.
 
 We ship all three plugins in a single dependency, so that it's easy for you to use all modules without version incompatibilities in your multi project build.
 If you only need a specific feature in one of your sub projects, you can only apply the corresponding plugin, instead of adding all features and capabilities to this project.
@@ -89,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "4.2.2"
+    id("de.espirit.firstspirit-module") version "4.2.3"
 }
 ```
 
@@ -117,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "4.2.2"
+    id("de.espirit.firstspirit-module-configurations") version "4.2.3"
 }
 ```
 
@@ -402,7 +402,7 @@ In a multi-project build make sure to only use the dependency configurations in 
 dependencies {
   // Required to compile the production source code of 
   // this FSM, provided by FirstSpirit at runtime. 
-  compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.210210")
+  compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.221111")
 
   // Embeds this and transitive deps as a server scoped resource
   fsServerCompile("joda-time:joda-time:2.3")
