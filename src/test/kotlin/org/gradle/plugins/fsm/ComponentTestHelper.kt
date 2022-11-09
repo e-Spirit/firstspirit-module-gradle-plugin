@@ -124,6 +124,7 @@ class TestMinimalWebAppComponent : BaseWebApp()
     description = "TestDescription",
     configurable = TestWebAppComponent.TestConfigurable::class,
     webXml = "/web.xml",
+    xmlSchemaVersion = "5.0",
     webResources = [WebResource(path = "lib/guava-24.0.jar", name = "com.google.guava:guava", version = "24.0"),
         WebResource(
             targetPath = "targetPath",

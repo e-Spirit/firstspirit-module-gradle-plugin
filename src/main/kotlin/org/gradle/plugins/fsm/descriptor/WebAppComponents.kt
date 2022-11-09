@@ -138,6 +138,10 @@ class WebAppComponents(project: Project, private val scanResult: ScanResult): Co
                     if (scopes.isNotEmpty()) {
                         attribute("scopes", scopes.joinToString(",") { it.valueName })
                     }
+                    val xmlSchemaVersion = annotation.getString("xmlSchemaVersion")
+                    if (xmlSchemaVersion.isNotEmpty()) {
+                        attribute("xml-schema-version", xmlSchemaVersion)
+                    }
                     "name" { -webAppName }
                     "displayname" { -annotation.getString("displayName") }
                     "description" { -annotation.getString("description") }

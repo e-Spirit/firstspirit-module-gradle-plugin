@@ -23,7 +23,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     }
 }
 
-val fsmAnnotationsVersion = "2.1.0"
+val fsmAnnotationsVersion = "2.2.0"
 
 try {
     val branchName = grgit.branch.current().name
@@ -75,12 +75,12 @@ dependencies {
     implementation("de.espirit.mavenplugins:fsmchecker:0.14.0")
     implementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
     testImplementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
+    testImplementation(platform("org.junit:junit-bom:5.9.1"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.assertj:assertj-core:3.23.1")
     testImplementation("org.mockito:mockito-junit-jupiter:4.8.0")
-    testImplementation("org.ow2.asm:asm:9.3")
+    testImplementation("org.ow2.asm:asm:9.4")
     testImplementation(gradleTestKit())
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.0")
 }
 
 licenseReport {

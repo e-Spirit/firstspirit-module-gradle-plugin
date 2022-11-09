@@ -37,6 +37,7 @@ class WebAppComponentsTest {
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name" ) == "TestMinimalWebAppComponentName" }.single()
         assertThat(component.nodeName).isEqualTo("web-app")
+        assertThat(component.attributes).doesNotContainKey("xml-schema-version")
         assertThat(component.childText("displayname")).isEmpty()
         assertThat(component.childText("description")).isEmpty()
         assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestMinimalWebAppComponent")
@@ -50,6 +51,7 @@ class WebAppComponentsTest {
         val component = components.filter{ it.childText("name" ) == "TestWebAppComponentName" }.single()
         assertThat(component.nodeName).isEqualTo("web-app")
         assertThat(component.attributes["scopes"].toString().split(",")).containsExactlyInAnyOrder("PROJECT", "GLOBAL")
+        assertThat(component.attributes).containsEntry("xml-schema-version", "5.0")
         assertThat(component.childText("displayname")).isEqualTo("TestDisplayName")
         assertThat(component.childText("description")).isEqualTo("TestDescription")
         assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestWebAppComponent")
