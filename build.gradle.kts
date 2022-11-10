@@ -1,3 +1,4 @@
+import com.github.jk1.license.filter.LicenseBundleNormalizer
 import org.apache.tools.ant.taskdefs.condition.Os
 import java.net.URI
 import java.nio.file.Files
@@ -12,6 +13,8 @@ plugins {
     id("com.dorongold.task-tree") version "1.5"
     id("net.researchgate.release") version "2.8.1"
     id("org.ajoberstar.grgit") version "5.0.0"
+    id("com.github.jk1.dependency-license-report") version "2.1"
+    id("org.cyclonedx.bom") version "1.7.2"
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
@@ -78,6 +81,28 @@ dependencies {
     testImplementation("org.ow2.asm:asm:9.3")
     testImplementation(gradleTestKit())
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.0")
+}
+
+licenseReport {
+    allowedLicensesFile = projectDir.resolve("config/allowed-licenses.json")
+    filters = arrayOf(LicenseBundleNormalizer())
+}
+
+tasks.checkLicense {
+    dependsOn(tasks.cyclonedxBom)
+}
+
+
+tasks.cyclonedxBom {
+    setIncludeConfigs(listOf("runtimeClasspath"))
+    setOutputFormat("json")
+}
+
+val bomFile = layout.buildDirectory.file("reports/bom.json")
+val bomArtifact = artifacts.add("archives", bomFile.get().asFile) {
+    type = "bom"
+    extension = "bom"
+    builtBy(tasks.cyclonedxBom)
 }
 
 sourceSets {
@@ -164,9 +189,17 @@ val integrationTest by tasks.creating(Test::class.java) {
     useJUnitPlatform()
 }
 
+tasks.check {
+    dependsOn(tasks.checkLicense)
+}
+
+tasks.publish {
+    dependsOn(tasks.checkLicense)
+}
+
 publishing {
     publications {
-        create("pluginMaven", MavenPublication::class.java) {
+        create<MavenPublication>("pluginMaven") {
             pom.withXml {
                 val root = asNode()
                 root.appendNode("name", "FSM Gradle plugin")
@@ -185,10 +218,11 @@ publishing {
                 originalDeveloper.appendNode("email", "moritz.zmmr@gmail.com")
 
                 val developer = developers.appendNode("developer")
-                developer.appendNode("id", "e-spirit")
-                developer.appendNode("name", "E-Spirit AG")
-                developer.appendNode("email", "produktmanagement@e-spirit.com")
+                developer.appendNode("id", "crownpeak")
+                developer.appendNode("name", "Crownpeak Technology GmbH")
+                developer.appendNode("url", "https://www.crownpeak.com")
             }
+            artifact(bomArtifact)
         }
     }
     repositories {
