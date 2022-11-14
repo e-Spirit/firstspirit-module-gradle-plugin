@@ -1,3 +1,4 @@
+import org.apache.tools.ant.taskdefs.condition.Os
 import java.net.URI
 import java.nio.file.Files
 import java.util.*
@@ -144,6 +145,12 @@ tasks.test {
     systemProperty("version", version)
     systemProperty("testJar", testJar.archiveFile.get().asFile.absolutePath)
     systemProperty("classesDir", project.buildDir.resolve("classes").absolutePath)
+
+    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        // Gradle may keep locks on Windows systems, causing the @TempDir cleanup to fail
+        systemProperty("junit.jupiter.tempdir.cleanup.mode.default", "NEVER")
+    }
+
     maxHeapSize = "2048m"
     useJUnitPlatform()
 }
