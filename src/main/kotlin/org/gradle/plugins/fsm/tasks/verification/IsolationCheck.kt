@@ -1,14 +1,14 @@
 package org.gradle.plugins.fsm.tasks.verification
 
 import de.espirit.mavenplugins.fsmchecker.ComplianceLevel
-import de.espirit.mavenplugins.fsmchecker.WebServiceConnector
-import de.espirit.mavenplugins.fsmchecker.check.ComplianceCheckImpl
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.plugins.fsm.FSMPluginExtension
+import org.gradle.plugins.fsm.isolationcheck.ComplianceCheck
+import org.gradle.plugins.fsm.isolationcheck.WebServiceConnector
 import java.net.URI
 
 /**
@@ -23,7 +23,7 @@ open class IsolationCheck: DefaultTask() {
     @TaskAction
     fun check() {
         val pathList = inputs.files.files.map { it.toPath() }
-        val uri = URI(pluginExtension.isolationDetectorUrl ?: return)
+        val uri = URI.create(pluginExtension.isolationDetectorUrl ?: return)
 
         if (pathList.isEmpty() || uri.toString().isEmpty()) {
             return
@@ -45,13 +45,13 @@ open class IsolationCheck: DefaultTask() {
         val connector = WebServiceConnector(uri, getFirstSpiritVersion(), getMaxBytecodeVersion(),
             getIsolationDetectorUsername(), getIsolationDetectorPassword())
 
-        val complianceCheck = ComplianceCheckImpl(getComplianceLevel(), project.buildDir.toPath(), connector)
+        val complianceCheck = ComplianceCheck(getComplianceLevel(), project.buildDir.toPath(), connector)
         pluginExtension.isolationDetectorWhitelist.forEach { complianceCheck.addWhitelistedResource(it) }
         pluginExtension.contentCreatorComponents.forEach { complianceCheck.addContentCreatorComponent(it) }
 
-        val checkResult = complianceCheck.check(pathList)
+        val checkResult = complianceCheck.use { it.check(pathList) }
 
-        if (!checkResult.isValid) {
+        if (!checkResult.isValid()) {
             logger.error("Isolation check failed!\nViolation details: " + checkResult.message)
             val moduleErrors = checkResult.moduleErrors
             if (moduleErrors.isNotEmpty()) {

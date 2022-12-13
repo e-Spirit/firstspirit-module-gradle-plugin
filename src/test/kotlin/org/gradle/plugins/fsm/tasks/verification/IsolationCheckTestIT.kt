@@ -27,14 +27,20 @@ import kotlin.io.path.readBytes
 
 class IsolationCheckTestIT {
 
+    @TempDir
+    private lateinit var tempDir: File
+
+    @TempDir
     private lateinit var jarDir: Path
+
     private lateinit var project: Project
     private lateinit var isolationCheck: IsolationCheck
     private lateinit var fsm: FSM
 
+
+
     @BeforeEach
-    fun setup(@TempDir tempDir: File, @TempDir jarDir: Path) {
-        this.jarDir = jarDir
+    fun setup() {
         project = ProjectBuilder.builder().withProjectDir(tempDir).build()
         project.setArtifactoryCredentialsFromLocalProperties()
         project.defineArtifactoryForProject()
@@ -270,10 +276,12 @@ class IsolationCheckTestIT {
         connection.visit(
             V11, ACC_PUBLIC, "de.espirit.firstspirit.access/Connection",
             null, "java/lang/Object", null)
-        val classesToWrite: MutableMap<String, ClassWriter> = HashMap()
-        classesToWrite["de/espirit/firstspirit/access/store/IDProvider.class"] = idProvider
-        classesToWrite["de/espirit/firstspirit/access/project/Project.class"] = project
-        classesToWrite["de/espirit/firstspirit/access/Connection.class"] = connection
+
+        val classesToWrite = mapOf(
+            "de/espirit/firstspirit/access/store/IDProvider.class" to idProvider,
+            "de/espirit/firstspirit/access/project/Project.class" to project,
+            "de/espirit/firstspirit/access/Connection.class" to connection
+        )
 
         writeClassesToFsmFile(classesToWrite)
 

@@ -1,9 +1,9 @@
 import com.github.jk1.license.filter.LicenseBundleNormalizer
+import net.researchgate.release.ReleaseExtension
 import org.apache.tools.ant.taskdefs.condition.Os
 import java.net.URI
 import java.nio.file.Files
 import java.util.*
-import java.util.regex.Pattern
 
 plugins {
     kotlin("jvm") version "1.7.20"
@@ -11,7 +11,7 @@ plugins {
     id("idea")
     id("java-gradle-plugin")
     id("com.dorongold.task-tree") version "1.5"
-    id("net.researchgate.release") version "2.8.1"
+    id("net.researchgate.release") version "3.0.2"
     id("org.ajoberstar.grgit") version "5.0.0"
     id("com.github.jk1.dependency-license-report") version "2.1"
     id("org.cyclonedx.bom") version "1.7.2"
@@ -25,14 +25,9 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 
 val fsmAnnotationsVersion = "2.2.0"
 
-try {
-    val branchName = grgit.branch.current().name
-    val matcher = Pattern.compile("(?:.*/)?[^A-Z]*([A-Z]+-[0-9]+).*").matcher(branchName)
-    if (matcher.matches()) {
-        project.version = "${matcher.group(1)}-SNAPSHOT"
-    }
-} catch (e: java.io.IOException) {
-    println("Failure determining branch name: $e")
+val branchName: String = grgit.branch.current().name
+Regex("(?:.*/)?[^A-Z]*([A-Z]+-[0-9]+).*").matchEntire(branchName)?.let {
+    project.version = "${it.groupValues[1]}-SNAPSHOT"
 }
 
 description = "Gradle plugin to build FirstSpirit modules (FSMs)."
@@ -68,17 +63,19 @@ val fsRuntimeVersion = "5.2.220309" // FirstSpirit 2022-03
 
 dependencies {
     implementation(gradleApi())
-    implementation("io.github.classgraph:classgraph:4.8.149")
+    implementation("io.github.classgraph:classgraph:4.8.151")
     implementation("com.github.jk1:gradle-license-report:2.1")
     implementation("org.redundent:kotlin-xml-builder:1.8.0")
+    implementation("org.json:json:20220924")
+    implementation("org.apache.maven:maven-artifact:3.8.6")
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.2.1")
     implementation("com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}")
-    implementation("de.espirit.mavenplugins:fsmchecker:0.14.0")
     implementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
     testImplementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
     testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.assertj:assertj-core:3.23.1")
-    testImplementation("org.mockito:mockito-junit-jupiter:4.8.0")
+    testImplementation("org.mockito:mockito-junit-jupiter:4.9.0")
     testImplementation("org.ow2.asm:asm:9.4")
     testImplementation(gradleTestKit())
 }
@@ -242,6 +239,12 @@ publishing {
 
 rootProject.tasks.afterReleaseBuild {
     dependsOn(tasks.publish)
+}
+
+configure<ReleaseExtension> {
+    with(git) {
+        requireBranch.set("master")
+    }
 }
 
 idea {
