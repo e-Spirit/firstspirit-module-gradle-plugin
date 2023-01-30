@@ -24,6 +24,7 @@ import java.io.Closeable
 import java.io.InterruptedIOException
 import java.net.ConnectException
 import java.net.NoRouteToHostException
+import java.net.SocketTimeoutException
 import java.net.URI
 import java.net.UnknownHostException
 import java.nio.file.Path
@@ -67,7 +68,8 @@ class WebServiceConnector(
                 ConnectException::class.java,
                 ConnectionClosedException::class.java,
                 NoRouteToHostException::class.java,
-                SSLException::class.java),
+                SSLException::class.java,
+                SocketTimeoutException::class.java),
             listOf(
                 HttpStatus.SC_TOO_MANY_REQUESTS,
                 HttpStatus.SC_BAD_GATEWAY,
