@@ -13,8 +13,10 @@ java {
     targetCompatibility = JavaVersion.VERSION_11
 }
 
+val customLib: Configuration by configurations.creating
+
 dependencies {
-    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.220309")
+    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.230212")
 
     fsServerCompile(project(":api"))
     fsModuleCompile(project(":impl"))
@@ -26,7 +28,9 @@ dependencies {
 
     fsWebCompile(fsDependency("org.apache.activemq:activemq-all:5.14.2"))
 
-    testImplementation("junit:junit:4.12")
+    customLib("org.slf4j:slf4j-api:2.0.6")
+
+    testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
 }
 
 tasks.jar {
@@ -38,9 +42,21 @@ firstSpiritModule {
     displayName = "test-project displayName"
     isolationDetectorUrl = "https://fsdev.e-spirit.de/FsmDependencyDetector/"
     complianceLevel = MINIMAL
-    firstSpiritVersion = "5.2.220309"
+    firstSpiritVersion = "5.2.230212"
     vendor = "e-Spirit AG"
     fsmDependencies = listOf("otherModuleName", "yetAnotherModule")
+    libraries {
+        create("libWithAllServerLibs") {
+            description = "A library component containing all dependencies with server scope"
+            configuration = configurations.fsServerCompile.get()
+        }
+        create("libWithCustomConfiguration") {
+            displayName = "Library with custom configuration"
+            description = "A library component defined by a custom Gradle configuration"
+            hidden = false
+            configuration = customLib
+        }
+    }
 }
 
 val fsmArchivePath = Paths.get(project.buildDir.path, "fsm", "fsm-${project.version}.fsm")
@@ -66,4 +82,5 @@ val testZipFileContainsModuleXml by tasks.creating {
 
 tasks.test {
     dependsOn(tasks.assembleFSM, testFsmIsProduced, testZipFileContainsModuleXml)
+    useJUnitPlatform()
 }

@@ -23,15 +23,15 @@ import kotlin.io.path.writeText
 
 class FSMTest {
 
+    @TempDir
     private lateinit var testDir: File
+
     private lateinit var project: Project
 
     private lateinit var fsm: FSM
 
     @BeforeEach
-    fun setUp(@TempDir tempDir: File) {
-        testDir = tempDir
-
+    fun setUp() {
         project = ProjectBuilder.builder().withProjectDir(testDir).build()
         defineArtifactoryForProject(project)
 
@@ -373,6 +373,27 @@ class FSMTest {
             assertThat(fsm.getEntry("web1.xml")).isNotNull
         }
 
+    }
+
+    @Test
+    fun `library component`() {
+        val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+        val libWithCustomConfiguration = pluginExtension.libraries.create("libWithCustomConfiguration")
+
+        val configuration = project.configurations.create("customLib")
+        configuration.dependencies.add(project.dependencies.create("org.slf4j:slf4j-api:2.0.6"))
+        libWithCustomConfiguration.configuration = configuration
+
+        fsm.execute()
+
+        val moduleXml = moduleXml()
+        assertThat(moduleXml).contains("<library>")
+        assertThat(moduleXml).contains("<name>libWithCustomConfiguration</name>")
+        assertThat(moduleXml).contains("""<resource minVersion="2.0.6" mode="isolated" name="org.slf4j:slf4j-api" scope="server" version="2.0.6">lib/slf4j-api-2.0.6.jar</resource>""")
+
+        withFsmFile { fsm ->
+            assertThat(fsm.getEntry("lib/slf4j-api-2.0.6.jar")).isNotNull
+        }
     }
 
     private fun copyTestJar() {

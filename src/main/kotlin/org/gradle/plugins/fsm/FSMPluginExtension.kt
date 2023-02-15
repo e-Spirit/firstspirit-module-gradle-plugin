@@ -1,12 +1,16 @@
 package org.gradle.plugins.fsm
 
 import de.espirit.mavenplugins.fsmchecker.ComplianceLevel
+import org.gradle.api.Action
+import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
 
 open class FSMPluginExtension(val project: Project) {
 
     private val fsmWebApps: MutableMap<String, Project> = mutableMapOf()
+
+    val libraries: NamedDomainObjectContainer<LibraryDeclaration> = project.container(LibraryDeclaration::class.java)
 
     /**
      * Registers a web-app to a given subproject
@@ -110,5 +114,9 @@ open class FSMPluginExtension(val project: Project) {
      * when a user adds this Module.
      */
     var fsmDependencies: Collection<String> = emptySet()
+
+    open fun libraries(action: Action<in NamedDomainObjectContainer<LibraryDeclaration>>) {
+        action.execute(libraries)
+    }
 
 }

@@ -29,6 +29,7 @@ class Components(private val project: Project, private val scanResult: Component
             components(UrlFactoryComponent::class, ::nodesForUrlFactoryComponent, scanResult).forEach(this::addNode)
             components(ServiceComponent::class, ::nodesForServiceComponent, scanResult).forEach(this::addNode)
             ProjectAppComponents(project, scanResult).nodes.forEach(this::addNode)
+            LibraryComponents(project).nodes.forEach(this::addNode)
 
             val webAppComponents = WebAppComponents(project, scanResult)
             webAppComponents.nodes.forEach(this::addNode)
@@ -147,6 +148,8 @@ class Components(private val project: Project, private val scanResult: Component
                 }
             }
     }
+
+
 
     companion object {
         private val PRINT_OPTIONS = PrintOptions(singleLineTextElements = true)

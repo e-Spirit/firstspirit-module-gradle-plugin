@@ -16,7 +16,7 @@ repositories {
 
 dependencies {
     // Test dependency is irrelevant for licensing
-    testImplementation(group = "junit", name = "junit", version = "4.12")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
 
     // use one, real, dependency
     // it needs:

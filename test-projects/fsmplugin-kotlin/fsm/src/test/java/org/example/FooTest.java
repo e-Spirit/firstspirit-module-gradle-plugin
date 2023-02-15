@@ -1,14 +1,14 @@
 package org.example;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 public class FooTest {
 
     @Test
-    @Ignore("just an example")
+    @Disabled("just an example")
     public void test() {
         fail("Not yet implemented");
     }

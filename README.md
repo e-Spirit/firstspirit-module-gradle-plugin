@@ -89,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "4.5.0"
+    id("de.espirit.firstspirit-module") version "4.6.0"
 }
 ```
 
@@ -117,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "4.5.0"
+    id("de.espirit.firstspirit-module-configurations") version "4.6.0"
 }
 ```
 
@@ -255,11 +255,64 @@ is <u>NOT</u> in server scope. To make this work the following can be done.
 
 With this a `.fsm` file is generated which includes a jar with all the classes which are needed in server scope and the module-isolated.xml with the corresponding resource entry.
 
-###### com.espirit.moddev.components.annotations.@UrlFactoryComponent
+##### com.espirit.moddev.components.annotations.@UrlFactoryComponent
 Should be added to a class implementing the UrlFactory in order to render the appropriate UrlFactory configuration into the module-isolated.xml.
 
-###### com.espirit.moddev.components.annotations.@GadgetComponent
+##### com.espirit.moddev.components.annotations.@GadgetComponent
 Should be added to a class implementing the GomElement in order to render the appropriate GomElement configuration into the module-isolated.xml.
+
+#### Library Components
+
+Since library components are not based on a specific interface implementation, there is no annotation available to configure those. Instead, a specific configuration block in the Gradle configuration is used to add them:
+
+```kotlin
+// Kotlin
+
+val customLib: Configuration by configurations.creating
+
+dependencies {
+    customLib("org.slf4j:slf4j-api:2.0.6")
+}
+
+firstSpiritModule {
+    libraries {
+        create("libWithCustomConfiguration") {
+            displayName = "Library with custom configuration"
+            description = "A library component defined by a custom Gradle configuration"
+            hidden = false
+            configurable = "com.crownpeak.fsm.demo.Config"
+            configuration = customLib
+        }
+    }
+}
+```
+
+```groovy
+// Groovy
+
+configurations {
+    customLib
+}
+
+dependencies {
+    customLib 'org.slf4j:slf4j-api:2.0.6'
+}
+
+firstSpiritModule {
+    libraries {
+        libWithCustomConfiguration {
+            displayName = 'Library with custom configuration'
+            description = 'A library component defined by a custom Gradle configuration'
+            hidden = false
+            configurable = 'com.crownpeak.fsm.demo.Config'
+            configuration = configurations.customLib
+        }
+    }
+}
+
+```
+
+Please note that the library component only supports resolvable artifacts, local files or directories will be ignored.
 
 ### Resources by convention
 
@@ -509,7 +562,7 @@ You can use the following snippet as a starting point:
 // Groovy
 
 plugins {
-    id 'de.espirit.firstspirit-module' version '4.5.0'
+    id 'de.espirit.firstspirit-module' version '4.6.0'
 }
 
 description = 'Example FSM Gradle build'
@@ -544,7 +597,7 @@ firstSpiritModule {
 // Kotlin
 
 plugins {
-    id("de.espirit.firstspirit-module") version "4.5.0"
+    id("de.espirit.firstspirit-module") version "4.6.0"
 }
 
 description = "Example FSM Gradle build"

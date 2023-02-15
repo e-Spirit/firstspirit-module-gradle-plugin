@@ -9,6 +9,7 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.jvm.tasks.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
+import org.gradle.plugins.fsm.descriptor.LibraryComponents
 import org.gradle.plugins.fsm.descriptor.ModuleDescriptor
 import java.io.File
 import java.nio.charset.StandardCharsets
@@ -50,6 +51,10 @@ abstract class FSM: Jar() {
     fun lazyConfiguration() {
         into("lib") { lib ->
             classpath.filter { file -> file.isFile }.forEach { lib.from(it) }
+            pluginExtension.libraries
+                .asSequence().map { it.configuration }.filterNotNull()
+                .flatMap { LibraryComponents.getResolvedDependencies(project, it) }
+                .forEach { lib.from(it.file) }
         }
 
         // include licenses report

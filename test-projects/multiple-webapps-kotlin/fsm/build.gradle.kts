@@ -5,7 +5,7 @@ plugins {
 }
 
 dependencies {
-	compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.220309")
+	compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.230212")
 	fsWebCompile("joda-time:joda-time:2.9")
 	fsModuleCompile("org.joda:joda-convert:2.1.2")
 }

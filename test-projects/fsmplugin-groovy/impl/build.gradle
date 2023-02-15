@@ -11,9 +11,9 @@ java {
 }
 
 dependencies {
+    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.230212'
     use (FSMConfigurationsPluginKt) {
-        implementation fsDependency('junit:junit:4.12')
+        implementation fsDependency(guavaProperty + ':' + guavaVersionProperty)
     }
-    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.220309'
-    implementation "$guavaProperty:$guavaVersionProperty"
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
 }

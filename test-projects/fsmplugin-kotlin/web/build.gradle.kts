@@ -14,7 +14,7 @@ rootProject.extra["webappIconName"] = "com.espirit.moddev.example.icon.png"
 rootProject.extra["commonsIOWebDependencyName"] = commonsIOWebDependencyName
 
 dependencies {
-    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.220309")
+    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.230212")
     fsWebCompile(fsDependency(mapOf("dependency" to "org.apache.commons:commons-lang3:3.8.1")))
     implementation("$commonsIOWebDependencyName:2.6")
 }

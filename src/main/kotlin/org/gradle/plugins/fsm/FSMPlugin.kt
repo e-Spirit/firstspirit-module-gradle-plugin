@@ -3,6 +3,7 @@ package org.gradle.plugins.fsm
 import com.github.jk1.license.LicenseReportExtension
 import com.github.jk1.license.LicenseReportPlugin
 import com.github.jk1.license.render.CsvReportRenderer
+import com.github.jk1.license.task.ReportTask
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -126,6 +127,21 @@ class FSMPlugin: Plugin<Project> {
     }
 
     private fun configureLicenseReport(project: Project) {
+        @Suppress("ObjectLiteralToLambda") // Lambdas cannot be used as Gradle task inputs
+        val action = object : Action<Task> {
+            override fun execute(t: Task) {
+                val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+                val configurationNames = mutableListOf(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME)
+                // Library names are only available after the configuration phase
+                configurationNames.addAll(fsmPluginExtension.libraries.asSequence().mapNotNull { it.configuration?.name })
+                with(project.extensions.getByType(LicenseReportExtension::class.java)) {
+                    configurations = configurationNames.toTypedArray()
+                }
+            }
+        }
+
+        project.tasks.withType(ReportTask::class.java).first().doFirst(action)
+
         with(project.extensions.getByType(LicenseReportExtension::class.java)) {
             // Set output directory for the report data.
             outputDir = "${project.buildDir}/${FSM.LICENSES_DIR_NAME}"

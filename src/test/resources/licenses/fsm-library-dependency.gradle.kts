@@ -14,11 +14,31 @@ repositories {
     }
 }
 
+val customLib: Configuration by configurations.creating
+
 dependencies {
     // Test dependency is irrelevant for licensing
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
 
+    customLib(group = "joda-time", name = "joda-time", version = "2.12.2")
+
+    // use one, real, dependency
+    // it needs:
+    // - license info
+    // - some transitive dependencies which also have license info
+    implementation(group = "com.fasterxml.jackson.core", name = "jackson-databind", version = "2.10.0")
+
     // - compile classpath dependencies - should not be included in licenseInfo
     compileOnly(group = "de.espirit.firstspirit", name = "fs-isolated-runtime", version = "5.2.220309")
     compileOnly(group = "joda-time", name = "joda-time", version = "2.9")
+}
+
+firstSpiritModule {
+    libraries {
+        create("libWithCustomConfiguration") {
+            displayName = "Library with custom configuration"
+            description = "A library component defined by a custom Gradle configuration"
+            configuration = customLib
+        }
+    }
 }

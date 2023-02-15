@@ -14,7 +14,7 @@ val guavaProperty = rootProject.extra["guavaProperty"] as String
 val guavaVersionProperty = rootProject.extra["guavaVersionProperty"] as String
 
 dependencies {
-    implementation(fsDependency("junit:junit:4.12"))
-    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.220309")
-    implementation("$guavaProperty:$guavaVersionProperty")
+    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.230212")
+    implementation(fsDependency("$guavaProperty:$guavaVersionProperty"))
+    testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
 }
