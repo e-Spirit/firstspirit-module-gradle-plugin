@@ -146,6 +146,9 @@ tasks.jar {
     }
 }
 
+/**
+ * Bundles together test classes for component scan tests
+ */
 val testJar = tasks.create<Jar>("testJar") {
     dependsOn(tasks.testClasses)
     archiveClassifier.set("tests")
@@ -157,6 +160,7 @@ val testJar = tasks.create<Jar>("testJar") {
     exclude("org/gradle/plugins/fsm/TestModuleImpl.class")
     exclude("org/gradle/plugins/fsm/TestWebAppWithProjectProperties.class")
     exclude("org/gradle/plugins/fsm/TestProjectAppComponentWithProperties.class")
+    exclude("org/gradle/plugins/fsm/components/invalid/**/*.class")
 }
 
 tasks.test {

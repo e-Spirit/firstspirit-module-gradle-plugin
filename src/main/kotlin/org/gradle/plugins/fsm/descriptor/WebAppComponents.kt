@@ -2,10 +2,10 @@ package org.gradle.plugins.fsm.descriptor
 
 import com.espirit.moddev.components.annotations.WebAppComponent
 import de.espirit.firstspirit.module.Configuration
+import de.espirit.firstspirit.module.ProjectApp
 import de.espirit.firstspirit.module.WebApp
 import io.github.classgraph.AnnotationInfo
 import io.github.classgraph.ClassInfo
-import io.github.classgraph.ScanResult
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ProjectDependency
@@ -22,12 +22,12 @@ import org.redundent.kotlin.xml.xml
 import java.io.File
 import java.util.*
 
-class WebAppComponents(project: Project, private val scanResult: ScanResult): ComponentsWithResources(project) {
+class WebAppComponents(project: Project, private val scanResult: ComponentScan): ComponentsWithResources(project) {
 
     lateinit var webXmlPaths: List<String>
 
     val nodes by lazy {
-        val webAppClasses = scanResult.getClassesImplementing(WebApp::class.java.name)
+        val webAppClasses = scanResult.getClassesWithAnnotation(WebAppComponent::class)
         verify(webAppClasses)
         nodesForWebApp(webAppClasses)
     }
@@ -73,99 +73,101 @@ class WebAppComponents(project: Project, private val scanResult: ScanResult): Co
         val nodes = mutableListOf<Node>()
 
         webAppClasses.forEach { webAppClass ->
+            if (!webAppClass.implementsInterface(WebApp::class.java)) {
+                throw GradleException("Web App '${webAppClass.name}' does not implement interface '${WebApp::class}'")
+            }
+
             val annotation = webAppClass.annotationInfo
                     .filter { it.isClass(WebAppComponent::class) }
-                    .firstOrNull()
-            if (annotation != null) {
-                val webCompileConfiguration = project.configurations.getByName(FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME)
-                val projectDependencies = webCompileConfiguration.allDependencies.withType(ProjectDependency::class.java)
+                    .first()
+            val webCompileConfiguration = project.configurations.getByName(FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME)
+            val projectDependencies = webCompileConfiguration.allDependencies.withType(ProjectDependency::class.java)
 
-                val webResources = mutableListOf<Node>()
+            val webResources = mutableListOf<Node>()
 
-                // fsm-resources directory of root project and fsWebCompile subprojects (shared between all webapps)
-                webResources.addAll(projectDependencies
-                    .map(ProjectDependency::getDependencyProject)
-                    .flatMap(this::fsmResources)
-                )
+            // fsm-resources directory of root project and fsWebCompile subprojects (shared between all webapps)
+            webResources.addAll(projectDependencies
+                .map(ProjectDependency::getDependencyProject)
+                .flatMap(this::fsmResources)
+            )
 
-                val webAppName = annotation.getString("name")
-                if (declaredWebApps.containsKey(webAppName)) {
-                    val webAppProject = declaredWebApps[webAppName]!!
+            val webAppName = annotation.getString("name")
+            if (declaredWebApps.containsKey(webAppName)) {
+                val webAppProject = declaredWebApps[webAppName]!!
 
-                    // fsm-resources directory of current web-app
-                    // - safety check to avoid duplicates
-                    if (!projectDependencies.map(ProjectDependency::getDependencyProject).contains(webAppProject)) {
-                        webResources.addAll(fsmResources(webAppProject))
-                    }
-
-                    // compile dependencies of web-app subproject -
-                    // If we registered a subproject for a given web-app, evaluate its compile dependencies
-                    val webAppProjectDependencies = getResolvedDependencies(webAppProject, JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, allCompileDependencies)
-
-                    // Don't want duplicate resources
-                    webAppProjectDependencies.removeAll(sharedWebCompileDependencies)
-
-                    val jarTask = webAppProject.tasks.findByName("jar") as Jar
-                    val jarFile = jarTask.archiveFile.get().asFile
-                    if (!jarFile.exists()) {
-                        Resources.LOGGER.warn("Jar file '$jarFile' not found!")
-                    } else if (Resources.isEmptyJarFile(jarFile)) {
-                        Resources.LOGGER.info("Skipping empty Jar file.")
-                    } else {
-                        webResources.add(xml("resource") {
-                            attribute("name", "${webAppProject.group}:${webAppProject.name}")
-                            attribute("version", webAppProject.version)
-                            -"lib/${jarTask.archiveFileName.get()}"
-                        })
-                    }
-
-                    // Add dependencies
-                    webAppProjectDependencies
-                        .map { Resource(project, it, "", false).node }
-                        .forEach(webResources::add)
+                // fsm-resources directory of current web-app
+                // - safety check to avoid duplicates
+                if (!projectDependencies.map(ProjectDependency::getDependencyProject).contains(webAppProject)) {
+                    webResources.addAll(fsmResources(webAppProject))
                 }
 
-                // fsWebCompile for all subprojects
-                sharedWebCompileDependencies
+                // compile dependencies of web-app subproject -
+                // If we registered a subproject for a given web-app, evaluate its compile dependencies
+                val webAppProjectDependencies = getResolvedDependencies(webAppProject, JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, allCompileDependencies)
+
+                // Don't want duplicate resources
+                webAppProjectDependencies.removeAll(sharedWebCompileDependencies)
+
+                val jarTask = webAppProject.tasks.findByName("jar") as Jar
+                val jarFile = jarTask.archiveFile.get().asFile
+                if (!jarFile.exists()) {
+                    Resources.LOGGER.warn("Jar file '$jarFile' not found!")
+                } else if (Resources.isEmptyJarFile(jarFile)) {
+                    Resources.LOGGER.info("Skipping empty Jar file.")
+                } else {
+                    webResources.add(xml("resource") {
+                        attribute("name", "${webAppProject.group}:${webAppProject.name}")
+                        attribute("version", webAppProject.version)
+                        -"lib/${jarTask.archiveFileName.get()}"
+                    })
+                }
+
+                // Add dependencies
+                webAppProjectDependencies
                     .map { Resource(project, it, "", false).node }
                     .forEach(webResources::add)
-
-                val webXmlPath = annotation.getString("webXml")
-                webXmlPaths.add(webXmlPath)
-
-                nodes.add(xml("web-app") {
-                    val scopes = annotation.getEnumValues("scope")
-                    if (scopes.isNotEmpty()) {
-                        attribute("scopes", scopes.joinToString(",") { it.valueName })
-                    }
-                    val xmlSchemaVersion = annotation.getString("xmlSchemaVersion")
-                    if (xmlSchemaVersion.isNotEmpty()) {
-                        attribute("xml-schema-version", xmlSchemaVersion)
-                    }
-                    "name" { -webAppName }
-                    "displayname" { -annotation.getString("displayName") }
-                    "description" { -annotation.getString("description") }
-                    "class" { -webAppClass.name }
-                    annotation.getClassNameOrNull("configurable", Configuration::class)?.let { "configurable" { -it } }
-                    "web-xml" { -webXmlPath }
-                    "web-resources" {
-                        val jarTask = project.tasks.findByName("jar") as Jar
-                        if (!Resources.isEmptyJarFile(jarTask.archiveFile.get().asFile)) {
-                            "resource" {
-                                attribute("name", "${project.group}:${project.name}")
-                                attribute("version", project.version)
-                                -"lib/${jarTask.archiveFileName.get()}"
-                            }
-                        }
-
-                        nodesForWebResources(annotation).forEach(this::addNode)
-                        webResources.forEach(this::addNode)
-
-                    }
-
-                })
-
             }
+
+            // fsWebCompile for all subprojects
+            sharedWebCompileDependencies
+                .map { Resource(project, it, "", false).node }
+                .forEach(webResources::add)
+
+            val webXmlPath = annotation.getString("webXml")
+            webXmlPaths.add(webXmlPath)
+
+            nodes.add(xml("web-app") {
+                val scopes = annotation.getEnumValues("scope")
+                if (scopes.isNotEmpty()) {
+                    attribute("scopes", scopes.joinToString(",") { it.valueName })
+                }
+                val xmlSchemaVersion = annotation.getString("xmlSchemaVersion")
+                if (xmlSchemaVersion.isNotEmpty()) {
+                    attribute("xml-schema-version", xmlSchemaVersion)
+                }
+                "name" { -webAppName }
+                "displayname" { -annotation.getString("displayName") }
+                "description" { -annotation.getString("description") }
+                "class" { -webAppClass.name }
+                annotation.getClassNameOrNull("configurable", Configuration::class)?.let { "configurable" { -it } }
+                "web-xml" { -webXmlPath }
+                "web-resources" {
+                    val jarTask = project.tasks.findByName("jar") as Jar
+                    if (!Resources.isEmptyJarFile(jarTask.archiveFile.get().asFile)) {
+                        "resource" {
+                            attribute("name", "${project.group}:${project.name}")
+                            attribute("version", project.version)
+                            -"lib/${jarTask.archiveFileName.get()}"
+                        }
+                    }
+
+                    nodesForWebResources(annotation).forEach(this::addNode)
+                    webResources.forEach(this::addNode)
+
+                }
+
+            })
+
         }
 
         this.webXmlPaths = webXmlPaths

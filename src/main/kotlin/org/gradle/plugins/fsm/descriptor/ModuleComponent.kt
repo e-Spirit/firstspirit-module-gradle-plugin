@@ -1,7 +1,6 @@
 package org.gradle.plugins.fsm.descriptor
 
 import de.espirit.firstspirit.module.Module
-import io.github.classgraph.ScanResult
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
 import org.redundent.kotlin.xml.Node
@@ -11,13 +10,13 @@ import com.espirit.moddev.components.annotations.ModuleComponent
 import de.espirit.firstspirit.module.Configuration
 import io.github.classgraph.ClassInfo
 
-class ModuleComponent(scanResult: ScanResult) {
+class ModuleComponent(scanResult: ComponentScan) {
 
     val nodes: List<Node>
 
     init {
-        val moduleAnnotatedClasses = scanResult.getClassesWithAnnotation(ModuleComponent::class.qualifiedName)
-        val moduleImplClasses = scanResult.getClassesImplementing(Module::class.qualifiedName)
+        val moduleAnnotatedClasses = scanResult.getClassesWithAnnotation(ModuleComponent::class)
+        val moduleImplClasses = scanResult.getClassesImplementing(Module::class)
 
         val moduleClass = moduleClass(moduleAnnotatedClasses, moduleImplClasses)
         if (moduleClass != null) {

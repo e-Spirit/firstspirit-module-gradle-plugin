@@ -100,16 +100,9 @@ class FSMConfigurationsPlugin : Plugin<Project> {
 
         const val FS_SERVER_COMPILE_CONFIGURATION_NAME = "fsServerCompile"
         const val FS_MODULE_COMPILE_CONFIGURATION_NAME = "fsModuleCompile"
-
         const val FS_WEB_COMPILE_CONFIGURATION_NAME = "fsWebCompile"
 
         val FS_CONFIGURATIONS = setOf(
-            FS_SERVER_COMPILE_CONFIGURATION_NAME,
-            FS_MODULE_COMPILE_CONFIGURATION_NAME,
-            FS_WEB_COMPILE_CONFIGURATION_NAME
-        )
-
-        val COMPILE_CONFIGURATIONS = listOf(
             FS_SERVER_COMPILE_CONFIGURATION_NAME,
             FS_MODULE_COMPILE_CONFIGURATION_NAME,
             FS_WEB_COMPILE_CONFIGURATION_NAME

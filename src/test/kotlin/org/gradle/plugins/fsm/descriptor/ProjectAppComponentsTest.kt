@@ -1,10 +1,13 @@
 package org.gradle.plugins.fsm.descriptor
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
+import org.gradle.plugins.fsm.components.invalid.InvalidProjectApp
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_MODULE_COMPILE_CONFIGURATION_NAME
 import org.gradle.testfixtures.ProjectBuilder
@@ -30,7 +33,7 @@ class ProjectAppComponentsTest {
     fun `minimal project app`() {
         val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
-        val component = components.filter{ it.childText("name") == "TestMinimalProjectAppComponentName"}.single()
+        val component = components.filter { it.childText("name") == "TestMinimalProjectAppComponentName" }.single()
         assertThat(component.childText("displayname")).isEmpty()
         assertThat(component.childText("description")).isEmpty()
         assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestMinimalProjectAppComponent")
@@ -41,7 +44,7 @@ class ProjectAppComponentsTest {
     fun `project app should contain basic information`() {
         val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
-        val component = components.filter{ it.childText("name") == "TestProjectAppComponentName"}.single()
+        val component = components.filter { it.childText("name") == "TestProjectAppComponentName" }.single()
         assertThat(component.childText("displayname")).isEqualTo("TestDisplayName")
         assertThat(component.childText("description")).isEqualTo("TestDescription")
         assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestProjectAppComponent")
@@ -51,7 +54,7 @@ class ProjectAppComponentsTest {
     fun `project app should have no configurable tag if no config class was set`() {
         val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
-        val component = components.filter{ it.childText("name") == "TestProjectAppComponentWithoutConfigurableName"}.single()
+        val component = components.filter { it.childText("name") == "TestProjectAppComponentWithoutConfigurableName" }.single()
         assertThat(component.childText("class")).endsWith(".TestProjectAppComponentWithoutConfigurable")
         assertThat(component.filter("configurable")).isEmpty()
     }
@@ -60,7 +63,7 @@ class ProjectAppComponentsTest {
     fun `project app should not contain an empty resources tag when there are no resources`() {
         val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
-        val component = components.filter{ it.childText("name") == "TestProjectAppComponentWithoutConfigurableName"}.single()
+        val component = components.filter { it.childText("name") == "TestProjectAppComponentWithoutConfigurableName" }.single()
         assertThat(component.childText("class")).endsWith(".TestProjectAppComponentWithoutConfigurable")
         assertThat(component.filter("resources")).isEmpty()
     }
@@ -69,17 +72,17 @@ class ProjectAppComponentsTest {
     fun `project app with configurable`() {
         val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
-        val component = components.filter{ it.childText("name") == "TestProjectAppComponentName"}.single()
+        val component = components.filter { it.childText("name") == "TestProjectAppComponentName" }.single()
         assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestProjectAppComponent")
         assertThat(component.childText("configurable"))
-            .isEqualTo("org.gradle.plugins.fsm.TestProjectAppComponent\$TestConfigurable")
+                .isEqualTo("org.gradle.plugins.fsm.TestProjectAppComponent\$TestConfigurable")
     }
 
     @Test
     fun `project app with resource`() {
         val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
-        val component = components.filter{ it.childText("name") == "TestProjectAppComponentName"}.single()
+        val component = components.filter { it.childText("name") == "TestProjectAppComponentName" }.single()
         assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestProjectAppComponent")
         val resources = component.filter("resources").single()
         val resource = resources.filter("resource").single()
@@ -99,12 +102,19 @@ class ProjectAppComponentsTest {
         val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
 
-        val component = components.filter{ it.childText("name") == "TestProjectAppComponentWithProperties"}.single()
+        val component = components.filter { it.childText("name") == "TestProjectAppComponentWithProperties" }.single()
         val resources = component.filter("resources").single()
         val resource = resources.filter("resource").single()
         assertThat(resource.attributes["name"]).isEqualTo("org.joda:joda-convert")
         assertThat(resource.attributes["version"]).isEqualTo("2.1.1")
     }
 
+    @Test
+    fun `project app that does not implement interface is rejected`() {
+        project.addClassToTestJar("org/gradle/plugins/fsm/components/invalid/InvalidProjectApp.class")
+        assertThatExceptionOfType(GradleException::class.java)
+                .isThrownBy { ModuleDescriptor(project) }
+                .withMessageContaining(InvalidProjectApp::class.simpleName)
+    }
 
 }

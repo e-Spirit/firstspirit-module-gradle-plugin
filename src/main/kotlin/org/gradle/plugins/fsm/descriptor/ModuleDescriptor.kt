@@ -1,11 +1,7 @@
 package org.gradle.plugins.fsm.descriptor
 
-import io.github.classgraph.ClassGraph
 import org.gradle.api.GradleException
 import org.gradle.api.Project
-import org.gradle.api.artifacts.ProjectDependency
-import org.gradle.api.plugins.JavaPlugin
-import org.gradle.jvm.tasks.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.redundent.kotlin.xml.*
 import java.io.ByteArrayInputStream
@@ -21,14 +17,9 @@ class ModuleDescriptor(private val project: Project) {
     val dependencies: List<Node>
 
     init {
-        val classGraph = ClassGraph()
-            .enableClassInfo()
-            .enableAnnotationInfo()
-        configureComponentScan(classGraph)
-
         val componentsNode: Node
 
-        classGraph.scan().use {
+        ComponentScan(project).use {
             components = Components(project, it)
             componentsNode = components.node
             resources = Resources(project, components.webXmlPaths)
@@ -67,24 +58,6 @@ class ModuleDescriptor(private val project: Project) {
     fun fsmDependencies(): String {
         return dependencies.joinToString("\n") { it.toString(PRINT_OPTIONS) }
     }
-
-    private fun configureComponentScan(classGraph: ClassGraph) {
-        // Get current project + all subprojects for which we have a compile dependency and get their
-        // jar tasks' classpath
-        val compileClasspathConfiguration = project.configurations.getByName("compileClasspath")
-        val projectDependencies = compileClasspathConfiguration.allDependencies.withType(ProjectDependency::class.java)
-            .map { it.dependencyProject }
-            .filter { it.plugins.hasPlugin(JavaPlugin::class.java) }
-        val allProjects = listOf(project) + projectDependencies
-        val jarFiles = allProjects.map {
-            val jarTask = it.tasks.getByName(JavaPlugin.JAR_TASK_NAME) as Jar
-            jarTask.archiveFile.get().asFile
-        }
-        // Must include annotations dependency to get default values for annotations
-        val annotationsDependency = project.configurations.getByName("fsmAnnotations").singleFile
-        classGraph.overrideClasspath(jarFiles + annotationsDependency)
-    }
-
 
     private fun moduleInformation(descriptor: Node) {
         with(descriptor) {

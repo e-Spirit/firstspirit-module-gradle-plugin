@@ -6,15 +6,15 @@ import de.espirit.firstspirit.module.ProjectApp
 import de.espirit.firstspirit.server.module.ModuleInfo.Mode
 import io.github.classgraph.AnnotationInfo
 import io.github.classgraph.ClassInfo
-import io.github.classgraph.ScanResult
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.xml
 
-class ProjectAppComponents(project: Project, private val scanResult: ScanResult) : ComponentsWithResources(project) {
+class ProjectAppComponents(project: Project, private val scanResult: ComponentScan) : ComponentsWithResources(project) {
 
     val nodes by lazy {
-        scanResult.getClassesImplementing(ProjectApp::class.java.name)
+        scanResult.getClassesWithAnnotation(ProjectAppComponent::class)
             .mapNotNull(this::nodeForProjectApp)
     }
 
@@ -22,6 +22,10 @@ class ProjectAppComponents(project: Project, private val scanResult: ScanResult)
     private fun nodeForProjectApp(projectApp: ClassInfo): Node? {
         if (projectApp.name in PROJECT_APP_BLACKLIST) {
             return null
+        }
+
+        if (!projectApp.implementsInterface(ProjectApp::class.java)) {
+            throw GradleException("Project App '${projectApp.name}' does not implement interface '${ProjectApp::class}'")
         }
 
         return projectApp.annotationInfo
@@ -42,7 +46,7 @@ class ProjectAppComponents(project: Project, private val scanResult: ScanResult)
                     }
                 }
             }
-            .firstOrNull()
+            .first()
     }
 
     private fun nodesForResources(annotation: AnnotationInfo): List<Node> {

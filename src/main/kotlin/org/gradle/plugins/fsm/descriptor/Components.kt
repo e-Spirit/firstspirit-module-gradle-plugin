@@ -10,16 +10,13 @@ import de.espirit.firstspirit.module.GadgetSpecification
 import de.espirit.firstspirit.module.ScheduleTaskSpecification
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
 import io.github.classgraph.ClassInfo
-import io.github.classgraph.ScanResult
 import org.gradle.api.Project
-import org.gradle.api.logging.Logger
-import org.gradle.api.logging.Logging
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.PrintOptions
 import org.redundent.kotlin.xml.xml
 import kotlin.reflect.KClass
 
-class Components(private val project: Project, private val scanResult: ScanResult) {
+class Components(private val project: Project, private val scanResult: ComponentScan) {
 
     lateinit var webXmlPaths: List<String>
     val node: Node
@@ -44,12 +41,12 @@ class Components(private val project: Project, private val scanResult: ScanResul
     }
 
     fun innerComponentsToString(): String {
-        return node.filter{ true }.joinToString("\n\n") { it.toString(PRINT_OPTIONS) }
+        return node.filter { true }.joinToString("\n\n") { it.toString(PRINT_OPTIONS) }
     }
 
-    private fun components(type: KClass<*>, transform: (ClassInfo) -> List<Node>, scanResult: ScanResult): List<Node> {
+    private fun components(type: KClass<out Annotation>, transform: (ClassInfo) -> List<Node>, scanResult: ComponentScan): List<Node> {
         return scanResult
-            .getClassesWithAnnotation(type.java.name)
+            .getClassesWithAnnotation(type)
             .flatMap(transform)
     }
 
@@ -152,7 +149,6 @@ class Components(private val project: Project, private val scanResult: ScanResul
     }
 
     companion object {
-        val LOGGER: Logger = Logging.getLogger(Components::class.java)
         private val PRINT_OPTIONS = PrintOptions(singleLineTextElements = true)
     }
 

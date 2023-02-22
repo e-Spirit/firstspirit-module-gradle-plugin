@@ -35,7 +35,7 @@ class FSMConfigurationsPluginTest {
         val implementationConfig = project.configurations.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
 
         assertThat(implementationConfig.extendsFrom.map { it.name })
-            .containsAll(FSMConfigurationsPlugin.COMPILE_CONFIGURATIONS)
+            .containsAll(FSMConfigurationsPlugin.FS_CONFIGURATIONS)
         assertThat(implementationConfig.isVisible).isFalse
         assertThat(implementationConfig.isTransitive).isTrue
     }
