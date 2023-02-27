@@ -1,3 +1,19 @@
+# Upgrading from 4.x.x to 4.5.0
+
+* The FSM task will no longer be added to the default publications automatically. In order to publish the FSM,
+add a configuration block like
+
+```kotlin
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            artifact(tasks.assembleFSM)
+            artifactId = "my-module-name"
+        }
+    }
+}
+```
+
 # Upgrading from 4.0.0 to 4.1.0
 
 * Resources defined with the `@Resource` annotation now use

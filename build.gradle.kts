@@ -6,7 +6,7 @@ import java.nio.file.Files
 import java.util.*
 
 plugins {
-    kotlin("jvm") version "1.7.20"
+    kotlin("jvm") version "1.8.10"
     id("maven-publish")
     id("idea")
     id("java-gradle-plugin")
@@ -15,6 +15,10 @@ plugins {
     id("org.ajoberstar.grgit") version "5.0.0"
     id("com.github.jk1.dependency-license-report") version "2.1"
     id("org.cyclonedx.bom") version "1.7.2"
+}
+
+tasks.withType<JavaCompile> {
+    options.release.set(11)
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {

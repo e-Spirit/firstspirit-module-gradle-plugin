@@ -18,7 +18,8 @@ class Resource(val project: Project, val dependency: ResolvedArtifact, val scope
         val filename = dependency.file.name
 
         // Construct resource identifier
-        val resourceExtension = if (dependency.extension.isEmpty() || dependency.extension == "jar") {
+        val extension = dependency.extension ?: ""
+        val resourceExtension = if (extension.isEmpty() || extension == "jar") {
             "" // Special case for "jar", as the "default" extension we do not put it here
         } else {
             "@${dependency.extension}"

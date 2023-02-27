@@ -8,8 +8,6 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Dependency
-import org.gradle.api.internal.artifacts.publish.ArchivePublishArtifact
-import org.gradle.api.internal.plugins.DefaultArtifactPublicationSet
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.plugins.JavaPlugin
@@ -76,7 +74,7 @@ class FSMPlugin: Plugin<Project> {
         fsmTask.description = "Assembles an fsmTask archive containing the FirstSpirit module."
         fsmTask.group = BasePlugin.BUILD_GROUP
 
-        addPublication(project, fsmTask)
+        removeDefaultJarArtifactFromArchives(project)
 
         val javaPlugin = project.extensions.getByType(JavaPluginExtension::class.java)
         val runtimeClasspath = javaPlugin.sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).runtimeClasspath
@@ -96,13 +94,10 @@ class FSMPlugin: Plugin<Project> {
         return fsmTask
     }
 
-    private fun addPublication(project: Project, fsm: FSM) {
+    private fun removeDefaultJarArtifactFromArchives(project: Project) {
         // remove jar artifact added by java the plugin (see http://issues.gradle.org/browse/GRADLE-687)
         val archivesConfig = project.configurations.getByName(Dependency.ARCHIVES_CONFIGURATION)
         archivesConfig.artifacts.clear()
-
-        val publicationSet = project.extensions.getByType(DefaultArtifactPublicationSet::class.java)
-        publicationSet.addCandidate(ArchivePublishArtifact(fsm))
     }
 
     private fun configureValidateTask(validateTask: TaskProvider<ValidateDescriptor>, fsmTask: FSM) {
