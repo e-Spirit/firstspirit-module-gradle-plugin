@@ -22,11 +22,7 @@ import org.apache.hc.core5.util.TimeValue
 import org.apache.hc.core5.util.Timeout
 import java.io.Closeable
 import java.io.InterruptedIOException
-import java.net.ConnectException
-import java.net.NoRouteToHostException
-import java.net.SocketTimeoutException
-import java.net.URI
-import java.net.UnknownHostException
+import java.net.*
 import java.nio.file.Path
 import java.time.Duration
 import javax.net.ssl.SSLException
@@ -58,7 +54,7 @@ class WebServiceConnector(
             }
         }
 
-        val requestConfig = RequestConfig.custom().setResponseTimeout(Timeout.of(Duration.ofMinutes(5))).build()
+        val requestConfig = RequestConfig.custom().setResponseTimeout(Timeout.of(Duration.ofMinutes(20))).build()
         clientBuilder.setDefaultRequestConfig(requestConfig)
 
         val retryStrategy = object : DefaultHttpRequestRetryStrategy(3, TimeValue.ofSeconds(5),
