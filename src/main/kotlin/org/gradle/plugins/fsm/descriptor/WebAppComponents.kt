@@ -1,8 +1,8 @@
 package org.gradle.plugins.fsm.descriptor
 
 import com.espirit.moddev.components.annotations.WebAppComponent
+import de.espirit.firstspirit.module.AbstractWebApp
 import de.espirit.firstspirit.module.Configuration
-import de.espirit.firstspirit.module.ProjectApp
 import de.espirit.firstspirit.module.WebApp
 import io.github.classgraph.AnnotationInfo
 import io.github.classgraph.ClassInfo
@@ -13,7 +13,6 @@ import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
 import org.gradle.api.plugins.JavaPlugin
-import org.gradle.jvm.tasks.Jar
 import org.gradle.plugins.fsm.DeclaredWebAppChecker
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
@@ -39,7 +38,7 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
         // Check if web-apps are complete
         // Warn if there is a @WebAppComponent annotation not defined in the `firstSpiritModule` block
         val undeclaredWebAppComponents = webAppChecker.webAppAnnotationsWithoutDeclaration
-        if (declaredWebApps.isNotEmpty() && !(undeclaredWebAppComponents.isNullOrEmpty())) {
+        if (declaredWebApps.isNotEmpty() && !undeclaredWebAppComponents.isNullOrEmpty()) {
             val warningStringBuilder = StringBuilder()
             warningStringBuilder.append("@WebAppComponent annotations found that are not registered in the firstSpiritModule configuration block:\n")
             undeclaredWebAppComponents.forEach {
@@ -73,8 +72,10 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
         val nodes = mutableListOf<Node>()
 
         webAppClasses.forEach { webAppClass ->
-            if (!webAppClass.implementsInterface(WebApp::class.java)) {
-                throw GradleException("Web App '${webAppClass.name}' does not implement interface '${WebApp::class}'")
+            // Report if WebApp does not seem to implement WebApp or AbstractWebApp
+            if (webAppClass.superclass?.name !in WEB_APP_TYPES) {
+                LOGGER.info("Web App '${webAppClass.name}' does not appear to implement interface '${WebApp::class.qualifiedName}'.")
+                LOGGER.info("This might be because the class implements or extends an intermediary type inheriting from ${WebApp::class.simpleName}.")
             }
 
             val annotation = webAppClass.annotationInfo
@@ -108,8 +109,7 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
                 // Don't want duplicate resources
                 webAppProjectDependencies.removeAll(sharedWebCompileDependencies)
 
-                val jarTask = webAppProject.tasks.findByName("jar") as Jar
-                val jarFile = jarTask.archiveFile.get().asFile
+                val jarFile = webAppProject.buildJar()
                 if (!jarFile.exists()) {
                     Resources.LOGGER.warn("Jar file '$jarFile' not found!")
                 } else if (Resources.isEmptyJarFile(jarFile)) {
@@ -118,7 +118,7 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
                     webResources.add(xml("resource") {
                         attribute("name", "${webAppProject.group}:${webAppProject.name}")
                         attribute("version", webAppProject.version)
-                        -"lib/${jarTask.archiveFileName.get()}"
+                        -"lib/${jarFile.name}"
                     })
                 }
 
@@ -152,12 +152,12 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
                 annotation.getClassNameOrNull("configurable", Configuration::class)?.let { "configurable" { -it } }
                 "web-xml" { -webXmlPath }
                 "web-resources" {
-                    val jarTask = project.tasks.findByName("jar") as Jar
-                    if (!Resources.isEmptyJarFile(jarTask.archiveFile.get().asFile)) {
+                    val jarFile = project.buildJar()
+                    if (!Resources.isEmptyJarFile(jarFile)) {
                         "resource" {
                             attribute("name", "${project.group}:${project.name}")
                             attribute("version", project.version)
-                            -"lib/${jarTask.archiveFileName.get()}"
+                            -"lib/${jarFile.name}"
                         }
                     }
 
@@ -233,6 +233,11 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
     }
 
     companion object {
-        val LOGGER: Logger = Logging.getLogger(WebAppComponents::class.java)
+        private val LOGGER: Logger = Logging.getLogger(WebAppComponents::class.java)
+
+        private val WEB_APP_TYPES = setOf(
+                WebApp::class.qualifiedName,
+                AbstractWebApp::class.qualifiedName
+        )
     }
 }

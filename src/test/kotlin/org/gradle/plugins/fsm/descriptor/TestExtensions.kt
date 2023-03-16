@@ -2,8 +2,6 @@ package org.gradle.plugins.fsm.descriptor
 
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtraPropertiesExtension
-import org.gradle.api.plugins.JavaPlugin
-import org.gradle.jvm.tasks.Jar
 import java.io.File
 import java.net.URI
 import java.nio.file.FileSystems
@@ -19,16 +17,13 @@ import java.util.jar.JarOutputStream
  */
 fun Project.copyTestJar() {
     val testJar = File(System.getProperty("testJar"))
-    val jar = tasks.getByName(JavaPlugin.JAR_TASK_NAME) as Jar
-    testJar.copyTo(jar.archiveFile.get().asFile)
+    testJar.copyTo(buildJar())
 }
 
 fun Project.addClassToTestJar(pathToClassFile: String) {
-    val jar = tasks.getByName(JavaPlugin.JAR_TASK_NAME) as Jar
-    val testJar = jar.archiveFile.get().asFile
     val classesDir = Paths.get(System.getProperty("classesDir"))
     val classToAdd = classesDir.resolve("kotlin/test/$pathToClassFile")
-    FileSystems.newFileSystem(URI.create("jar:${testJar.toURI()}"), emptyMap<String, Any>()).use {
+    FileSystems.newFileSystem(URI.create("jar:${buildJar().toURI()}"), emptyMap<String, Any>()).use {
         val newClass = it.getPath(pathToClassFile)
         Files.copy(classToAdd, newClass)
     }
@@ -52,7 +47,7 @@ fun Project.defineArtifactoryForProject() {
 }
 
 fun Project.writeJarFileWithEntries(vararg entries: String) {
-    val jarFile = tasks.named("jar", Jar::class.java).get().archiveFile.get().asFile
+    val jarFile = buildJar()
     Files.createDirectories(jarFile.parentFile.toPath())
     jarFile.createNewFile()
     JarOutputStream(jarFile.outputStream()).use { jar ->

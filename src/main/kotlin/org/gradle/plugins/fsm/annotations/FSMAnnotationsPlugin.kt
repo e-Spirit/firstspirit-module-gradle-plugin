@@ -22,12 +22,15 @@ class FSMAnnotationsPlugin: Plugin<Project> {
             props.load(it)
         }
 
+        project.configurations.maybeCreate("fsmAnnotations")
         project.dependencies.let {
             val annotationsDep = "com.espirit.moddev.components:annotations:${props["fsm-annotations-version"]}"
             project.logger.debug("fsmgradleplugin uses $annotationsDep")
 
             it.add("compileOnly", annotationsDep)
+            it.add("fsmAnnotations", annotationsDep)
         }
+
     }
 
     companion object {

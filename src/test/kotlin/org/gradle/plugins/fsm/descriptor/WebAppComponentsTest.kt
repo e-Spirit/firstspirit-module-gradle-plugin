@@ -7,7 +7,6 @@ import org.gradle.api.Project
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
-import org.gradle.plugins.fsm.components.invalid.InvalidWebApp
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
@@ -271,19 +270,10 @@ class WebAppComponentsTest {
                 .withMessageContaining("not_existing")
     }
 
-    @Test
-    fun `web app that does not implement interface is rejected`() {
-        project.addClassToTestJar("org/gradle/plugins/fsm/components/invalid/InvalidWebApp.class")
-        assertThatExceptionOfType(GradleException::class.java)
-                .isThrownBy { ModuleDescriptor(project) }
-                .withMessageContaining(InvalidWebApp::class.simpleName)
-    }
-
     companion object {
         private const val NAME = "webapps-test-project"
         private const val GROUP = "test"
         private const val VERSION = "1.2"
     }
-
 
 }

@@ -37,6 +37,9 @@ class FSMAnnotationsPluginTest {
         val annotationDependencyCompileOnly = project.configurations.getByName("compileOnly").dependencies.find {
             it.group == "com.espirit.moddev.components" && it.name == "annotations"
         } ?: error("annotations dependency not found for 'compileOnly' configuration")
+        val annotationDependencyFSMAnnotations = project.configurations.getByName("fsmAnnotations").dependencies.find {
+            it.group == "com.espirit.moddev.components" && it.name == "annotations"
+        } ?: error("annotations dependency not found for 'fsmAnnotations' configuration")
 
         val props = Properties()
         FSMPlugin::class.java.getResourceAsStream("/versions.properties").use {
@@ -44,6 +47,7 @@ class FSMAnnotationsPluginTest {
         }
 
         assertThat(props["fsm-annotations-version"]).isEqualTo(annotationDependencyCompileOnly.version)
+        assertThat(props["fsm-annotations-version"]).isEqualTo(annotationDependencyFSMAnnotations.version)
     }
     
 }

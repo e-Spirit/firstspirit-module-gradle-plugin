@@ -1,13 +1,10 @@
 package org.gradle.plugins.fsm.descriptor
 
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
-import org.gradle.plugins.fsm.components.invalid.InvalidProjectApp
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_MODULE_COMPILE_CONFIGURATION_NAME
 import org.gradle.testfixtures.ProjectBuilder
@@ -107,14 +104,6 @@ class ProjectAppComponentsTest {
         val resource = resources.filter("resource").single()
         assertThat(resource.attributes["name"]).isEqualTo("org.joda:joda-convert")
         assertThat(resource.attributes["version"]).isEqualTo("2.1.1")
-    }
-
-    @Test
-    fun `project app that does not implement interface is rejected`() {
-        project.addClassToTestJar("org/gradle/plugins/fsm/components/invalid/InvalidProjectApp.class")
-        assertThatExceptionOfType(GradleException::class.java)
-                .isThrownBy { ModuleDescriptor(project) }
-                .withMessageContaining(InvalidProjectApp::class.simpleName)
     }
 
 }

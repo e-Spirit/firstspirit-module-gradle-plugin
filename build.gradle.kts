@@ -160,7 +160,6 @@ val testJar = tasks.create<Jar>("testJar") {
     exclude("org/gradle/plugins/fsm/TestModuleImpl.class")
     exclude("org/gradle/plugins/fsm/TestWebAppWithProjectProperties.class")
     exclude("org/gradle/plugins/fsm/TestProjectAppComponentWithProperties.class")
-    exclude("org/gradle/plugins/fsm/components/invalid/**/*.class")
 }
 
 tasks.test {

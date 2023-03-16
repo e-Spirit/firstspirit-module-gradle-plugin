@@ -6,7 +6,6 @@ import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
-import org.gradle.jvm.tasks.Jar
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_MODULE_COMPILE_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_SERVER_COMPILE_CONFIGURATION_NAME
@@ -38,8 +37,7 @@ class Resources(private val project: Project, private val webXmlPaths: List<Stri
      * The jar file assembled for the current project
      */
     private fun projectResource(): Node? {
-        val jarTask = project.tasks.named("jar", Jar::class.java).get()
-        val jarFile = jarTask.archiveFile.get().asFile
+        val jarFile = project.buildJar()
         if (!jarFile.exists()) {
             LOGGER.warn("Jar file '$jarFile' not found!")
             return null
@@ -53,7 +51,7 @@ class Resources(private val project: Project, private val webXmlPaths: List<Stri
             attribute("version", project.version)
             attribute("scope", "module")
             attribute("mode", Mode.ISOLATED.name.lowercase())
-            -"lib/${jarTask.archiveFileName.get()}"
+            -"lib/${jarFile.name}"
         }
     }
 

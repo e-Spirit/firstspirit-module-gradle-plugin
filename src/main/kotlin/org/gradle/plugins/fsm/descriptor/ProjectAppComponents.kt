@@ -6,8 +6,9 @@ import de.espirit.firstspirit.module.ProjectApp
 import de.espirit.firstspirit.server.module.ModuleInfo.Mode
 import io.github.classgraph.AnnotationInfo
 import io.github.classgraph.ClassInfo
-import org.gradle.api.GradleException
 import org.gradle.api.Project
+import org.gradle.api.logging.Logger
+import org.gradle.api.logging.Logging
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.xml
 
@@ -15,17 +16,15 @@ class ProjectAppComponents(project: Project, private val scanResult: ComponentSc
 
     val nodes by lazy {
         scanResult.getClassesWithAnnotation(ProjectAppComponent::class)
-            .mapNotNull(this::nodeForProjectApp)
+            .map(this::nodeForProjectApp)
     }
 
     @Suppress("DuplicatedCode") // No refactoring possible because of incompatible annotations
-    private fun nodeForProjectApp(projectApp: ClassInfo): Node? {
-        if (projectApp.name in PROJECT_APP_BLACKLIST) {
-            return null
-        }
-
-        if (!projectApp.implementsInterface(ProjectApp::class.java)) {
-            throw GradleException("Project App '${projectApp.name}' does not implement interface '${ProjectApp::class}'")
+    private fun nodeForProjectApp(projectApp: ClassInfo): Node {
+        // Report if ProjectApp does not seem to implement ProjectApp
+        if (projectApp.superclass?.name !in PROJECT_APP_TYPES) {
+            LOGGER.info("Project App '${projectApp.name}' does not appear to implement interface '${ProjectApp::class.qualifiedName}'.")
+            LOGGER.info("This might be because the class implements or extends an intermediary type inheriting from ${ProjectApp::class.simpleName}.")
         }
 
         return projectApp.annotationInfo
@@ -75,8 +74,11 @@ class ProjectAppComponents(project: Project, private val scanResult: ComponentSc
     }
 
     companion object {
-        // ContentTransportProjectApp is part of the fs-access.jar
-        val PROJECT_APP_BLACKLIST = listOf("de.espirit.firstspirit.feature.ContentTransportProjectApp")
+        private val LOGGER: Logger = Logging.getLogger(WebAppComponents::class.java)
+
+        private val PROJECT_APP_TYPES = setOf(
+                ProjectApp::class.qualifiedName
+        )
     }
 
 }
