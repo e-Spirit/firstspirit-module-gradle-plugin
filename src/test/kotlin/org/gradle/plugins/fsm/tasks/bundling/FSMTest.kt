@@ -292,7 +292,7 @@ class FSMTest {
         project.version = "1.0.0"
 
         // Create dummy test projects
-        val subprojectAFile = testDir.toPath().resolve("a").toFile()
+        val subprojectAFile = testDir.resolve("a")
         subprojectAFile.mkdirs()
         val subprojectA = ProjectBuilder.builder().withName("a").withProjectDir(subprojectAFile).withParent(project).build()
         subprojectA.plugins.apply("java")
@@ -313,7 +313,7 @@ class FSMTest {
         nestedA.resolve("n1.txt").writeText("n1.txt")
         nestedA.resolve("n2.txt").writeText("n2.txt")
 
-        val subprojectBFile = testDir.toPath().resolve("b").toFile()
+        val subprojectBFile = testDir.resolve("b")
         subprojectBFile.mkdirs()
         val subprojectB = ProjectBuilder.builder().withName("b").withProjectDir(subprojectBFile).withParent(project).build()
         subprojectB.plugins.apply("java")

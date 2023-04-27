@@ -42,7 +42,7 @@ class FSMAnnotationsPluginTest {
         } ?: error("annotations dependency not found for 'fsmAnnotations' configuration")
 
         val props = Properties()
-        FSMPlugin::class.java.getResourceAsStream("/versions.properties").use {
+        FSMPlugin::class.java.getResourceAsStream(FSMPlugin.VERSIONS_PROPERTIES_FILE).use {
             props.load(it)
         }
 

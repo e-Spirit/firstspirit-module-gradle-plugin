@@ -119,11 +119,11 @@ val writePropertiesToResourceFile = tasks.create("writePropertiesToResourceFile"
         val props = Properties()
         props.setProperty("fsm-annotations-version", fsmAnnotationsVersion)
         props.setProperty("version", version as String)
-        val propsFile = sourceSets.main.get().output.resourcesDir!!.toPath().resolve("versions.properties").toFile()
-        val propsFileTest = sourceSets.test.get().output.resourcesDir!!.toPath().resolve("versions.properties").toFile()
+        val propsFile = sourceSets.main.get().output.resourcesDir!!.resolve("fsm-gradle-plugin/versions.properties")
+        val propsFileTest = sourceSets.test.get().output.resourcesDir!!.resolve("fsm-gradle-plugin/versions.properties")
         listOf(propsFile, propsFileTest).forEach { targetFile ->
             targetFile.parentFile.mkdirs()
-            if(!targetFile.exists()) {
+            if (!targetFile.exists()) {
                 Files.createFile(targetFile.toPath())
             }
             targetFile.writer().use { writer ->

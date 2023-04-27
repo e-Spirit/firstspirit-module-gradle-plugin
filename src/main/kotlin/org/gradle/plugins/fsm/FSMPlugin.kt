@@ -175,7 +175,7 @@ class FSMPlugin: Plugin<Project> {
     }
 
     /**
-     * Gets the version of the FSM gradle plugin from `versions.properties`.
+     * Gets the version of the FSM gradle plugin from `fsm-gradle-plugin/versions.properties`.
      * It would also be possible to use the [Package.getImplementationVersion] property of FSMPlugin,
      * however, this relies on the implementation version being set in the plugin jar.
      * This is not the case for unit tests starting a gradle build.
@@ -183,7 +183,7 @@ class FSMPlugin: Plugin<Project> {
      * @return The plugin version
      */
     private fun getPluginVersion(): String {
-        FSMPlugin::class.java.getResourceAsStream("/versions.properties").use {
+        FSMPlugin::class.java.getResourceAsStream(VERSIONS_PROPERTIES_FILE).use {
             val properties = Properties()
             properties.load(it)
             return properties.getProperty("version")
@@ -199,6 +199,7 @@ class FSMPlugin: Plugin<Project> {
         const val VALIDATE_DESCRIPTOR_TASK_NAME = "validateDescriptor"
         const val ISOLATION_CHECK_TASK_NAME = "checkIsolation"
         const val GENERATE_LICENSE_REPORT_TASK_NAME = "generateLicenseReport"
+        const val VERSIONS_PROPERTIES_FILE = "/fsm-gradle-plugin/versions.properties"
     }
 
 }

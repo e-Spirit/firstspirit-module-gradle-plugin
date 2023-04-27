@@ -3,6 +3,7 @@ package org.gradle.plugins.fsm.annotations
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.plugins.fsm.FSMPlugin
 import java.util.*
 
 class FSMAnnotationsPlugin: Plugin<Project> {
@@ -15,8 +16,8 @@ class FSMAnnotationsPlugin: Plugin<Project> {
 
     private fun addFsmAnnotationsDependencyToProject(project: Project) {
         val props = Properties()
-        val versionFile = FSMAnnotationsPlugin::class.java.getResourceAsStream("/versions.properties")
-            ?: throw IllegalStateException("Couldn't find versions.properties file that should be a generated resource!")
+        val versionFile = FSMAnnotationsPlugin::class.java.getResourceAsStream(FSMPlugin.VERSIONS_PROPERTIES_FILE)
+            ?: throw IllegalStateException("Couldn't find properties file '${FSMPlugin.VERSIONS_PROPERTIES_FILE}'!")
 
         versionFile.use {
             props.load(it)
