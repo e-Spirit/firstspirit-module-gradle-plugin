@@ -105,6 +105,12 @@ open class FSMPluginExtension(val project: Project) {
     var firstSpiritVersion: String? = null
 
     /**
+     * Defines the minimal version of the FirstSpirit server that is required
+     * to install the module.
+     */
+    var minimalFirstSpiritVersion: String? = null
+
+    /**
      * Whether to append the artifact version as the minVersion attribute to resources.
      */
     var appendDefaultMinVersion: Boolean = true

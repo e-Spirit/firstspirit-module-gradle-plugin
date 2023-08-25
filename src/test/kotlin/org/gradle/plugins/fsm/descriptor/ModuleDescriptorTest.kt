@@ -68,6 +68,30 @@ class ModuleDescriptorTest {
     }
 
     @Test
+    fun `no min-fs-version should not be added by default`() {
+        val minFsVersionTags = moduleDescriptor.node.filter("min-fs-version")
+        assertThat(minFsVersionTags).isEmpty()
+    }
+
+    @Test
+    fun `no min-fs-version should not be added if empty`() {
+        project.extensions.getByType(FSMPluginExtension::class.java).minimalFirstSpiritVersion = ""
+        moduleDescriptor = ModuleDescriptor(project)
+
+        val minFsVersionTags = moduleDescriptor.node.filter("min-fs-version")
+        assertThat(minFsVersionTags).isEmpty()
+    }
+
+    @Test
+    fun `min-fs-version should be added if defined`() {
+        project.extensions.getByType(FSMPluginExtension::class.java).minimalFirstSpiritVersion = "5.2.230909"
+        moduleDescriptor = ModuleDescriptor(project)
+
+        val minFsVersionTag = moduleDescriptor.node.filter("min-fs-version").single()
+        assertThat(minFsVersionTag.textContent()).isEqualTo("5.2.230909")
+    }
+
+    @Test
     fun `module description should be equal to project description`() {
         project.description = "Test project"
         moduleDescriptor = ModuleDescriptor(project)

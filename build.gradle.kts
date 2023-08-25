@@ -6,15 +6,14 @@ import java.nio.file.Files
 import java.util.*
 
 plugins {
-    kotlin("jvm") version "1.8.10"
+    kotlin("jvm") version "1.9.0"
     id("maven-publish")
     id("idea")
     id("java-gradle-plugin")
-    id("com.dorongold.task-tree") version "1.5"
     id("net.researchgate.release") version "3.0.2"
     id("org.ajoberstar.grgit") version "5.0.0"
-    id("com.github.jk1.dependency-license-report") version "2.1"
-    id("org.cyclonedx.bom") version "1.7.2"
+    id("com.github.jk1.dependency-license-report") version "2.3"
+    id("org.cyclonedx.bom") version "1.7.4"
 }
 
 tasks.withType<JavaCompile> {
@@ -63,24 +62,25 @@ gradlePlugin {
     }
 }
 
-val fsRuntimeVersion = "5.2.220309" // FirstSpirit 2022-03
+val fsRuntimeVersion = "5.2.230909" // FirstSpirit 2023-09
 
 dependencies {
     implementation(gradleApi())
     implementation("io.github.classgraph:classgraph:4.8.154")
-    implementation("com.github.jk1:gradle-license-report:2.1")
+    implementation("com.github.jk1:gradle-license-report:2.3")
     implementation("org.redundent:kotlin-xml-builder:1.9.0")
-    implementation("org.json:json:20220924")
-    implementation("org.apache.maven:maven-artifact:3.8.6")
+    implementation("org.json:json:20230618")
+    implementation("org.apache.maven:maven-artifact:3.9.4")
     implementation("org.apache.httpcomponents.client5:httpclient5:5.2.1")
     implementation("com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}")
     implementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
     testImplementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
-    testImplementation(platform("org.junit:junit-bom:5.9.2"))
+    testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.assertj:assertj-core:3.24.2")
-    testImplementation("org.mockito:mockito-junit-jupiter:5.1.1")
-    testImplementation("org.ow2.asm:asm:9.4")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.5.0")
+    testImplementation("org.ow2.asm:asm:9.5")
     testImplementation(gradleTestKit())
 }
 
@@ -173,7 +173,7 @@ tasks.test {
     systemProperty("gradle.version", gradle.gradleVersion)
     systemProperty("version", version)
     systemProperty("testJar", testJar.archiveFile.get().asFile.absolutePath)
-    systemProperty("classesDir", project.buildDir.resolve("classes").absolutePath)
+    systemProperty("classesDir", layout.buildDirectory.dir("classes").get().asFile.absolutePath)
 
     if (Os.isFamily(Os.FAMILY_WINDOWS)) {
         // Gradle may keep locks on Windows systems, causing the @TempDir cleanup to fail

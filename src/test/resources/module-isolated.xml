@@ -2,6 +2,7 @@
     <name>$name</name>
     <displayname>$displayName</displayname>
     <version>$version</version>
+    <min-fs-version>$minimalFirstSpiritVersion</min-fs-version>
     <description>$description</description>
     <vendor>$vendor</vendor>
     <licenses>$licensesFile</licenses>

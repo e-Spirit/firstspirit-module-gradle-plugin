@@ -4,7 +4,6 @@ import com.espirit.moddev.components.annotations.WebAppComponent;
 import com.espirit.moddev.components.annotations.WebResource;
 import de.espirit.firstspirit.module.AbstractWebApp;
 import de.espirit.firstspirit.module.*;
-import de.espirit.firstspirit.server.module.ModuleInfo;
 
 import javax.swing.*;
 import java.awt.*;

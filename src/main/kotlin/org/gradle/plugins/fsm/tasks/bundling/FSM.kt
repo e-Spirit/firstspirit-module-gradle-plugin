@@ -43,7 +43,7 @@ abstract class FSM: Jar() {
 
     init {
         archiveExtension.set(FSM_EXTENSION)
-        destinationDirectory.set(project.buildDir.resolve("fsm"))
+        destinationDirectory.set(project.layout.buildDirectory.dir("fsm"))
         pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
         duplicatesStrategy = DuplicatesStrategy.WARN
     }
@@ -59,14 +59,14 @@ abstract class FSM: Jar() {
 
         // include licenses report
         into("META-INF") {
-            it.from(project.buildDir.resolve(LICENSES_DIR_NAME)) { from ->
+            it.from(project.layout.buildDirectory.dir(LICENSES_DIR_NAME)) { from ->
                 from.include("licenses.csv")
             }
         }
 
         // include license texts
         into("/") { into ->
-            with(into.from(project.buildDir.resolve(LICENSES_DIR_NAME))) {
+            with(into.from(project.layout.buildDirectory.dir(LICENSES_DIR_NAME))) {
                 includeEmptyDirs = false
                 eachFile { file ->
                     // Set output path
@@ -180,6 +180,7 @@ abstract class FSM: Jar() {
                 .replace("\$name", pluginExtension.moduleName ?: project.name)
                 .replace("\$displayName", pluginExtension.displayName ?: project.name)
                 .replace("\$version", project.version.toString())
+                .replace("\$minimalFirstSpiritVersion", pluginExtension.minimalFirstSpiritVersion ?: "")
                 .replace("\$description", project.description ?: project.name)
                 .replace("\$vendor", pluginExtension.vendor ?: "")
                 .replace("\$artifact", project.tasks.named("jar", Jar::class.java).get().archiveFileName.toString())

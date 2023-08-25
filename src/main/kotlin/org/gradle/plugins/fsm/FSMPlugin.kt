@@ -144,7 +144,7 @@ class FSMPlugin: Plugin<Project> {
 
         with(project.extensions.getByType(LicenseReportExtension::class.java)) {
             // Set output directory for the report data.
-            outputDir = "${project.buildDir}/${FSM.LICENSES_DIR_NAME}"
+            outputDir = project.layout.buildDirectory.dir(FSM.LICENSES_DIR_NAME).get().asFile.absolutePath
             configurations = arrayOf(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME)
             renderers = arrayOf(CsvReportRenderer())
         }

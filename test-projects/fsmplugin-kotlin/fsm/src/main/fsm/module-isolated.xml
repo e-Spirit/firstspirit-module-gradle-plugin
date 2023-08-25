@@ -1,6 +1,7 @@
 <module>
     <name>$name</name>
     <version>$version</version>
+    <min-fs-version>$minimalFirstSpiritVersion</min-fs-version>
     <description>$description</description>
     <licenses>$licensesFile</licenses>
 $class

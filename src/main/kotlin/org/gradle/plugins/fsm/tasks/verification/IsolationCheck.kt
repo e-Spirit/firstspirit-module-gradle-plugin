@@ -45,7 +45,7 @@ open class IsolationCheck: DefaultTask() {
         val connector = WebServiceConnector(uri, getFirstSpiritVersion(), getMaxBytecodeVersion(),
             getIsolationDetectorUsername(), getIsolationDetectorPassword())
 
-        val complianceCheck = ComplianceCheck(getComplianceLevel(), project.buildDir.toPath(), connector)
+        val complianceCheck = ComplianceCheck(getComplianceLevel(), project.layout.buildDirectory.get().asFile.toPath(), connector)
         pluginExtension.isolationDetectorWhitelist.forEach { complianceCheck.addWhitelistedResource(it) }
         pluginExtension.contentCreatorComponents.forEach { complianceCheck.addContentCreatorComponent(it) }
 

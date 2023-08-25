@@ -1,6 +1,5 @@
-import de.espirit.mavenplugins.fsmchecker.ComplianceLevel.MINIMAL
+import de.espirit.mavenplugins.fsmchecker.ComplianceLevel.HIGHEST
 import org.gradle.plugins.fsm.configurations.fsDependency
-import java.nio.file.Paths
 import java.util.zip.ZipFile
 
 plugins {
@@ -16,7 +15,7 @@ java {
 val customLib: Configuration by configurations.creating
 
 dependencies {
-    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.230212")
+    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.230909")
 
     fsServerCompile(project(":api"))
     fsModuleCompile(project(":impl"))
@@ -30,7 +29,7 @@ dependencies {
 
     customLib("org.slf4j:slf4j-api:2.0.6")
 
-    testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
 }
 
 tasks.jar {
@@ -41,9 +40,10 @@ firstSpiritModule {
     moduleDirName = "src/main/fsm"
     displayName = "test-project displayName"
     isolationDetectorUrl = "https://fsdev.e-spirit.de/FsmDependencyDetector/"
-    complianceLevel = MINIMAL
-    firstSpiritVersion = "5.2.230212"
-    vendor = "e-Spirit AG"
+    complianceLevel = HIGHEST
+    firstSpiritVersion = "5.2.230909"
+    minimalFirstSpiritVersion = "5.2.230909"
+    vendor = "Crownpeak Technology GmbH"
     fsmDependencies = listOf("otherModuleName", "yetAnotherModule")
     libraries {
         create("libWithAllServerLibs") {
@@ -59,14 +59,14 @@ firstSpiritModule {
     }
 }
 
-val fsmArchivePath = Paths.get(project.buildDir.path, "fsm", "fsm-${project.version}.fsm")
+val fsmArchivePath = layout.buildDirectory.file("fsm/fsm-${project.version}.fsm").get().asFile
 
 val testFsmIsProduced by tasks.creating {
     dependsOn(tasks.assembleFSM)
 
     doLast {
         logger.info("Searching for fsm file in $fsmArchivePath")
-        assert(fsmArchivePath.toFile().exists())
+        assert(fsmArchivePath.exists())
     }
 }
 
@@ -74,7 +74,7 @@ val testZipFileContainsModuleXml by tasks.creating {
     dependsOn(tasks.assembleFSM)
 
     doLast {
-        val fsmFile = ZipFile(fsmArchivePath.toString())
+        val fsmFile = ZipFile(fsmArchivePath)
         val moduleXml = fsmFile.entries().toList().first { "META-INF/module-isolated.xml" == it.getName() }
         assert(moduleXml != null)
     }

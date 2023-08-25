@@ -89,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "4.6.4"
+    id("de.espirit.firstspirit-module") version "4.7.0"
 }
 ```
 
@@ -117,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "4.6.4"
+    id("de.espirit.firstspirit-module-configurations") version "4.7.0"
 }
 ```
 
@@ -177,6 +177,7 @@ contentCreatorComponents    | String[]      | *unset*                   |  Names
 complianceLevel             | String        | DEFAULT                   |  Compliance level to check for if isolationDetectorUrl is set
 maxBytecodeVersion          | int           | 55                        |  Maximum bytecode version for all JAR files of the FSM. Defaults to 55 (JDK 11).
 firstSpiritVersion          | String        | *unset*             		|  FirstSpirit version used in the isolation check
+minimalFirstSpiritVersion   | String        | *unset*                   |  Minimal FirstSpirit server version required to install the module. *Supported by FirstSpirit 2023.10 and later.*
 appendDefaultMinVersion     | boolean       | true                      |  If set to true, appends the artifact version as the minVersion attribute to all resource tags (except resources which were explicitly set within FS component annotations)
 
 ### Example
@@ -191,7 +192,8 @@ firstSpiritModule {
     isolationDetectorUsername = property("isolation_detector_username") as String  // Read sensitive credentials from external properties file
     isolationDetectorPassword = property("isolation_detector_password") as String  
     isolationDetectorWhitelist = listOf("org.freemarker:freemarker:2.3.28")
-    firstSpiritVersion = "5.2.221008"
+    firstSpiritVersion = "5.2.230909"
+    minimalFirstSpiritVersion = "5.2.230909" 
     complianceLevel = HIGHEST
 }
 ```
@@ -213,6 +215,7 @@ $description | project.description | Description of the FSM
 $artifact | project.jar.archiveName | Artifact (jar) name of the FSM
 $class | complex (see module example) | The class name of the class implementing the FirstSpirit module interface
 $components | complex (see component example) | All FirstSpirit components that can be found in the FSM archive
+$minimalFirstSpiritVersion | (unset) | Minimal FirstSpirit server version required to install the module. Supported by FirstSpirit 2023.10 and later.
 $resources | complex (see resource example) | All FirstSpirit resources that can be found in the FSM archive
 
 If no module-isolated.xml file is provided within the project, a small generic template module-isolated.xml file is used by the plugin.
@@ -562,7 +565,7 @@ You can use the following snippet as a starting point:
 // Groovy
 
 plugins {
-    id 'de.espirit.firstspirit-module' version '4.6.4'
+    id 'de.espirit.firstspirit-module' version '4.7.0'
 }
 
 description = 'Example FSM Gradle build'
@@ -597,7 +600,7 @@ firstSpiritModule {
 // Kotlin
 
 plugins {
-    id("de.espirit.firstspirit-module") version "4.6.4"
+    id("de.espirit.firstspirit-module") version "4.7.0"
 }
 
 description = "Example FSM Gradle build"

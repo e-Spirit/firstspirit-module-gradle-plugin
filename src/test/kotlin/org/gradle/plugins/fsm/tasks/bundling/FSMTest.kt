@@ -83,7 +83,8 @@ class FSMTest {
 
     @Test
     fun archivePathUsed() {
-        assertThat(fsm.archiveFile.get().asFile).isEqualTo(project.buildDir.resolve("fsm").resolve(fsm.archiveFile.get().asFile.name))
+        assertThat(fsm.archiveFile.get().asFile).isEqualTo(project.layout.buildDirectory.dir("fsm").get().asFile
+            .resolve(fsm.archiveFile.get().asFile.name))
     }
 
     @Test
@@ -105,6 +106,27 @@ class FSMTest {
         fsm.execute()
 
         assertThat(moduleXml()).contains("""<custom-tag>custom</custom-tag>""")
+    }
+
+    @Test
+    fun `variables should be replaced in custom descriptor`() {
+        val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+        project.version = "1.4.3"
+        project.description = "Module for variable replacement test"
+        pluginExtension.vendor = "Crownpeak Technology GmbH"
+        pluginExtension.minimalFirstSpiritVersion = "5.2.230909"
+        pluginExtension.moduleDirName = this::class.java.classLoader.getResource("module-isolated.xml")?.path
+
+        fsm.execute()
+
+        assertThat(moduleXml()).containsIgnoringNewLines("""
+            <name>${project.name}</name>
+            <displayname>test</displayname>
+            <version>${project.version}</version>
+            <min-fs-version>${pluginExtension.minimalFirstSpiritVersion}</min-fs-version>
+            <description>${project.description}</description>
+            <vendor>${pluginExtension.vendor}</vendor>
+        """.replaceIndent("\t"))
     }
 
     @Test

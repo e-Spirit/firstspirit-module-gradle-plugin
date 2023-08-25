@@ -203,15 +203,15 @@ class TestMinimalGadgetComponent
 
 class TestGadgetFactoryOne : GadgetFactory<Gadget, GomElement, GadgetContext<*>> {
 
-    override fun create(gadgetContext: GadgetContext<*>): Gadget? {
-        return null
+    override fun create(gadgetContext: GadgetContext<*>): Gadget {
+        error("Gadget not available")
     }
 }
 
 class TestGadgetFactoryTwo : GadgetFactory<Gadget, GomElement, GadgetContext<*>> {
 
-    override fun create(gadgetContext: GadgetContext<*>): Gadget? {
-        return null
+    override fun create(gadgetContext: GadgetContext<*>): Gadget {
+        error("Gadget not available")
     }
 }
 
@@ -286,12 +286,12 @@ open class TestMinimalUrlFactoryComponent : UrlFactory {
         templateSet: TemplateSet,
         language: Language,
         pageParams: PageParams
-    ): String? {
-        return null
+    ): String {
+        return ""
     }
 
-    override fun getUrl(media: Media, language: Language, resolution: Resolution): String? {
-        return null
+    override fun getUrl(media: Media, language: Language, resolution: Resolution?): String {
+        return ""
     }
 }
 
@@ -324,7 +324,7 @@ class TestFilenameFactory : FilenameFactory {
         return null
     }
 
-    override fun getFilename(s: String, media: Media, language: Language, resolution: Resolution): String? {
+    override fun getFilename(s: String, media: Media, language: Language?, resolution: Resolution?): String? {
         return null
     }
 }

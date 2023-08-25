@@ -63,6 +63,7 @@ class ModuleDescriptor(private val project: Project) {
         with(descriptor) {
             "name" { -(pluginExtension.moduleName ?: project.name) }
             "version" { -"${project.version}" }
+            pluginExtension.minimalFirstSpiritVersion?.let { if (it.isNotBlank()) { "min-fs-version" { -it } } }
             "displayname" { -(pluginExtension.displayName ?: project.name) }
             "description" { -(project.description ?: project.name) }
             "vendor" { -(pluginExtension.vendor ?: "") }

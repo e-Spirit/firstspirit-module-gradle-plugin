@@ -1,6 +1,5 @@
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPluginKt
 
-import java.nio.file.Paths
 import java.util.zip.ZipFile
 
 plugins {
@@ -32,7 +31,7 @@ dependencies {
 
     customLib 'org.slf4j:slf4j-api:2.0.6'
 
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
 }
 
 jar {
@@ -43,9 +42,10 @@ firstSpiritModule {
     moduleDirName = 'src/main/fsm'
     displayName = 'test-project displayName'
     isolationDetectorUrl = 'https://fsdev.e-spirit.de/FsmDependencyDetector/'
-    complianceLevel = "MINIMAL"
-    firstSpiritVersion = '5.2.220309'
-    vendor = "e-Spirit AG"
+    complianceLevel = "HIGHEST"
+    firstSpiritVersion = '5.2.230909'
+    minimalFirstSpiritVersion = '5.2.230909'
+    vendor = "Crownpeak Technology GmbH"
     fsmDependencies = ['otherModuleName', 'yetAnotherModule']
 
     libraries {
@@ -62,14 +62,14 @@ firstSpiritModule {
     }
 }
 
-def fsmArchivePath = Paths.get(project.buildDir.path, "fsm", "fsm-${project.version}.fsm")
+def fsmArchivePath = layout.buildDirectory.file("fsm/fsm-${project.version}.fsm").get().asFile
 
 task testFsmIsProduced {
     dependsOn assembleFSM
 
     doLast {
         logger.info("Searching for fsm file in $fsmArchivePath")
-        assert fsmArchivePath.toFile().exists()
+        assert fsmArchivePath.exists()
     }
 }
 
@@ -77,7 +77,7 @@ task testZipFileContainsModuleXml {
     dependsOn assembleFSM
 
     doLast {
-        ZipFile fsmFile = new ZipFile(fsmArchivePath.toString())
+        ZipFile fsmFile = new ZipFile(fsmArchivePath)
         def moduleXml = fsmFile.entries().find { "META-INF/module-isolated.xml" == it.getName() }
         assert moduleXml != null
     }

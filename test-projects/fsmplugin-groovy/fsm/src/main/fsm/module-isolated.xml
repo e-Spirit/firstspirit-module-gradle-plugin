@@ -1,6 +1,7 @@
 <module>
     <name>$name</name>
     <version>$version</version>
+    <min-fs-version>5.2.230909</min-fs-version>
     <description>$description</description>
     <licenses>$licensesFile</licenses>
 $class
