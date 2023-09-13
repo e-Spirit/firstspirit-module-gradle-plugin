@@ -89,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "4.7.1"
+    id("de.espirit.firstspirit-module") version "5.0.0"
 }
 ```
 
@@ -105,7 +105,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-annotations") version "2.2.0"
+    id("de.espirit.firstspirit-module-annotations") version "3.0.0"
 }
 ```
 
@@ -117,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "4.7.1"
+    id("de.espirit.firstspirit-module-configurations") version "5.0.0"
 }
 ```
 
@@ -565,7 +565,7 @@ You can use the following snippet as a starting point:
 // Groovy
 
 plugins {
-    id 'de.espirit.firstspirit-module' version '4.7.1'
+    id 'de.espirit.firstspirit-module' version '5.0.0'
 }
 
 description = 'Example FSM Gradle build'
@@ -581,7 +581,7 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
 
-    implementation 'com.espirit.moddev.components:annotations:2.2.0'
+    implementation 'com.espirit.moddev.components:annotations:3.0.0'
 }
 
 test {
@@ -600,7 +600,7 @@ firstSpiritModule {
 // Kotlin
 
 plugins {
-    id("de.espirit.firstspirit-module") version "4.7.1"
+    id("de.espirit.firstspirit-module") version "5.0.0"
 }
 
 description = "Example FSM Gradle build"
@@ -616,7 +616,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.2")
 
-    implementation("com.espirit.moddev.components:annotations:2.2.0")
+    implementation("com.espirit.moddev.components:annotations:3.0.0")
 }
 
 tasks.withType<Test> {
