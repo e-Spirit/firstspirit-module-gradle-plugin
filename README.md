@@ -89,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "4.7.0"
+    id("de.espirit.firstspirit-module") version "4.7.1"
 }
 ```
 
@@ -117,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "4.7.0"
+    id("de.espirit.firstspirit-module-configurations") version "4.7.1"
 }
 ```
 
@@ -175,7 +175,7 @@ isolationDetectorPassword   | String        | *unset*             		|  If set, t
 isolationDetectorWhitelist  | String[]      | *unset*                   |  Contains all resources that should not be scanned for dependencies
 contentCreatorComponents    | String[]      | *unset*                   |  Names of components which are meant to be installed with the ContentCreator.
 complianceLevel             | String        | DEFAULT                   |  Compliance level to check for if isolationDetectorUrl is set
-maxBytecodeVersion          | int           | 55                        |  Maximum bytecode version for all JAR files of the FSM. Defaults to 55 (JDK 11).
+maxBytecodeVersion          | int           | 61                        |  Maximum bytecode version for all JAR files of the FSM. Defaults to 61 (JDK 17).
 firstSpiritVersion          | String        | *unset*             		|  FirstSpirit version used in the isolation check
 minimalFirstSpiritVersion   | String        | *unset*                   |  Minimal FirstSpirit server version required to install the module. *Supported by FirstSpirit 2023.10 and later.*
 appendDefaultMinVersion     | boolean       | true                      |  If set to true, appends the artifact version as the minVersion attribute to all resource tags (except resources which were explicitly set within FS component annotations)
@@ -565,7 +565,7 @@ You can use the following snippet as a starting point:
 // Groovy
 
 plugins {
-    id 'de.espirit.firstspirit-module' version '4.7.0'
+    id 'de.espirit.firstspirit-module' version '4.7.1'
 }
 
 description = 'Example FSM Gradle build'
@@ -600,7 +600,7 @@ firstSpiritModule {
 // Kotlin
 
 plugins {
-    id("de.espirit.firstspirit-module") version "4.7.0"
+    id("de.espirit.firstspirit-module") version "4.7.1"
 }
 
 description = "Example FSM Gradle build"

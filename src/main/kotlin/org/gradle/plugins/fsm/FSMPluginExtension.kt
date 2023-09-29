@@ -97,7 +97,7 @@ open class FSMPluginExtension(val project: Project) {
     /**
      * The maximum bytecode level allowed for all Java classes
      */
-    var maxBytecodeVersion: Int = 55 // JDK 11
+    var maxBytecodeVersion: Int = 61 // JDK 17
 
     /**
      * The FirstSpirit version to check against with the isolation detector service.
