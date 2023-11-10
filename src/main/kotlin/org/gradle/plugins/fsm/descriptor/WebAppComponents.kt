@@ -68,7 +68,8 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
             FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, allCompileDependencies)
 
         val webXmlPaths = mutableListOf<String>()
-        val declaredWebApps = project.extensions.getByType(FSMPluginExtension::class.java).getWebApps()
+        val extension = project.extensions.getByType(FSMPluginExtension::class.java)
+        val declaredWebApps = extension.getWebApps()
         val nodes = mutableListOf<Node>()
 
         webAppClasses.forEach { webAppClass ->
@@ -153,21 +154,17 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
                 "web-xml" { -webXmlPath }
                 "web-resources" {
                     val jarFile = project.buildJar()
-                    if (!Resources.isEmptyJarFile(jarFile)) {
+                    if (extension.addDefaultJarTaskOutputToWebResources && !Resources.isEmptyJarFile(jarFile)) {
                         "resource" {
                             attribute("name", "${project.group}:${project.name}")
                             attribute("version", project.version)
                             -"lib/${jarFile.name}"
                         }
                     }
-
                     nodesForWebResources(annotation).forEach(this::addNode)
                     webResources.forEach(this::addNode)
-
                 }
-
             })
-
         }
 
         this.webXmlPaths = webXmlPaths

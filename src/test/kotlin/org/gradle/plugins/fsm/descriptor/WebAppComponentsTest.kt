@@ -45,6 +45,19 @@ class WebAppComponentsTest {
     }
 
     @Test
+    fun `minimal web app component contains build jar of project`() {
+        val moduleDescriptor = ModuleDescriptor(project)
+        val components = moduleDescriptor.components.node
+        val component = components.filter { it.childText("name") == "TestMinimalWebAppComponentName" }.single()
+        val webResources = component.filter("web-resources").single()
+        val webResource = webResources.filter("resource").single()
+
+        assertThat(webResource.attributes["name"]).isEqualTo("${GROUP}:${NAME}")
+        assertThat(webResource.attributes["version"]).isEqualTo(VERSION)
+        assertThat(webResource.textContent()).isEqualTo("lib/${NAME}-${VERSION}.jar")
+    }
+
+    @Test
     fun `web app should contain basic information`() {
         val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
@@ -85,19 +98,6 @@ class WebAppComponentsTest {
         val webResources = component.filter("web-resources").single()
         val commonsLang = webResources.filter { it.attributes["name"] == "org.apache.commons:commons-lang3" }.single()
         assertThat(commonsLang.attributes["target"]).isEqualTo("targetPath")
-    }
-
-    @Test
-    fun `web app resource provided by project`() {
-        val moduleDescriptor = ModuleDescriptor(project)
-        val components = moduleDescriptor.components.node
-        val component = components.filter { it.childText("name") == "TestWebAppComponentName" }.single()
-        val webResources = component.filter("web-resources").single()
-        val webResource = webResources.filter("resource").first()
-
-        assertThat(webResource.attributes["name"]).isEqualTo("${GROUP}:${NAME}")
-        assertThat(webResource.attributes["version"]).isEqualTo(VERSION)
-        assertThat(webResource.textContent()).isEqualTo("lib/${NAME}-${VERSION}.jar")
     }
 
     @Test
@@ -250,6 +250,66 @@ class WebAppComponentsTest {
 
         val jarTaskOutput = webResources.filter { it.attributes["name"] == "webapps-test-project:web" }
         assertThat(jarTaskOutput).isEmpty()
+    }
+
+    @Test
+    fun `do not include build jar of project if explicitly disabled`() {
+        val webAppProjectA = ProjectBuilder.builder().withParent(project).withName("webA").build()
+        webAppProjectA.plugins.apply("java")
+        webAppProjectA.version = "0.1"
+        webAppProjectA.repositories.add(webAppProjectA.repositories.mavenCentral())
+        val webAppProjectB = ProjectBuilder.builder().withParent(project).withName("webB").build()
+        webAppProjectB.plugins.apply("java")
+        webAppProjectB.version = "0.1"
+        webAppProjectB.repositories.add(webAppProjectB.repositories.mavenCentral())
+
+        val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+        fsmPluginExtension.webAppComponent("TestWebAppA", webAppProjectA)
+        fsmPluginExtension.webAppComponent("TestWebAppB", webAppProjectB)
+        fsmPluginExtension.addDefaultJarTaskOutputToWebResources = false
+
+        val moduleDescriptor = ModuleDescriptor(project)
+        val webResourcesNamesA = moduleDescriptor.components.node
+            .filter { it.childText("name") == "TestWebAppA" }.single()
+            .filter("web-resources").single()
+            .filter("resource").map { it.attributes["name"] }
+        assertThat(webResourcesNamesA).doesNotContain("test:webapps-test-project")
+
+        val webResourcesNamesB = moduleDescriptor.components.node
+            .filter { it.childText("name") == "TestWebAppB" }.single()
+            .filter("web-resources").single()
+            .filter("resource").map { it.attributes["name"] }
+        assertThat(webResourcesNamesB).doesNotContain("test:webapps-test-project")
+    }
+
+    @Test
+    fun `include build jar of project if explicitly enabled`() {
+        val webAppProjectA = ProjectBuilder.builder().withParent(project).withName("webA").build()
+        webAppProjectA.plugins.apply("java")
+        webAppProjectA.version = "0.1"
+        webAppProjectA.repositories.add(webAppProjectA.repositories.mavenCentral())
+        val webAppProjectB = ProjectBuilder.builder().withParent(project).withName("webB").build()
+        webAppProjectB.plugins.apply("java")
+        webAppProjectB.version = "0.1"
+        webAppProjectB.repositories.add(webAppProjectB.repositories.mavenCentral())
+
+        val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+        fsmPluginExtension.webAppComponent("TestWebAppA", webAppProjectA)
+        fsmPluginExtension.webAppComponent("TestWebAppB", webAppProjectB)
+        fsmPluginExtension.addDefaultJarTaskOutputToWebResources = true
+
+        val moduleDescriptor = ModuleDescriptor(project)
+        val webResourcesNamesA = moduleDescriptor.components.node
+            .filter { it.childText("name") == "TestWebAppA" }.single()
+            .filter("web-resources").single()
+            .filter("resource").map { it.attributes["name"] }
+        assertThat(webResourcesNamesA).contains("test:webapps-test-project")
+
+        val webResourcesNamesB = moduleDescriptor.components.node
+            .filter { it.childText("name") == "TestWebAppB" }.single()
+            .filter("web-resources").single()
+            .filter("resource").map { it.attributes["name"] }
+        assertThat(webResourcesNamesB).contains("test:webapps-test-project")
     }
 
     @Test

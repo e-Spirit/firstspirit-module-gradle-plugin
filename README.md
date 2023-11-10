@@ -89,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "5.0.0"
+    id("de.espirit.firstspirit-module") version "5.1.0"
 }
 ```
 
@@ -105,7 +105,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-annotations") version "3.0.0"
+    id("de.espirit.firstspirit-module-annotations") version "5.1.0"
 }
 ```
 
@@ -117,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "5.0.0"
+    id("de.espirit.firstspirit-module-configurations") version "5.1.0"
 }
 ```
 
@@ -179,7 +179,7 @@ maxBytecodeVersion          | int           | 61                        |  Maxim
 firstSpiritVersion          | String        | *unset*             		|  FirstSpirit version used in the isolation check
 minimalFirstSpiritVersion   | String        | *unset*                   |  Minimal FirstSpirit server version required to install the module. *Supported by FirstSpirit 2023.10 and later.*
 appendDefaultMinVersion     | boolean       | true                      |  If set to true, appends the artifact version as the minVersion attribute to all resource tags (except resources which were explicitly set within FS component annotations)
-
+addDefaultJarTaskOutputToWebResources   | boolean       | true                		|  If set to true, adds the default jar task output of the project to web resources of all web-app components.
 ### Example
 
 ```kotlin
@@ -535,6 +535,7 @@ To add a WebApp to the FSM, use the following steps:
     }
     ```
     **Important**: The name you provide in the `webAppComponent` definition **must** match the `name` attribute of the `@WebAppComponent` annotation!\
+    **Important**: The default jar task output of the root project is added to the web resources of all web apps by default. This can be turned off using the extension property `addDefaultJarTaskOutputToWebResources` (see [Extension properties](#extension-properties)).\
     **Note**: If you add a web app with `webAppComponent`, do **not** declare a `fsWebCompile` dependency on the subproject. 
     
 If you have multiple webapps, note that the `fsm-resources` directories (see above) of each Gradle subproject are merged into the root directory of the FSM archive. To ensure no files are overwritten, we recommend placing the resources of each web app into a uniquely named subfolder in the `fsm-resources` directory. Example:
@@ -565,7 +566,7 @@ You can use the following snippet as a starting point:
 // Groovy
 
 plugins {
-    id 'de.espirit.firstspirit-module' version '5.0.0'
+    id 'de.espirit.firstspirit-module' version '5.1.0'
 }
 
 description = 'Example FSM Gradle build'
@@ -600,7 +601,7 @@ firstSpiritModule {
 // Kotlin
 
 plugins {
-    id("de.espirit.firstspirit-module") version "5.0.0"
+    id("de.espirit.firstspirit-module") version "5.1.0"
 }
 
 description = "Example FSM Gradle build"

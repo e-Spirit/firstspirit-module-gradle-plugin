@@ -121,6 +121,11 @@ open class FSMPluginExtension(val project: Project) {
      */
     var fsmDependencies: Collection<String> = emptySet()
 
+    /**
+     * Whether to add the default jar task output of the project to web resources of all web-app components.
+     */
+    var addDefaultJarTaskOutputToWebResources: Boolean = true
+
     open fun libraries(action: Action<in NamedDomainObjectContainer<LibraryDeclaration>>) {
         action.execute(libraries)
     }
