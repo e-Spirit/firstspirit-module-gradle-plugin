@@ -41,7 +41,7 @@ class LibraryComponents(project: Project): ComponentsWithResources(project) {
                                 LOGGER.warn("Library '${library.name}' does not specify any resources.")
                             }
 
-                            nodes.forEach(::addNode)
+                            nodes.forEach(::addElement)
                         }
                     }
                 }

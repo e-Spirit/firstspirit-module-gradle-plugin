@@ -23,16 +23,16 @@ class Components(private val project: Project, private val scanResult: Component
 
     init {
         node = xml("components") {
-            components(PublicComponent::class, ::nodesForPublicComponent, scanResult).forEach(this::addNode)
-            components(ScheduleTaskComponent::class, ::nodesForScheduleTaskComponent, scanResult).forEach(this::addNode)
-            components(GadgetComponent::class, ::nodesForGadgetComponent, scanResult).forEach(this::addNode)
-            components(UrlFactoryComponent::class, ::nodesForUrlFactoryComponent, scanResult).forEach(this::addNode)
-            components(ServiceComponent::class, ::nodesForServiceComponent, scanResult).forEach(this::addNode)
-            ProjectAppComponents(project, scanResult).nodes.forEach(this::addNode)
-            LibraryComponents(project).nodes.forEach(this::addNode)
+            components(PublicComponent::class, ::nodesForPublicComponent, scanResult).forEach(this::addElement)
+            components(ScheduleTaskComponent::class, ::nodesForScheduleTaskComponent, scanResult).forEach(this::addElement)
+            components(GadgetComponent::class, ::nodesForGadgetComponent, scanResult).forEach(this::addElement)
+            components(UrlFactoryComponent::class, ::nodesForUrlFactoryComponent, scanResult).forEach(this::addElement)
+            components(ServiceComponent::class, ::nodesForServiceComponent, scanResult).forEach(this::addElement)
+            ProjectAppComponents(project, scanResult).nodes.forEach(this::addElement)
+            LibraryComponents(project).nodes.forEach(this::addElement)
 
             val webAppComponents = WebAppComponents(project, scanResult)
-            webAppComponents.nodes.forEach(this::addNode)
+            webAppComponents.nodes.forEach(this::addElement)
             webXmlPaths = webAppComponents.webXmlPaths
         }
     }

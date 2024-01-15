@@ -9,6 +9,7 @@ import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_MODULE_COMPILE_CONFIGURATION_NAME
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_SERVER_COMPILE_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.configurations.MinMaxVersion
 import org.gradle.plugins.fsm.configurations.fsDependency
 import org.gradle.plugins.fsm.util.TestProjectUtils.defineArtifactoryForProject
@@ -18,8 +19,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
 import kotlin.io.path.writeText
 
 class FSMTest {
@@ -312,6 +316,68 @@ class FSMTest {
     }
 
     @Test
+    fun `web-app component libraries should be included`() {
+        project.version = "1.0.0"
+
+        copyTestJar()
+
+        val libProjectDir = testDir.resolve("lib")
+        libProjectDir.mkdirs()
+        val libProject = ProjectBuilder.builder().withName("lib").withProjectDir(libProjectDir).withParent(project).build()
+        libProject.plugins.apply("java")
+        val libBuildDir = libProjectDir.resolve("build/libs/")
+        libBuildDir.mkdirs()
+        libBuildDir.resolve("lib.jar").createNewFile()
+
+        val webProjectDir = testDir.resolve("web")
+        webProjectDir.mkdirs()
+        val webProject = ProjectBuilder.builder().withName("web").withProjectDir(webProjectDir).withParent(project).build()
+        webProject.plugins.apply("java")
+        webProject.dependencies.add("implementation", project.dependencies.project(mapOf("path" to ":lib")))
+
+        val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+        fsmPluginExtension.webAppComponent("TestWebAppA", webProject)
+
+        fsm.execute()
+
+        assertThat(moduleXml()).contains("""<resource minVersion="unspecified" name="test:lib" version="unspecified">lib/lib.jar</resource>""")
+
+        withFsmFile { fsm ->
+            assertThat(fsm.getEntry("lib/lib.jar")).isNotNull
+        }
+    }
+
+    @Test
+    fun `web-app component jar output should be included`() {
+        project.version = "1.0.0"
+
+        copyTestJar()
+
+        val webProjectDir = testDir.resolve("web")
+        webProjectDir.mkdirs()
+        val webProject = ProjectBuilder.builder().withName("web").withProjectDir(webProjectDir).withParent(project).build()
+        webProject.plugins.apply("java")
+        val jarTask = webProject.tasks.getByName(JavaPlugin.JAR_TASK_NAME)
+        val jarFile = jarTask.outputs.files.toList().single()
+        Files.createDirectories(jarFile.toPath().parent)
+        ZipOutputStream(jarFile.outputStream()).use {
+            it.putNextEntry(ZipEntry("test.txt"))
+            it.closeEntry()
+        }
+
+        val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+        fsmPluginExtension.webAppComponent("TestWebAppA", webProject)
+
+        fsm.execute()
+
+        assertThat(moduleXml()).contains("""<resource name="test:web" version="unspecified">lib/web.jar</resource>""")
+
+        withFsmFile { fsm ->
+            assertThat(fsm.getEntry("lib/web.jar")).isNotNull
+        }
+    }
+
+    @Test
     fun testFsmResourceFilesDetectDuplicates() {
         project.version = "1.0.0"
 
@@ -421,6 +487,28 @@ class FSMTest {
             assertThat(fsm.getEntry("lib/slf4j-api-2.0.6.jar")).isNotNull
         }
     }
+
+
+    @Test
+    fun `do not include local jar dependencies`(@TempDir tempDir: Path) {
+        val localServerJar = Files.createFile(tempDir.resolve("server-lib.jar"))
+        val localModuleJar = Files.createFile(tempDir.resolve("module-lib-1.0.jar"))
+        val localImplJar = Files.createFile(tempDir.resolve("lib-1.0.jar"))
+        project.dependencies.add(FS_SERVER_COMPILE_CONFIGURATION_NAME, project.files(localServerJar))
+        project.dependencies.add(FS_MODULE_COMPILE_CONFIGURATION_NAME, project.files(localModuleJar))
+        project.dependencies.add(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, project.files(localImplJar))
+
+        fsm.execute()
+
+        assertThat(moduleXml()).contains("<resources/>")
+
+        withFsmFile { fsm ->
+            assertThat(fsm.getEntry("lib/server-lib.jar")).isNull()
+            assertThat(fsm.getEntry("lib/module-lib-1.0.jar")).isNull()
+            assertThat(fsm.getEntry("lib/lib-1.0.jar")).isNull()
+        }
+    }
+
 
     private fun copyTestJar() {
         val testJar = Paths.get(System.getProperty("testJar"))

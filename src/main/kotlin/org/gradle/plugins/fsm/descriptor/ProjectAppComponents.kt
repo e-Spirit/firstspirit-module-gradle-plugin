@@ -40,7 +40,7 @@ class ProjectAppComponents(project: Project, private val scanResult: ComponentSc
                     val resources = nodesForResources(annotation)
                     if (resources.isNotEmpty()) {
                         "resources" {
-                            resources.forEach(this::addNode)
+                            resources.forEach(this::addElement)
                         }
                     }
                 }

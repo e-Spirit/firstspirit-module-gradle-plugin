@@ -1,14 +1,11 @@
 package org.gradle.plugins.fsm.descriptor
 
-import de.espirit.firstspirit.server.module.ModuleInfo.Mode
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ProjectDependency
-import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_MODULE_COMPILE_CONFIGURATION_NAME
-import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_SERVER_COMPILE_CONFIGURATION_NAME
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.PrintOptions
 import org.redundent.kotlin.xml.xml
@@ -19,9 +16,9 @@ class Resources(private val project: Project, private val webXmlPaths: List<Stri
 
     val node by lazy {
         xml("resources") {
-            projectResource()?.let(this::addNode)
-            fsmResources().forEach(this::addNode)
-            dependencies().forEach(this::addNode)
+            projectResource()?.let(this::addElement)
+            fsmResources().forEach(this::addElement)
+            dependencies().forEach(this::addElement)
         }
     }
 
@@ -50,7 +47,7 @@ class Resources(private val project: Project, private val webXmlPaths: List<Stri
             attribute("name", "${project.group}:${project.name}")
             attribute("version", project.version)
             attribute("scope", "module")
-            attribute("mode", Mode.ISOLATED.name.lowercase())
+            attribute("mode", "isolated")
             -"lib/${jarFile.name}"
         }
     }
@@ -125,7 +122,7 @@ class Resources(private val project: Project, private val webXmlPaths: List<Stri
                 attribute("name", "${project.group}:${project.name}-${relativePath}")
                 attribute("version", project.version)
                 attribute("scope", scope)
-                attribute("mode", Mode.ISOLATED.name.lowercase())
+                attribute("mode", "isolated")
                 text(relativePath.toString())
             }
             fsmResources.add(relativePath.toString() to node)
@@ -140,37 +137,15 @@ class Resources(private val project: Project, private val webXmlPaths: List<Stri
     private fun dependencies(): List<Node> {
         val dependencies = mutableListOf<Node>()
 
-        val configurations = project.configurations
-        val fsModuleCompileConfiguration = configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME)
-        val fsServerCompileConfiguration = configurations.getByName(FS_SERVER_COMPILE_CONFIGURATION_NAME)
-        val uncleanedDependenciesModuleScoped = fsModuleCompileConfiguration.resolvedConfiguration.resolvedArtifacts
-        val resolvedServerScopeArtifacts = fsServerCompileConfiguration.resolvedConfiguration.resolvedArtifacts
-
-        val compileDependenciesServerScoped = uncleanedDependenciesModuleScoped.filter {
-                moduleScoped -> resolvedServerScopeArtifacts.any { it.hasSameModuleAs(moduleScoped) }
-        }.toMutableSet()
-        val cleanedCompileDependenciesModuleScoped = uncleanedDependenciesModuleScoped.toMutableSet()
-        cleanedCompileDependenciesModuleScoped.removeAll(compileDependenciesServerScoped)
-
-        logIgnoredModuleScopeDependencies(uncleanedDependenciesModuleScoped, cleanedCompileDependenciesModuleScoped)
-
-        compileDependenciesServerScoped
+        project.serverScopeDependencies()
             .map { Resource(project, it, "server").node }
             .forEach(dependencies::add)
 
-        cleanedCompileDependenciesModuleScoped
+        project.moduleScopeDependencies()
             .map { Resource(project, it, "module").node }
             .forEach(dependencies::add)
 
         return dependencies
-    }
-
-    private fun logIgnoredModuleScopeDependencies(uncleanedDependenciesModuleScoped: Set<ResolvedArtifact>, compileDependenciesModuleScoped: Set<ResolvedArtifact>) {
-        val ignoredDependenciesModuleScoped = uncleanedDependenciesModuleScoped - compileDependenciesModuleScoped
-        LOGGER.debug("The following dependencies are found on both module and server scope. The scope will be resolved to server.")
-        ignoredDependenciesModuleScoped.forEach {
-            LOGGER.debug(it.toString())
-        }
     }
 
     companion object {

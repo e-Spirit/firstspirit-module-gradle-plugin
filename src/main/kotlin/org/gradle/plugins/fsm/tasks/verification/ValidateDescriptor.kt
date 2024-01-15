@@ -177,8 +177,12 @@ abstract class ValidateDescriptor: DefaultTask() {
 
             val filename = resource.textContent()
             if (!files.contains(filename) && !files.contains("$filename/")) {
+                val similarFile = findSimilarFile(files, filename)
+                val similarMessage = similarFile?.let { " However, the different version '$it' was found. " +
+                        "Please check your project for inconsistent dependency versions." } ?: ""
+
                 throw GradleException("File '$filename' specified for resource '$resourceName' in" +
-                        " $source but is not found in the FSM.")
+                        " $source but is not found in the FSM.$similarMessage")
             }
         }
     }
@@ -201,6 +205,20 @@ abstract class ValidateDescriptor: DefaultTask() {
         }
 
         return "<unnamed>"
+    }
+
+    private fun findSimilarFile(files: List<String>, filename: String): String? {
+        val versionNumber = Regex("\\d\\.")
+        if (!filename.contains(versionNumber)) {
+            return null
+        }
+
+        var filenameWithoutVersion = filename
+        while (filenameWithoutVersion.contains("-") && filenameWithoutVersion.contains(versionNumber)) {
+            filenameWithoutVersion = filenameWithoutVersion.substringBeforeLast("-")
+        }
+
+        return files.first { it.startsWith(filenameWithoutVersion) }
     }
 
     companion object {

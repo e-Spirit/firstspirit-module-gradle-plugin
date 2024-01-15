@@ -161,8 +161,8 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
                             -"lib/${jarFile.name}"
                         }
                     }
-                    nodesForWebResources(annotation).forEach(this::addNode)
-                    webResources.forEach(this::addNode)
+                    nodesForWebResources(annotation).forEach(this::addElement)
+                    webResources.forEach(this::addElement)
                 }
             })
         }

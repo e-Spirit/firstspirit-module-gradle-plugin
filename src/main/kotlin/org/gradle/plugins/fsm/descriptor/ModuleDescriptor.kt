@@ -31,11 +31,11 @@ class ModuleDescriptor(private val project: Project) {
                 version = XmlVersion.V10
                 moduleInformation(this)
                 "dependencies" {
-                    dependencies.forEach(this::addNode)
+                    dependencies.forEach(this::addElement)
                 }
-                moduleClass.nodes.forEach(this::addNode)
-                addNode(componentsNode)
-                addNode(resources.node)
+                moduleClass.nodes.forEach(this::addElement)
+                addElement(componentsNode)
+                addElement(resources.node)
             }
         }
     }

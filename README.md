@@ -89,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "6.0.0"
+    id("de.espirit.firstspirit-module") version "6.1.0"
 }
 ```
 
@@ -105,7 +105,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-annotations") version "6.0.0"
+    id("de.espirit.firstspirit-module-annotations") version "6.1.0"
 }
 ```
 
@@ -117,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "6.0.0"
+    id("de.espirit.firstspirit-module-configurations") version "6.1.0"
 }
 ```
 
@@ -447,10 +447,14 @@ fsModuleCompile | Same as the usual `implementation` configuration, but the depe
 fsWebCompile | Same as the usual `implementation` configuration, but the dependency and all transitive dependencies are added to the web-resources tag in the module-isolated.xml
 
 Dependencies with other scopes than these (for example the regular compile scope) are not treated as a resource to be used for module-isolated.xml file generation.
-That means if you use compile scope, you can compile your source files against it like in any other project, but the resource won't be listed in the module-isolated.xml.
-   
+That means if you use compile scope, you can compile your source files against it like in any other project, but the resource won't be listed in the module-isolated.xml
+or included in the `lib` directory.
 
-In a multi-project build make sure to only use the dependency configurations in the project that assembles the fsm. The dependencies of other subprojects should be defined without using the plugin dependency configurations. The resource entries of these dependencies are created depending on how the respective subproject is referenced from the project executing the assembleFSM task.  
+In a multi-project build make sure to only use the dependency configurations in the project that assembles the fsm. The dependencies of other subprojects should be defined without using the plugin dependency configurations. The resource entries of these dependencies are created depending on how the respective subproject is referenced from the project executing the assembleFSM task.
+
+Local Jars which are part of the project directory will not be included when they are defined with one of the three
+scopes above because FirstSpirit requires the artifact metadata (like group-id and version) to detect conflicts
+between different modules.
 
 ### Example
 
@@ -566,7 +570,7 @@ You can use the following snippet as a starting point:
 // Groovy
 
 plugins {
-    id 'de.espirit.firstspirit-module' version '6.0.0'
+    id 'de.espirit.firstspirit-module' version '6.1.0'
 }
 
 description = 'Example FSM Gradle build'
@@ -601,7 +605,7 @@ firstSpiritModule {
 // Kotlin
 
 plugins {
-    id("de.espirit.firstspirit-module") version "6.0.0"
+    id("de.espirit.firstspirit-module") version "6.1.0"
 }
 
 description = "Example FSM Gradle build"

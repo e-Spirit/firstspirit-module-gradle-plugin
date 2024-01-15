@@ -3,6 +3,7 @@ package org.gradle.plugins.fsm.tasks.bundling
 import org.gradle.api.Project
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.file.FileCollection
+import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
@@ -10,8 +11,11 @@ import org.gradle.jvm.tasks.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.compileDependencies
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_WEB_COMPILE_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.descriptor.LibraryComponents
 import org.gradle.plugins.fsm.descriptor.ModuleDescriptor
+import org.gradle.plugins.fsm.descriptor.moduleScopeDependencies
+import org.gradle.plugins.fsm.descriptor.serverScopeDependencies
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.FileSystem
@@ -51,7 +55,18 @@ abstract class FSM: Jar() {
 
     fun lazyConfiguration() {
         into("lib") { lib ->
-            classpath.filter { file -> file.isFile }.forEach { lib.from(it) }
+            project.serverScopeDependencies().forEach { lib.from(it.file) }
+            project.moduleScopeDependencies().forEach { lib.from(it.file) }
+            project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME).resolve().forEach { lib.from(it) }
+            lib.from(project.tasks.named(JavaPlugin.JAR_TASK_NAME))
+            pluginExtension.getWebApps().values
+                .map { project -> project.configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME) }
+                .forEach { lib.from(it) }
+            pluginExtension.getWebApps().values
+                .map { project -> project.tasks.named(JavaPlugin.JAR_TASK_NAME) }
+                .filter { task -> task.isPresent }
+                .map { task -> task.map { it.outputs.files.singleFile } }
+                .forEach { jarFile -> lib.from(jarFile) }
             pluginExtension.libraries
                 .asSequence().map { it.configuration }.filterNotNull()
                 .flatMap { LibraryComponents.getResolvedDependencies(project, it) }

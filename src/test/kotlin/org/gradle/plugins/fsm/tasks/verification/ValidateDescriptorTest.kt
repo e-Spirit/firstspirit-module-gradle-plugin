@@ -323,6 +323,35 @@ class ValidateDescriptorTest {
 
 
     @Test
+    fun `different version of web-app resource included`() {
+        val descriptor = """
+            <module>
+                <name>Test</name>
+                <version>1.0</version>
+                
+                <components>
+                    <web-app>
+                        <name>TestWebApp</name>
+                        <web-resources>
+                            <resource name="my.test:lib">lib/lib-5.0.8.jar</resource>
+                        </web-resources>                        
+                    </web-app>
+                </components>
+            </module>
+        """.trimIndent()
+
+        val resourcesDir = testDir.resolve("src/main/fsm-resources/lib")
+        resourcesDir.mkdirs()
+        resourcesDir.resolve("lib-4.8.2.jar").createNewFile()
+
+        assertThatThrownBy { validate(descriptor) }
+            .hasMessage("""
+                File 'lib/lib-5.0.8.jar' specified for resource 'my.test:lib' in component of type 'web-app' with name 'TestWebApp' but is not found in the FSM. However, the different version 'lib/lib-4.8.2.jar' was found. Please check your project for inconsistent dependency versions.
+            """.trimIndent())
+    }
+
+
+    @Test
     fun `web-app resource without file`() {
         val descriptor = """
             <module>

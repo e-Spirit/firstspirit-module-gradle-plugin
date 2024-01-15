@@ -6,7 +6,7 @@ import java.nio.file.Files
 import java.util.*
 
 plugins {
-    kotlin("jvm") version "1.9.0"
+    kotlin("jvm") version "1.9.20"
     id("maven-publish")
     id("idea")
     id("java-gradle-plugin")
@@ -66,21 +66,21 @@ val fsRuntimeVersion = "5.2.230909" // FirstSpirit 2023-09
 
 dependencies {
     implementation(gradleApi())
-    implementation("io.github.classgraph:classgraph:4.8.154")
+    implementation("io.github.classgraph:classgraph:4.8.165")
     implementation("com.github.jk1:gradle-license-report:2.3")
-    implementation("org.redundent:kotlin-xml-builder:1.9.0")
-    implementation("org.json:json:20230618")
-    implementation("org.apache.maven:maven-artifact:3.9.4")
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.2.1")
+    implementation("org.redundent:kotlin-xml-builder:1.9.1")
+    implementation("org.json:json:20231013")
+    implementation("org.apache.maven:maven-artifact:3.9.6")
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.3")
     implementation("com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}")
     implementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
     testImplementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
+    testImplementation(platform("org.junit:junit-bom:5.10.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testImplementation("org.assertj:assertj-core:3.24.2")
-    testImplementation("org.mockito:mockito-junit-jupiter:5.5.0")
-    testImplementation("org.ow2.asm:asm:9.5")
+    testImplementation("org.assertj:assertj-core:3.25.1")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.9.0")
+    testImplementation("org.ow2.asm:asm:9.6")
     testImplementation(gradleTestKit())
 }
 

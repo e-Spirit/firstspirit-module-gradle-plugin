@@ -1,3 +1,20 @@
+# Upgrading from 6.0.0 to 6.1.0
+
+* Dependencies not defined using fs-configurations like `fsModuleCompile` will no longer be placed in the `lib`
+directory. This results in smaller FSM files without any side effects since those files were not visible to the 
+classloader anyway.
+* If a project specifies multiple versions of the same library, this will now result in a build error pointing out that
+only a single version is going to be included in the FSM. In case your build fails with an error message like below,
+please check the dependency tree of your project to ensure consistent versions. 
+
+```
+* What went wrong:
+Execution failed for task ':validateDescriptor'.
+> File 'lib/commons-io-2.10.0.jar' specified for resource 'commons-io:commons-io' in component of
+  type 'web-app' with name 'custom-webapp' but is not found in the FSM. However, the different
+  version 'lib/commons-io-2.7.jar' was found. Please check your project for inconsistent dependency versions.
+```
+
 # Upgrading from 5.x.x to 6.0.0
 
 * When packaging an FSM file, only `fsm-resources` of the current project and its dependencies will be included.

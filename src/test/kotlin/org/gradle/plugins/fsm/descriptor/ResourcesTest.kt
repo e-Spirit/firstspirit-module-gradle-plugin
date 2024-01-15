@@ -1,8 +1,8 @@
 package org.gradle.plugins.fsm.descriptor
 
-import de.espirit.firstspirit.server.module.ModuleInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.gradle.api.Project
+import org.gradle.api.plugins.JavaPlugin
 import org.gradle.jvm.tasks.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
@@ -12,11 +12,12 @@ import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.F
 import org.gradle.plugins.fsm.configurations.fsDependency
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.TextElement
 import java.nio.file.Files
+import java.nio.file.Path
 
 class ResourcesTest {
 
@@ -150,7 +151,7 @@ class ResourcesTest {
         val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
         assertThat(resource.attributes["minVersion"]).isEqualTo("1.7.32")
-        assertThat(resource.attributes["mode"]).isEqualTo(ModuleInfo.Mode.ISOLATED.name.lowercase())
+        assertThat(resource.attributes["mode"]).isEqualTo("isolated")
         assertThat(resource.textContent()).isEqualTo("lib/slf4j-api-1.7.32.jar")
     }
 
@@ -165,7 +166,7 @@ class ResourcesTest {
         val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
         assertThat(resource.hasAttribute("minVersion")).isFalse
-        assertThat(resource.attributes["mode"]).isEqualTo(ModuleInfo.Mode.ISOLATED.name.lowercase())
+        assertThat(resource.attributes["mode"]).isEqualTo("isolated")
         assertThat(resource.textContent()).isEqualTo("lib/slf4j-api-1.7.32.jar")
     }
 
@@ -181,7 +182,7 @@ class ResourcesTest {
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
         assertThat(resource.attributes["minVersion"]).isEqualTo("1.7")
         assertThat(resource.attributes["maxVersion"]).isEqualTo("1.8")
-        assertThat(resource.attributes["mode"]).isEqualTo(ModuleInfo.Mode.ISOLATED.name.lowercase())
+        assertThat(resource.attributes["mode"]).isEqualTo("isolated")
         assertThat(resource.textContent()).isEqualTo("lib/slf4j-api-1.7.32.jar")
     }
 
@@ -200,7 +201,7 @@ class ResourcesTest {
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
         assertThat(resource.attributes["minVersion"]).isEqualTo("1.7")
         assertThat(resource.attributes["maxVersion"]).isEqualTo("1.8")
-        assertThat(resource.attributes["mode"]).isEqualTo(ModuleInfo.Mode.ISOLATED.name.lowercase())
+        assertThat(resource.attributes["mode"]).isEqualTo("isolated")
         assertThat(resource.textContent()).isEqualTo("lib/slf4j-api-1.7.32.jar")
     }
 
@@ -217,6 +218,20 @@ class ResourcesTest {
     }
 
     @Test
+    fun `local jar dependencies`(@TempDir tempDir: Path) {
+        val localServerJar = Files.createFile(tempDir.resolve("server-lib.jar"))
+        val localModuleJar = Files.createFile(tempDir.resolve("module-lib-1.0.jar"))
+        val localImplJar = Files.createFile(tempDir.resolve("lib-1.0.jar"))
+        project.dependencies.add(FS_SERVER_COMPILE_CONFIGURATION_NAME, project.files(localServerJar))
+        project.dependencies.add(FS_MODULE_COMPILE_CONFIGURATION_NAME, project.files(localModuleJar))
+        project.dependencies.add(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, project.files(localImplJar))
+
+        val resources = Resources(project, emptyList()).node
+
+        assertThat(resources.children).hasSize(1) // Contains only project jar resource
+    }
+
+    @Test
     fun `dependency fsm without classifier`() {
         val dependency = project.dependencies.create("com.espirit.moddev.basicworkflows:basicworkflows-fsm:1.3.846@fsm")
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
@@ -228,7 +243,6 @@ class ResourcesTest {
         assertThat(resource.textContent()).isEqualTo("lib/basicworkflows-fsm-1.3.846.fsm")
     }
 
-    @Disabled("DEVEX-497 - Race Condition When Downloading Dependency Twice")
     @Test
     fun `resolve scope resource conflict`() {
         project.dependencies.add(FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
@@ -244,7 +258,6 @@ class ResourcesTest {
         assertThat(slf4j.attributes["scope"]).isEqualTo("server")
     }
 
-    @Disabled("DEVEX-497 - Race Condition When Downloading Dependency Twice")
     @Test
     fun `module scope server scope resolution works correctly`() {
         // Module and server scope should be resolved together, so the higher version wins, just like normal maven
@@ -265,7 +278,6 @@ class ResourcesTest {
         assertThat(jodaConvert.attributes["version"]).isEqualTo("2.1.1")
     }
 
-    @Disabled("DEVEX-497 - Race Condition When Downloading Dependency Twice")
     @Test
     fun `module scope server scope resolution works correctly with server version higher`() {
         // Module and server scope should be resolved together, so the higher version wins, just like normal maven
