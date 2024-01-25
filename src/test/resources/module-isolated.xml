@@ -14,6 +14,7 @@
     </components>
 
     <resources>
+        <resource>$artifact</resource>
         $resources
     </resources>
 </module>

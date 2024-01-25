@@ -127,6 +127,7 @@ class FSMTest {
             <description>${project.description}</description>
             <vendor>${pluginExtension.vendor}</vendor>
         """.replaceIndent("\t"))
+            .contains("<resource>test-${project.version}.jar</resource>")
     }
 
     @Test
