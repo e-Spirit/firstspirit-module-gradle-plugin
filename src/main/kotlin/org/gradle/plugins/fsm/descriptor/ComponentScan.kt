@@ -4,8 +4,7 @@ import io.github.classgraph.ClassGraph
 import io.github.classgraph.ClassInfoList
 import io.github.classgraph.ScanResult
 import org.gradle.api.Project
-import org.gradle.api.artifacts.ProjectDependency
-import org.gradle.api.plugins.JavaPlugin
+import org.gradle.plugins.fsm.compileDependencies
 import java.io.Closeable
 import kotlin.reflect.KClass
 
@@ -36,12 +35,7 @@ class ComponentScan(private val project: Project): Closeable {
     }
 
     private fun createClassGraph(): ClassGraph {
-        val compileClasspath = project.configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
-        val projectDependencies = compileClasspath.allDependencies.withType(ProjectDependency::class.java)
-                .map { it.dependencyProject }
-                .filter { it.plugins.hasPlugin(JavaPlugin::class.java) }
-        val allProjects = listOf(project) + projectDependencies
-        val jarFiles = allProjects.map { it.buildJar() }
+        val jarFiles = project.compileDependencies().map { it.buildJar() }
         // Must include annotations dependency to get default values for annotations
         val annotationsDependency = project.configurations.getByName("fsmAnnotations").singleFile
 

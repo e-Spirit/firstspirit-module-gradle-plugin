@@ -8,6 +8,7 @@ import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.jvm.tasks.Jar
 import org.gradle.plugins.fsm.FSMPluginExtension
+import org.gradle.plugins.fsm.compileDependencies
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.descriptor.LibraryComponents
 import org.gradle.plugins.fsm.descriptor.ModuleDescriptor
@@ -82,8 +83,8 @@ abstract class FSM: Jar() {
             }
         }
 
-        // Merge fsm-resources folders of all projects
-        project.rootProject.allprojects.forEach {
+        // Merge fsm-resources folders of projects added as dependency
+        project.compileDependencies().forEach {
             copyResourceFolderToFsm(it)
         }
 

@@ -8,6 +8,7 @@ import org.gradle.jvm.tasks.Jar
 import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_MODULE_COMPILE_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.configurations.MinMaxVersion
 import org.gradle.plugins.fsm.configurations.fsDependency
 import org.gradle.plugins.fsm.util.TestProjectUtils.defineArtifactoryForProject
@@ -319,6 +320,7 @@ class FSMTest {
         subprojectAFile.mkdirs()
         val subprojectA = ProjectBuilder.builder().withName("a").withProjectDir(subprojectAFile).withParent(project).build()
         subprojectA.plugins.apply("java")
+        project.dependencies.add(FS_MODULE_COMPILE_CONFIGURATION_NAME, subprojectA)
         defineArtifactoryForProject(subprojectA)
 
         // add resources
@@ -340,6 +342,7 @@ class FSMTest {
         subprojectBFile.mkdirs()
         val subprojectB = ProjectBuilder.builder().withName("b").withProjectDir(subprojectBFile).withParent(project).build()
         subprojectB.plugins.apply("java")
+        project.dependencies.add(FS_MODULE_COMPILE_CONFIGURATION_NAME, subprojectB)
         defineArtifactoryForProject(subprojectB)
 
         // add resources

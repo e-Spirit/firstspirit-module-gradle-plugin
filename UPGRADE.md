@@ -1,3 +1,9 @@
+# Upgrading from 5.x.x to 6.0.0
+
+* When packaging an FSM file, only `fsm-resources` of the current project and its dependencies will be included.
+Previously, all subprojects of the root project had been evaluated in this step. Please verify the contents of
+your module after upgrading.
+
 # Upgrading from 4.x.x to 4.5.0
 
 * The FSM task will no longer be added to the default publications automatically. In order to publish the FSM,

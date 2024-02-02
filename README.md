@@ -89,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "5.1.1"
+    id("de.espirit.firstspirit-module") version "6.0.0"
 }
 ```
 
@@ -105,7 +105,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-annotations") version "5.1.1"
+    id("de.espirit.firstspirit-module-annotations") version "6.0.0"
 }
 ```
 
@@ -117,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "5.1.1"
+    id("de.espirit.firstspirit-module-configurations") version "6.0.0"
 }
 ```
 
@@ -320,7 +320,7 @@ Please note that the library component only supports resolvable artifacts, local
 ### Resources by convention
 
 The Jar file resulting from the Java Plugin is included in the module-isolated.xml as `${project.name}-lib` with the given group id and version.
-Additionally, files in `src/main/fsm-resources` in all referenced subprojects and the main project will be merged into the root of the resulting fsm file.
+Additionally, files in `src/main/fsm-resources` in all referenced project dependencies and the main project will be merged into the root of the resulting fsm file.
 All resources in the main project (the project where you apply the fsm plugin), are module-scoped. Please keep in mind that resource entries
 with server scope override those with module scope. If you want to include other resource directories, for example for including a generated-resources-folder,
 you can configure the assembleFSM task just like other archive tasks accordingly:
@@ -566,7 +566,7 @@ You can use the following snippet as a starting point:
 // Groovy
 
 plugins {
-    id 'de.espirit.firstspirit-module' version '5.1.1'
+    id 'de.espirit.firstspirit-module' version '6.0.0'
 }
 
 description = 'Example FSM Gradle build'
@@ -601,7 +601,7 @@ firstSpiritModule {
 // Kotlin
 
 plugins {
-    id("de.espirit.firstspirit-module") version "5.1.1"
+    id("de.espirit.firstspirit-module") version "6.0.0"
 }
 
 description = "Example FSM Gradle build"
