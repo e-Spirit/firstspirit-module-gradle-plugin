@@ -62,6 +62,9 @@ class Components(private val project: Project, private val scanResult: Component
                     "description" { -annotation.getString("description") }
                     "class" { -publicComponent.name }
                     annotation.getClassNameOrNull("configurable", Configuration::class)?.let { "configurable" { -it } }
+                    if (annotation.getString("hidden").toBoolean()) {
+                        "hidden" { -"true" }
+                    }
                 }
             }
     }
@@ -145,6 +148,9 @@ class Components(private val project: Project, private val scanResult: Component
                     "description" { -annotation.getString("description") }
                     "class" { -serviceComponent.name }
                     annotation.getClassNameOrNull("configurable", Configuration::class)?.let { "configurable" { -it } }
+                    if (annotation.getString("hidden").toBoolean()) {
+                        "hidden" { -"true" }
+                    }
                 }
             }
     }

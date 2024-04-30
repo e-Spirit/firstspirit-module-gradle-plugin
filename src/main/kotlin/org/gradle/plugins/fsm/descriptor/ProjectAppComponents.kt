@@ -43,6 +43,9 @@ class ProjectAppComponents(project: Project, private val scanResult: ComponentSc
                             resources.forEach(this::addElement)
                         }
                     }
+                    if (annotation.getString("hidden").toBoolean()) {
+                        "hidden" { -"true" }
+                    }
                 }
             }
             .first()

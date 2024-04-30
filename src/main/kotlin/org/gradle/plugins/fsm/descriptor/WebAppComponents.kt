@@ -164,6 +164,9 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
                     nodesForWebResources(annotation).forEach(this::addElement)
                     webResources.forEach(this::addElement)
                 }
+                if (annotation.getString("hidden").toBoolean()) {
+                    "hidden" { -"true" }
+                }
             })
         }
 

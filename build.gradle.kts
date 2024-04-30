@@ -6,7 +6,7 @@ import java.nio.file.Files
 import java.util.*
 
 plugins {
-    kotlin("jvm") version "1.9.20"
+    kotlin("jvm") version "1.9.22"
     id("maven-publish")
     id("idea")
     id("java-gradle-plugin")
@@ -26,7 +26,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     }
 }
 
-val fsmAnnotationsVersion = "3.0.0"
+val fsmAnnotationsVersion = "3.1.0"
 
 val branchName: String = grgit.branch.current().name
 Regex("(?:.*/)?[^A-Z]*([A-Z]+-[0-9]+).*").matchEntire(branchName)?.let {
@@ -66,21 +66,21 @@ val fsRuntimeVersion = "5.2.230909" // FirstSpirit 2023-09
 
 dependencies {
     implementation(gradleApi())
-    implementation("io.github.classgraph:classgraph:4.8.165")
+    implementation("io.github.classgraph:classgraph:4.8.172")
     implementation("com.github.jk1:gradle-license-report:2.3")
     implementation("org.redundent:kotlin-xml-builder:1.9.1")
-    implementation("org.json:json:20231013")
+    implementation("org.json:json:20240303")
     implementation("org.apache.maven:maven-artifact:3.9.6")
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.3")
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.3.1")
     implementation("com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}")
     implementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
     testImplementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
-    testImplementation(platform("org.junit:junit-bom:5.10.1"))
+    testImplementation(platform("org.junit:junit-bom:5.10.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testImplementation("org.assertj:assertj-core:3.25.1")
-    testImplementation("org.mockito:mockito-junit-jupiter:5.9.0")
-    testImplementation("org.ow2.asm:asm:9.6")
+    testImplementation("org.assertj:assertj-core:3.25.3")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.11.0")
+    testImplementation("org.ow2.asm:asm:9.7")
     testImplementation(gradleTestKit())
 }
 

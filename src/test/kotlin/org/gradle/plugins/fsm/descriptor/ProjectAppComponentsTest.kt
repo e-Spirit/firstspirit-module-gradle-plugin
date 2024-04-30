@@ -66,6 +66,14 @@ class ProjectAppComponentsTest {
     }
 
     @Test
+    fun `project app should not be hidden by default`() {
+        val moduleDescriptor = ModuleDescriptor(project)
+        val components = moduleDescriptor.components.node
+        val component = components.filter { it.childText("name") == "TestProjectAppComponentName" }.single()
+        assertThat(component.filter("hidden")).isEmpty()
+    }
+
+    @Test
     fun `project app with configurable`() {
         val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
@@ -88,6 +96,15 @@ class ProjectAppComponentsTest {
         assertThat(resource.attributes["scope"]).isEqualTo("module")
         assertThat(resource.attributes["mode"]).isEqualTo("isolated")
         assertThat(resource.textContent()).isEqualTo("lib/guava-24.0.jar")
+    }
+
+    @Test
+    fun `hidden component`() {
+        val moduleDescriptor = ModuleDescriptor(project)
+        val components = moduleDescriptor.components.node
+        val component = components.filter { it.childText("name") == "TestHiddenProjectAppComponent" }.single()
+        val hidden = component.filter("hidden").single()
+        assertThat(hidden.textContent().toBoolean()).isTrue()
     }
 
     @Test

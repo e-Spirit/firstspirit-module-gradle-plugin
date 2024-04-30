@@ -115,6 +115,12 @@ class TestProjectAppComponentWithoutConfigurable : BaseProjectApp()
 )
 class TestProjectAppComponentWithProperties : BaseProjectApp()
 
+@ProjectAppComponent(
+    name = "TestHiddenProjectAppComponent",
+    hidden = true
+)
+class TestHiddenProjectAppComponent : BaseProjectApp()
+
 @WebAppComponent(name = "TestMinimalWebAppComponentName", webXml = "/web.xml")
 class TestMinimalWebAppComponent : BaseWebApp()
 
@@ -140,6 +146,13 @@ class TestWebAppComponent : BaseWebApp() {
 }
 
 @WebAppComponent(
+    name = "TestHiddenWebAppComponentName",
+    webXml = "/web.xml",
+    hidden = true
+)
+class TestHiddenWebAppComponent : BaseWebApp()
+
+@WebAppComponent(
     name = "TestWebAppComponentWithoutConfigurationName",
     displayName = "TestDisplayName",
     description = "TestDescription",
@@ -159,6 +172,12 @@ class TestWebAppComponentWithoutConfiguration : BaseWebApp() {
 
 @PublicComponent(name = "TestMinimalPublicComponentName")
 class TestMinimalPublicComponent
+
+@PublicComponent(
+    name = "TestHiddenPublicComponentName",
+    hidden = true
+)
+class TestHiddenPublicComponent
 
 @PublicComponent(
     name = "TestPublicComponentName",
@@ -255,6 +274,12 @@ class TestScheduleTaskFormFactory : ScheduleTaskFormFactory<ScheduleTaskData> {
 
 @ServiceComponent(name = "TestMinimalServiceComponentName")
 class TestMinimalServiceComponent : BaseService()
+
+@ServiceComponent(
+    name = "TestHiddenServiceComponentName",
+    hidden = true
+)
+class TestHiddenServiceComponent : BaseService()
 
 @ServiceComponent(
     name = "TestServiceComponentName",

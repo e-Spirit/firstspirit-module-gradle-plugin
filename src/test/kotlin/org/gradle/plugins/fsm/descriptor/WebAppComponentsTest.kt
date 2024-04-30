@@ -72,6 +72,23 @@ class WebAppComponentsTest {
     }
 
     @Test
+    fun `web app should not be hidden by default`() {
+        val moduleDescriptor = ModuleDescriptor(project)
+        val components = moduleDescriptor.components.node
+        val component = components.filter { it.childText("name") == "TestWebAppComponentName" }.single()
+        assertThat(component.filter("hidden")).isEmpty()
+    }
+
+    @Test
+    fun `hidden component`() {
+        val moduleDescriptor = ModuleDescriptor(project)
+        val components = moduleDescriptor.components.node
+        val component = components.filter { it.childText("name") == "TestHiddenWebAppComponentName" }.single()
+        val hidden = component.filter("hidden").single()
+        assertThat(hidden.textContent().toBoolean()).isTrue()
+    }
+
+    @Test
     fun `web app with configurable`() {
         val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node

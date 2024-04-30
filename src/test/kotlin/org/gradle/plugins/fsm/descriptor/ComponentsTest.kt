@@ -41,6 +41,19 @@ class ComponentsTest {
     }
 
     @Test
+    fun `public component should not be hidden by default`() {
+        val component = componentWithName("TestMinimalPublicComponentName")
+        assertThat(component.filter("hidden")).isEmpty()
+    }
+
+    @Test
+    fun `hidden public component`() {
+        val component = componentWithName("TestHiddenPublicComponentName")
+        val hidden = component.filter("hidden").single()
+        assertThat(hidden.textContent().toBoolean()).isTrue()
+    }
+
+    @Test
     fun `public component`() {
         val component = componentWithName("TestPublicComponentName")
 
@@ -240,6 +253,19 @@ class ComponentsTest {
         assertThat(component.childText("displayname")).isEmpty()
         assertThat(component.childText("description")).isEmpty()
         assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestMinimalServiceComponent")
+    }
+
+    @Test
+    fun `service component should not be hidden by default`() {
+        val component = componentWithName("TestMinimalServiceComponentName")
+        assertThat(component.filter("hidden")).isEmpty()
+    }
+
+    @Test
+    fun `hidden service component`() {
+        val component = componentWithName("TestHiddenServiceComponentName")
+        val hidden = component.filter("hidden").single()
+        assertThat(hidden.textContent().toBoolean()).isTrue()
     }
 
     @Test
