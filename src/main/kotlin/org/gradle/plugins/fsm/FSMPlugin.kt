@@ -127,20 +127,26 @@ class FSMPlugin: Plugin<Project> {
     }
 
     private fun configureLicenseReport(project: Project) {
-        @Suppress("ObjectLiteralToLambda") // Lambdas cannot be used as Gradle task inputs
-        val action = object : Action<Task> {
-            override fun execute(t: Task) {
-                val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
-                val configurationNames = mutableListOf(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME)
-                // Library names are only available after the configuration phase
-                configurationNames.addAll(fsmPluginExtension.libraries.asSequence().mapNotNull { it.configuration?.name })
-                with(project.extensions.getByType(LicenseReportExtension::class.java)) {
-                    configurations = configurationNames.toTypedArray()
-                }
+        val licenseReportTask = project.tasks.withType(ReportTask::class.java).first()
+
+        val preparationAction = { _: Task ->
+            val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+            val configurationNames = mutableListOf(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME)
+            // Library names are only available after the configuration phase
+            configurationNames.addAll(fsmPluginExtension.libraries.asSequence().mapNotNull { it.configuration?.name })
+            with(project.extensions.getByType(LicenseReportExtension::class.java)) {
+                configurations = configurationNames.toTypedArray()
             }
         }
+        licenseReportTask.doFirst(preparationAction)
 
-        project.tasks.withType(ReportTask::class.java).first().doFirst(action)
+        // License Report Plugin escapes quotes not in accordance with RFC 4180. A " should be "", but instead becomes \"
+        // Since there is no way to override this in the plugin configuration, we do a textual replace of \" to "".
+        val repairQuotes = { task: Task ->
+            val licenseFile = task.outputs.files.singleFile.resolve("licenses.csv")
+            licenseFile.writeText(licenseFile.readText().replace("\\\"", "\"\""))
+        }
+        licenseReportTask.doLast(repairQuotes)
 
         with(project.extensions.getByType(LicenseReportExtension::class.java)) {
             // Set output directory for the report data.

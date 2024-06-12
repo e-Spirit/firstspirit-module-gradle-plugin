@@ -13,32 +13,33 @@ import java.util.zip.ZipFile
 
 abstract class ValidateDescriptor: DefaultTask() {
 
+    private lateinit var fsm: ZipFile
+    private val files: MutableList<String> = mutableListOf()
+    private var descriptor: String = ""
+
     @TaskAction
     fun validateDescriptor() {
-        val fsm = inputs.files.singleFile
-        val entries = mutableListOf<String>()
-        var descriptor = ""
-        ZipFile(fsm).use { zip ->
+        fsm = ZipFile(inputs.files.singleFile)
+        fsm.use { zip ->
             val descriptorPath = "META-INF/module-isolated.xml"
 
             for (entry in zip.entries()) {
-                entries.add(entry.name)
+                files.add(entry.name)
 
                 if (entry.name == descriptorPath) {
                     descriptor = zip.getInputStream(entry).use { it.bufferedReader().readText() }
                 }
             }
 
-            if (!entries.contains(descriptorPath)) {
+            if (!files.contains(descriptorPath)) {
                 throw GradleException("Module descriptor '$descriptorPath' not found!")
             }
 
+            validate()
         }
-
-        validate(descriptor, entries)
     }
 
-    private fun validate(descriptor: String, files: List<String>) {
+    private fun validate() {
         if (descriptor.isBlank()) {
             throw GradleException("Module descriptor is empty!")
         }
@@ -51,9 +52,9 @@ abstract class ValidateDescriptor: DefaultTask() {
         val name = elementRequired(xml, "name")
         validateCharactersForName(name)
         elementRequired(xml, "version")
-        validateLicenseFile(xml, files)
-        checkAllResources(xml, files)
-        checkWebXmlFiles(xml, files)
+        validateLicenseFile(xml)
+        checkAllResources(xml)
+        checkWebXmlFiles(xml)
     }
 
     private fun elementRequired(xml: Node, element: String): String {
@@ -87,31 +88,39 @@ abstract class ValidateDescriptor: DefaultTask() {
         }
     }
 
+    private fun validateLicenseFile(xml: Node) {
+        val licenses = xml.filter("licenses").singleOrNull()
+        if (licenses == null || licenses.children.isEmpty()) {
+            // Nothing to check
+            return
+        }
 
-    private fun validateLicenseFile(xml: Node, files: List<String>) {
-        val licenses = xml.filter("licenses").singleOrNull() ?: return
+        // Check License File Presence
+        val licenseFilename = licenses.textContent()
+        if (!files.contains(licenseFilename)) {
+            throw GradleException("License file '$licenseFilename' not found in FSM archive.")
+        }
 
-        if (licenses.children.isNotEmpty()) {
-            val licenseFilename = licenses.textContent()
-            if (!files.contains(licenseFilename)) {
-                throw GradleException("License file '$licenseFilename' not found in FSM archive.")
-            }
+        // Validate the License File to check if FirstSpirit can parse it
+        val licenseEntry = fsm.getEntry(licenseFilename)
+        fsm.getInputStream(licenseEntry).use {
+            LicenseFileValidator.validateLicenseCsv(licenseFilename, it)
         }
     }
 
-    private fun checkAllResources(xml: Node, files: List<String>) {
-        xml.filter("resources").forEach { checkResources(it, files, "global resources") }
+    private fun checkAllResources(xml: Node) {
+        xml.filter("resources").forEach { checkResources(it, "global resources") }
 
         val components = xml.filter("components").singleOrNull() ?: return
 
         components.children.filterIsInstance<Node>().forEach { component ->
             val componentName = componentName(component)
-            component.filter("resources").forEach { checkResources(it, files, componentName) }
-            component.filter("web-resources").forEach { checkResources(it, files, componentName) }
+            component.filter("resources").forEach { checkResources(it, componentName) }
+            component.filter("web-resources").forEach { checkResources(it, componentName) }
         }
     }
 
-    private fun checkWebXmlFiles(xml: Node, files: List<String>) {
+    private fun checkWebXmlFiles(xml: Node) {
         val components = xml.filter("components").singleOrNull() ?: return
 
         components.filter("web-app").forEach { webApp ->
@@ -134,7 +143,7 @@ abstract class ValidateDescriptor: DefaultTask() {
         }
     }
 
-    private fun checkResources(resources: Node, files: List<String>, source: String) {
+    private fun checkResources(resources: Node, source: String) {
         resources.filter("resource").forEach { resource ->
             val resourceName = resourceName(resource)
 
@@ -177,7 +186,7 @@ abstract class ValidateDescriptor: DefaultTask() {
 
             val filename = resource.textContent()
             if (!files.contains(filename) && !files.contains("$filename/")) {
-                val similarFile = findSimilarFile(files, filename)
+                val similarFile = findSimilarFile(filename)
                 val similarMessage = similarFile?.let { " However, the different version '$it' was found. " +
                         "Please check your project for inconsistent dependency versions." } ?: ""
 
@@ -207,7 +216,7 @@ abstract class ValidateDescriptor: DefaultTask() {
         return "<unnamed>"
     }
 
-    private fun findSimilarFile(files: List<String>, filename: String): String? {
+    private fun findSimilarFile(filename: String): String? {
         val versionNumber = Regex("\\d\\.")
         if (!filename.contains(versionNumber)) {
             return null
