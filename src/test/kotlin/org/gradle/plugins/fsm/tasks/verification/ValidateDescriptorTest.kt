@@ -440,6 +440,34 @@ class ValidateDescriptorTest {
     }
 
 
+    @Test
+    fun `url factory has duplicate parameters`() {
+        val descriptor = """
+            <module>
+                <name>Test</name>
+                <version>1.0</version>
+                
+                <components>
+                    <public>
+                        <name>MyUrlFactory</name>
+                        <class>de.espirit.firstspirit.generate.UrlCreatorSpecification</class>
+                        <configuration>
+                            <UrlFactory>org.example.MyUrlFactory</UrlFactory>
+                            <UseRegistry>true</UseRegistry>
+                            <removeDeleted>yes</removeDeleted>
+                            <REMOVEDELETED>yes</REMOVEDELETED>
+                        </configuration>
+                    </public>
+                </components>
+            </module>
+        """.trimIndent()
+
+        assertThatThrownBy { validate(descriptor) }
+            .hasMessageContaining("MyUrlFactory")
+            .hasMessageContaining("removedeleted")
+    }
+
+
     private fun validate(descriptor: String) {
         val moduleDirName = "src/main/resources"
         val moduleDir = testDir.resolve(moduleDirName)

@@ -236,7 +236,6 @@ class ComponentsTest {
         assertThat(configuration.filter("FilenameFactory")).isEmpty()
     }
 
-
     @Test
     fun `url creator with filename factory`() {
         val component = componentWithName("TestUrlFactoryWithFilenameFactoryComponentName")
@@ -245,6 +244,16 @@ class ComponentsTest {
         assertThat(configuration.childText("UrlFactory")).endsWith(".TestUrlFactoryWithFilenameFactory")
         assertThat(configuration.childText("UseRegistry")).isEqualTo("true")
         assertThat(configuration.childText("FilenameFactory")).endsWith("TestFilenameFactory")
+    }
+
+    @Test
+    fun `url creator with custom parameters`() {
+        val component = componentWithName("TestUrlFactoryWithParameters")
+        assertThat(component.childText("class")).isEqualTo("de.espirit.firstspirit.generate.UrlCreatorSpecification")
+        val configuration = component.filter("configuration").single()
+        assertThat(configuration.childText("UrlFactory")).endsWith(".TestUrlFactoryWithParameters")
+        assertThat(configuration.childText("myCustomParameterA")).isEqualTo("1")
+        assertThat(configuration.childText("myCustomParameterB")).isEqualTo("2")
     }
 
     @Test

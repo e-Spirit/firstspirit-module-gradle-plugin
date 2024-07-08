@@ -328,7 +328,6 @@ open class TestMinimalUrlFactoryComponent : UrlFactory {
 )
 class TestUrlFactoryComponent : TestMinimalUrlFactoryComponent()
 
-
 @UrlFactoryComponent(
     name = "TestUrlFactoryWithFilenameFactoryComponentName",
     displayName = "TestDisplayName",
@@ -353,3 +352,14 @@ class TestFilenameFactory : FilenameFactory {
         return null
     }
 }
+
+@UrlFactoryComponent(
+    name = "TestUrlFactoryWithParameters",
+    displayName = "TestDisplayName",
+    description = "TestDescription",
+    parameters = [
+        UrlFactoryComponent.Parameter(name = "myCustomParameterA", value = "1"),
+        UrlFactoryComponent.Parameter(name = "myCustomParameterB", value = "2")
+    ]
+)
+class TestUrlFactoryWithParameters : TestMinimalUrlFactoryComponent()

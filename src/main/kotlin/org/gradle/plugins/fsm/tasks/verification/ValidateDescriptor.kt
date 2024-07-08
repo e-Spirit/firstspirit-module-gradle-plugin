@@ -1,5 +1,6 @@
 package org.gradle.plugins.fsm.tasks.verification
 
+import de.espirit.firstspirit.generate.UrlCreatorSpecification
 import org.apache.maven.artifact.versioning.ComparableVersion
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
@@ -11,7 +12,7 @@ import org.redundent.kotlin.xml.parse
 import java.io.ByteArrayInputStream
 import java.util.zip.ZipFile
 
-abstract class ValidateDescriptor: DefaultTask() {
+abstract class ValidateDescriptor : DefaultTask() {
 
     private lateinit var fsm: ZipFile
     private val files: MutableList<String> = mutableListOf()
@@ -53,6 +54,7 @@ abstract class ValidateDescriptor: DefaultTask() {
         validateCharactersForName(name)
         elementRequired(xml, "version")
         validateLicenseFile(xml)
+        checkComponents(xml)
         checkAllResources(xml)
         checkWebXmlFiles(xml)
     }
@@ -75,7 +77,6 @@ abstract class ValidateDescriptor: DefaultTask() {
         return text
     }
 
-
     private fun validateCharactersForName(name: String) {
         if (name.contains("\n")) {
             throw GradleException("<name> must not contain a line break.")
@@ -87,6 +88,7 @@ abstract class ValidateDescriptor: DefaultTask() {
             }
         }
     }
+
 
     private fun validateLicenseFile(xml: Node) {
         val licenses = xml.filter("licenses").singleOrNull()
@@ -105,6 +107,25 @@ abstract class ValidateDescriptor: DefaultTask() {
         val licenseEntry = fsm.getEntry(licenseFilename)
         fsm.getInputStream(licenseEntry).use {
             LicenseFileValidator.validateLicenseCsv(licenseFilename, it)
+        }
+    }
+
+    private fun checkComponents(xml: Node) {
+        val components = xml.filter("components").singleOrNull() ?: return
+        // Run through component-specific validation rules
+        components.children.filterIsInstance<Node>().forEach { component ->
+            val componentName = componentName(component)
+
+            // URL Creator - all extra parameters must be unique
+            if (component.nodeName == "public" && component.firstOrNull("class")?.textContent() == UrlCreatorSpecification::class.java.name) {
+                component.firstOrNull("configuration")?.let { configuration ->
+                    val parameters = configuration.children.filterIsInstance<Node>().map { it.nodeName.lowercase() }
+                    val duplicateParameters = parameters.toSet().filter { parameters.count { parameter -> parameter == it } > 1 }
+                    if (duplicateParameters.isNotEmpty()) {
+                        throw GradleException("Found duplicate URL Factory parameters in $componentName: $duplicateParameters")
+                    }
+                }
+            }
         }
     }
 
@@ -151,8 +172,10 @@ abstract class ValidateDescriptor: DefaultTask() {
                 val minVersion = ComparableVersion(resource.attributes["minVersion"] as String)
                 val maxVersion = ComparableVersion(resource.attributes["maxVersion"] as String)
                 if (minVersion > maxVersion) {
-                    throw GradleException("Invalid version range for resource '$resourceName' in $source: " +
-                            "$minVersion is greater than $maxVersion")
+                    throw GradleException(
+                        "Invalid version range for resource '$resourceName' in $source: " +
+                                "$minVersion is greater than $maxVersion"
+                    )
                 }
             }
 
@@ -187,11 +210,15 @@ abstract class ValidateDescriptor: DefaultTask() {
             val filename = resource.textContent()
             if (!files.contains(filename) && !files.contains("$filename/")) {
                 val similarFile = findSimilarFile(filename)
-                val similarMessage = similarFile?.let { " However, the different version '$it' was found. " +
-                        "Please check your project for inconsistent dependency versions." } ?: ""
+                val similarMessage = similarFile?.let {
+                    " However, the different version '$it' was found. " +
+                            "Please check your project for inconsistent dependency versions."
+                } ?: ""
 
-                throw GradleException("File '$filename' specified for resource '$resourceName' in" +
-                        " $source but is not found in the FSM.$similarMessage")
+                throw GradleException(
+                    "File '$filename' specified for resource '$resourceName' in" +
+                            " $source but is not found in the FSM.$similarMessage"
+                )
             }
         }
     }

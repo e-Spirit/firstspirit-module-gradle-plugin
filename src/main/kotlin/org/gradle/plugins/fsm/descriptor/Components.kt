@@ -132,6 +132,9 @@ class Components(private val project: Project, private val scanResult: Component
                         "UrlFactory" { -urlFactoryComponent.name }
                         "UseRegistry" { -annotation.getString("useRegistry") }
                         annotation.getClassNameOrNull("filenameFactory", FilenameFactory::class)?.let { "FilenameFactory" { -it } }
+                        annotation.getAnnotationValues("parameters").forEach {
+                            (it.getString("name")) { -it.getString("value") }
+                        }
                     }
                 }
             }

@@ -26,7 +26,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     }
 }
 
-val fsmAnnotationsVersion = "3.1.0"
+val fsmAnnotationsVersion = "3.2.0"
 
 val branchName: String = grgit.branch.current().name
 Regex("(?:.*/)?[^A-Z]*([A-Z]+-[0-9]+).*").matchEntire(branchName)?.let {
