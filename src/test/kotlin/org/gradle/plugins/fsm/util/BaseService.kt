@@ -5,7 +5,7 @@ import de.espirit.firstspirit.module.Service
 import de.espirit.firstspirit.module.ServiceProxy
 import de.espirit.firstspirit.module.descriptor.ServiceDescriptor
 
-open class BaseService: Service<ServerEnvironment> {
+open class BaseService: BaseServiceItf, Service<BaseServiceItf> {
 
     override fun start() {}
 
@@ -15,11 +15,11 @@ open class BaseService: Service<ServerEnvironment> {
         return false
     }
 
-    override fun getServiceInterface(): Class<out ServerEnvironment?>? {
-        return null
+    override fun getServiceInterface(): Class<out BaseServiceItf> {
+        return BaseServiceItf::class.java
     }
 
-    override fun getProxyClass(): Class<out ServiceProxy<ServerEnvironment?>?>? {
+    override fun getProxyClass(): Class<out ServiceProxy<BaseServiceItf>>? {
         return null
     }
 

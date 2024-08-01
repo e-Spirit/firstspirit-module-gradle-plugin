@@ -1,7 +1,6 @@
 package org.gradle.plugins.fsm.tasks.bundling
 
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.assertj.core.api.Assertions.*
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.jvm.tasks.Jar
@@ -84,6 +83,39 @@ class FSMTest {
         assertThat(moduleXml())
             .describedAs("module-isolated.xml should contain a web resource with the correctly named jar task output!")
             .contains("""<resource name="${project.group}:${project.name}" version="0.0.1-SNAPSHOT">lib/xxxxx-0.0.1-SNAPSHOT.jar</resource>""")
+    }
+
+    @Test
+    fun `default jar output is module-scoped by default`() {
+        project.version = "0.0.1"
+        copyTestJar()
+        fsm.execute()
+
+        assertThat(moduleXml())
+            .contains("""<resource mode="isolated" name=":test" scope="module" version="0.0.1">lib/test-0.0.1.jar</resource>""")
+    }
+
+    @Test
+    fun `use server scope for jar output`() {
+        project.version = "0.0.1"
+        copyTestJar()
+
+        val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+        pluginExtension.projectJarScope = "server"
+
+        fsm.execute()
+
+        assertThat(moduleXml())
+            .contains("""<resource mode="isolated" name=":test" scope="server" version="0.0.1">lib/test-0.0.1.jar</resource>""")
+    }
+
+    @Test
+    fun `invalid scope for jar output`() {
+        val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+
+        assertThatExceptionOfType(IllegalArgumentException::class.java)
+            .isThrownBy { pluginExtension.projectJarScope = "invalid" }
+            .withMessage("Unknown scope value 'invalid'.")
     }
 
     @Test

@@ -89,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "6.3.0"
+    id("de.espirit.firstspirit-module") version "6.4.0"
 }
 ```
 
@@ -105,7 +105,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-annotations") version "6.3.0"
+    id("de.espirit.firstspirit-module-annotations") version "6.4.0"
 }
 ```
 
@@ -117,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "6.3.0"
+    id("de.espirit.firstspirit-module-configurations") version "6.4.0"
 }
 ```
 
@@ -164,22 +164,23 @@ In order for further dependencies to have a resource entry in the module-isolate
 
 The _de.espirit.firstspirit-module_ plugin defines the following extension properties in the `fsm` closure:
 
-Property | Type | Default | Description
-:-------:|:----:|:-------:| -----------
-moduleName			        | String        | *unset* (project name)	|  The name of the module. If not set the project name is used
-displayName                 | String        | *unset*             		|  Human-readable name of the module
-moduleDirName               | String        | *unset*             		|  The name of the directory containing the module-isolated.xml, relative to the project directory.
-isolationDetectorUrl        | String        | *unset*             		|  If set, this URL is used to connect to the FSM Dependency Detector
-isolationDetectorUsername   | String        | *unset*             		|  If set, this username is used to connect to the FSM Dependency Detector
-isolationDetectorPassword   | String        | *unset*             		|  If set, this password is used to connect to the FSM Dependency Detector
-isolationDetectorWhitelist  | String[]      | *unset*                   |  Contains all resources that should not be scanned for dependencies
-contentCreatorComponents    | String[]      | *unset*                   |  Names of components which are meant to be installed with the ContentCreator.
-complianceLevel             | String        | DEFAULT                   |  Compliance level to check for if isolationDetectorUrl is set
-maxBytecodeVersion          | int           | 61                        |  Maximum bytecode version for all JAR files of the FSM. Defaults to 61 (JDK 17).
-firstSpiritVersion          | String        | *unset*             		|  FirstSpirit version used in the isolation check
-minimalFirstSpiritVersion   | String        | *unset*                   |  Minimal FirstSpirit server version required to install the module. *Supported by FirstSpirit 2023.10 and later.*
-appendDefaultMinVersion     | boolean       | true                      |  If set to true, appends the artifact version as the minVersion attribute to all resource tags (except resources which were explicitly set within FS component annotations)
-addDefaultJarTaskOutputToWebResources   | boolean       | true                		|  If set to true, adds the default jar task output of the project to web resources of all web-app components.
+Property                    | Type                   | Default                  | Description
+:--------------------------:|:----------------------:|:------------------------:|:-----------
+moduleName			        | String                 | *unset* (project name)	|  The name of the module. If not set the project name is used
+displayName                 | String                 | *unset*             		|  Human-readable name of the module
+moduleDirName               | String                 | *unset*             		|  The name of the directory containing the module-isolated.xml, relative to the project directory.
+isolationDetectorUrl        | String                 | *unset*             		|  If set, this URL is used to connect to the FSM Dependency Detector
+isolationDetectorUsername   | String                 | *unset*             		|  If set, this username is used to connect to the FSM Dependency Detector
+isolationDetectorPassword   | String                 | *unset*             		|  If set, this password is used to connect to the FSM Dependency Detector
+isolationDetectorWhitelist  | String[]               | *unset*                  |  Contains all resources that should not be scanned for dependencies
+contentCreatorComponents    | String[]               | *unset*                  |  Names of components which are meant to be installed with the ContentCreator.
+complianceLevel             | ComplianceLevel        | DEFAULT                  |  Compliance level to check for if isolationDetectorUrl is set
+maxBytecodeVersion          | int                    | 61                       |  Maximum bytecode version for all JAR files of the FSM. Defaults to 61 (JDK 17).
+firstSpiritVersion          | String                 | *unset*             		|  FirstSpirit version used in the isolation check
+minimalFirstSpiritVersion   | String                 | *unset*                  |  Minimal FirstSpirit server version required to install the module. *Supported by FirstSpirit 2023.10 and later.*
+appendDefaultMinVersion     | boolean                | true                     |  If set to true, appends the artifact version as the minVersion attribute to all resource tags (except resources which were explicitly set within FS component annotations)
+projectJarScope             | String                 | "module"                 |  Scope used for the automatically added jar which is built by the default jar task
+addDefaultJarTaskOutputToWebResources   | boolean    | true                  	|  If set to true, adds the default jar task output of the project to web resources of all web-app components.
 ### Example
 
 ```kotlin
@@ -570,7 +571,7 @@ You can use the following snippet as a starting point:
 // Groovy
 
 plugins {
-    id 'de.espirit.firstspirit-module' version '6.3.0'
+    id 'de.espirit.firstspirit-module' version '6.4.0'
 }
 
 description = 'Example FSM Gradle build'
@@ -605,7 +606,7 @@ firstSpiritModule {
 // Kotlin
 
 plugins {
-    id("de.espirit.firstspirit-module") version "6.3.0"
+    id("de.espirit.firstspirit-module") version "6.4.0"
 }
 
 description = "Example FSM Gradle build"

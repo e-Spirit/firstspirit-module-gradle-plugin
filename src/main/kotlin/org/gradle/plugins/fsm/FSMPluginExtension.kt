@@ -116,10 +116,23 @@ open class FSMPluginExtension(val project: Project) {
     var appendDefaultMinVersion: Boolean = true
 
     /**
-     * The dependencies of this FS-Module (FSM) to other FSM's. Will at least be displayed in the UI,
+     * The dependencies of this FS-Module (FSM) to other FSMs. Will at least be displayed in the UI,
      * when a user adds this Module.
      */
     var fsmDependencies: Collection<String> = emptySet()
+
+    /**
+     * Defines the scope ("module" or "server") of the jar built by the default jar task of the project
+     * which is added to the module automatically.
+     */
+    var projectJarScope = "module"
+        set(value) {
+            if (value.lowercase() in listOf("module", "server")) {
+                field = value
+            } else {
+                throw IllegalArgumentException("Unknown scope value '$value'.")
+            }
+        }
 
     /**
      * Whether to add the default jar task output of the project to web resources of all web-app components.

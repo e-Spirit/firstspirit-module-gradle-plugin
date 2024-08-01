@@ -4,6 +4,7 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
+import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_MODULE_COMPILE_CONFIGURATION_NAME
 import org.redundent.kotlin.xml.Node
@@ -46,7 +47,7 @@ class Resources(private val project: Project, private val webXmlPaths: List<Stri
         return xml("resource") {
             attribute("name", "${project.group}:${project.name}")
             attribute("version", project.version)
-            attribute("scope", "module")
+            attribute("scope", project.extensions.getByType(FSMPluginExtension::class.java).projectJarScope)
             attribute("mode", "isolated")
             -"lib/${jarFile.name}"
         }

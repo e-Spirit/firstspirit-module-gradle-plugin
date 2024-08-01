@@ -1,7 +1,6 @@
 package org.gradle.plugins.fsm.descriptor
 
 import de.espirit.firstspirit.module.GadgetSpecification
-import de.espirit.firstspirit.module.ScheduleTaskSpecification
 import org.assertj.core.api.Assertions.assertThat
 import org.gradle.api.Project
 import org.gradle.plugins.fsm.FSMPluginExtension
@@ -75,7 +74,7 @@ class ComponentsTest {
         val component = componentWithName("Test task without display name")
         assertThat(component.exists("displayname")).isFalse
         assertThat(component.childText("description")).isEmpty()
-        assertThat(component.childText("class")).isEqualTo(ScheduleTaskSpecification::class.java.name)
+        assertThat(component.childText("class")).isEqualTo("de.espirit.firstspirit.module.ScheduleTaskSpecification")
         val configuration = component.filter("configuration").single()
         assertThat(configuration.childText("application")).endsWith(".TestMinimalScheduleTaskComponent")
         assertThat(configuration.filter("form")).isEmpty()
@@ -84,7 +83,7 @@ class ComponentsTest {
     @Test
     fun `schedule task component without form`() {
         val component = componentWithName("Test task without form")
-        assertThat(component.childText("class")).isEqualTo(ScheduleTaskSpecification::class.java.name)
+        assertThat(component.childText("class")).isEqualTo("de.espirit.firstspirit.module.ScheduleTaskSpecification")
         val configuration = component.filter("configuration").single()
         assertThat(configuration.childText("application")).endsWith(".TestScheduleTaskComponentWithoutForm")
         assertThat(configuration.filter("form")).isEmpty()
@@ -93,7 +92,7 @@ class ComponentsTest {
     @Test
     fun `schedule task component with form`() {
         val component = componentWithName("Test task with form")
-        assertThat(component.childText("class")).isEqualTo(ScheduleTaskSpecification::class.java.name)
+        assertThat(component.childText("class")).isEqualTo("de.espirit.firstspirit.module.ScheduleTaskSpecification")
         val configuration = component.filter("configuration").single()
         assertThat(configuration.childText("application")).endsWith(".TestScheduleTaskComponentWithForm")
         assertThat(configuration.childText("form")).isEqualTo("org.gradle.plugins.fsm.TestScheduleTaskFormFactory")
@@ -102,7 +101,7 @@ class ComponentsTest {
     @Test
     fun `schedule task component with configurable`() {
         val component = componentWithName("Test task with configurable")
-        assertThat(component.childText("class")).isEqualTo(ScheduleTaskSpecification::class.java.name)
+        assertThat(component.childText("class")).isEqualTo("de.espirit.firstspirit.module.ScheduleTaskSpecification")
         assertThat(component.childText("configurable")).isEqualTo("org.gradle.plugins.fsm.TestConfigurable")
         val configuration = component.filter("configuration").single()
         assertThat(configuration.childText("application")).endsWith(".TestScheduleTaskComponentWithConfigurable")

@@ -7,7 +7,6 @@ import de.espirit.firstspirit.generate.UrlCreatorSpecification
 import de.espirit.firstspirit.module.Configuration
 import de.espirit.firstspirit.module.GadgetFactory
 import de.espirit.firstspirit.module.GadgetSpecification
-import de.espirit.firstspirit.module.ScheduleTaskSpecification
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
 import io.github.classgraph.ClassInfo
 import org.gradle.api.Project
@@ -77,7 +76,7 @@ class Components(private val project: Project, private val scanResult: Component
                     "name" { -annotation.getString("taskName") }
                     annotation.getStringOrNull("displayName", "")?.let { "displayname" { -it } }
                     "description" { -annotation.getString("description") }
-                    "class" { -ScheduleTaskSpecification::class.java.name }
+                    "class" { -"de.espirit.firstspirit.module.ScheduleTaskSpecification" }
                     "configuration" {
                         "application" { -scheduleTaskComponent.name }
                         annotation.getClassNameOrNull("formClass", ScheduleTaskFormFactory::class)?.let { "form" { -it } }

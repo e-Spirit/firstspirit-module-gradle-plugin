@@ -6,7 +6,7 @@ import java.nio.file.Files
 import java.util.*
 
 plugins {
-    kotlin("jvm") version "1.9.22"
+    kotlin("jvm") version "1.9.23"
     id("maven-publish")
     id("idea")
     id("java-gradle-plugin")
@@ -62,7 +62,7 @@ gradlePlugin {
     }
 }
 
-val fsRuntimeVersion = "5.2.230909" // FirstSpirit 2023-09
+val fsRuntimeVersion = "5.2.240809" // FirstSpirit 2024-08
 
 dependencies {
     implementation(gradleApi())
@@ -75,11 +75,11 @@ dependencies {
     implementation("com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}")
     implementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
     testImplementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
-    testImplementation(platform("org.junit:junit-bom:5.10.2"))
+    testImplementation(platform("org.junit:junit-bom:5.10.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testImplementation("org.assertj:assertj-core:3.25.3")
-    testImplementation("org.mockito:mockito-junit-jupiter:5.11.0")
+    testImplementation("org.assertj:assertj-core:3.26.3")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.12.0")
     testImplementation("org.ow2.asm:asm:9.7")
     testImplementation(gradleTestKit())
 }
