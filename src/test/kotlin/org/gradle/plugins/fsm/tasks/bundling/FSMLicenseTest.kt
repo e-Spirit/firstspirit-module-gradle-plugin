@@ -10,6 +10,7 @@ import org.junit.jupiter.api.fail
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.zip.ZipFile
 import kotlin.io.path.writeText
 
@@ -30,8 +31,8 @@ class FSMLicenseTest {
     @Test
     fun `FSM with no dependencies`() {
         settingsFile.writeText("""rootProject.name = "testFsmNoLicenses"""")
-        val buildScript = javaClass.getResourceAsStream("/licenses/fsmnodependency.gradle.kts") ?:
-            fail("Build script '/licenses/fsmnodependency.gradle.kts' not found!")
+        val buildScript = javaClass.getResourceAsStream("/licenses/fsmnodependency.gradle.kts")
+            ?: fail("Build script '/licenses/fsmnodependency.gradle.kts' not found!")
         buildScript.use {
             buildFile.writeText(it.reader().readText())
         }
@@ -61,8 +62,8 @@ class FSMLicenseTest {
     @Test
     fun `FSM with licenses`() {
         settingsFile.writeText("""rootProject.name = "testFsmWithLicenses"""")
-        val buildScript = javaClass.getResourceAsStream("/licenses/fsmdependency.gradle.kts") ?:
-            fail("Build script '/licenses/fsmdependency.gradle.kts' not found!")
+        val buildScript = javaClass.getResourceAsStream("/licenses/fsmdependency.gradle.kts")
+            ?: fail("Build script '/licenses/fsmdependency.gradle.kts' not found!")
         buildScript.use {
             buildFile.writeText(it.reader().readText())
         }
@@ -100,8 +101,8 @@ class FSMLicenseTest {
     @Test
     fun `FSM with licenses in library`() {
         settingsFile.writeText("""rootProject.name = "testFsmLibWithLicenses"""")
-        val buildScript = javaClass.getResourceAsStream("/licenses/fsm-library-dependency.gradle.kts") ?:
-            fail("Build script '/licenses/fsm-library-dependency.gradle.kts' not found!")
+        val buildScript = javaClass.getResourceAsStream("/licenses/fsm-library-dependency.gradle.kts")
+            ?: fail("Build script '/licenses/fsm-library-dependency.gradle.kts' not found!")
         buildScript.use {
             buildFile.writeText(it.reader().readText())
         }
@@ -136,8 +137,8 @@ class FSMLicenseTest {
     @Test
     fun `FSM with escaped quotes in license`() {
         settingsFile.writeText("""rootProject.name = "testFsmLibWithQuotesInLicense"""")
-        val buildScript = javaClass.getResourceAsStream("/licenses/fsm-quoted-license-entry.gradle.kts") ?:
-            fail("Build script '/licenses/fsm-quoted-license-entry.gradle.kts' not found!")
+        val buildScript = javaClass.getResourceAsStream("/licenses/fsm-quoted-license-entry.gradle.kts")
+            ?: fail("Build script '/licenses/fsm-quoted-license-entry.gradle.kts' not found!")
         buildScript.use {
             buildFile.writeText(it.reader().readText())
         }
@@ -160,6 +161,42 @@ class FSMLicenseTest {
             }
             // The quotes in the string 'dev.java.net "Other" License' must be escaped according to RFC 4180
             assertThat(licenses).contains(""""tablelayout:TableLayout:20050920","https://tablelayout.dev.java.net","dev.java.net ""Other"" License","https://tablelayout.dev.java.net/servlets/LicenseDetails?licenseID=18",""")
+        }
+    }
+
+    @Test
+    fun `webApp licenses`() {
+        val resourcesUrl = FSMLicenseTest::class.java.classLoader.getResource("webapp-project")
+            ?: error("test project files not found")
+        val resourcesPath = Paths.get(resourcesUrl.toURI())
+        resourcesPath.toFile().copyRecursively(testDir.toFile(), overwrite = true)
+
+        // Execute the gradle build
+        val result = GradleRunner.create()
+            .withProjectDir(testDir.toFile())
+            .withArguments(FSMPlugin.FSM_TASK_NAME)
+            .withPluginClasspath()
+            .build()
+        assertThat(result.task(':' + FSMPlugin.FSM_TASK_NAME)?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+
+        // get result
+        val fsmFile = testDir.resolve("build/fsm/testproject-webapp-1.0-SNAPSHOT.fsm")
+        assertThat(fsmFile.toFile()).exists()
+        ZipFile(fsmFile.toFile()).use { zipFile ->
+            val licenseReport = zipFile.getEntry("META-INF/licenses.csv")
+            val licenses = zipFile.getInputStream(licenseReport).use {
+                it.reader().readText()
+            }
+
+            // should have picked up runtime dependency license from WebApp subproject
+            assertThat(licenses).contains(""""org.slf4j:slf4j-api:2.0.13","http://www.slf4j.org","MIT License","http://www.opensource.org/licenses/mit-license.php"""")
+
+            // but not compile only dependencies
+            assertThat(licenses).doesNotContain("fs-isolated-runtime")
+            assertThat(licenses).doesNotContain("fs-isolated-webrt")
+
+            // check presence of license files
+            assertThat(zipFile.getEntry("META-INF/licenses/slf4j-api-2.0.13.jar/LICENSE.txt")).isNotNull
         }
     }
 

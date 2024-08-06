@@ -3,7 +3,6 @@ package org.gradle.plugins.fsm
 import org.assertj.core.api.Assertions.assertThat
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ProjectDependency
-import org.gradle.api.plugins.JavaPlugin
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -30,7 +29,7 @@ class FSMPluginExtensionTest {
         assertThat(testling.getWebApps()).containsEntry("web_b", webAppSubprojectB)
 
         // Ensure the project has a compile dependency on the subprojects
-        val dependencyProjects = project.configurations.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
+        val dependencyProjects = project.configurations.getByName(FSMPlugin.WEBAPPS_CONFIGURATION_NAME)
             .dependencies.filterIsInstance<ProjectDependency>().map { it.dependencyProject }
         assertThat(dependencyProjects).containsExactly(webAppSubprojectA, webAppSubprojectB)
     }

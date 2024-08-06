@@ -2,12 +2,11 @@ package org.gradle.plugins.fsm.tasks.bundling
 
 import org.gradle.api.Project
 import org.gradle.api.file.DuplicatesStrategy
-import org.gradle.api.file.FileCollection
 import org.gradle.api.plugins.JavaPlugin
-import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.jvm.tasks.Jar
+import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.compileDependencies
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
@@ -40,12 +39,6 @@ abstract class FSM: Jar() {
     @Internal("Visible for tests")
     val duplicateFsmResourceFiles = mutableSetOf<File>()
 
-    /**
-     * The fsm runtime classpath. All libraries in this classpath will be copied to 'fsm/lib' folder
-     */
-    @get:InputFiles
-    var classpath: FileCollection = project.files()
-
     init {
         archiveExtension.set(FSM_EXTENSION)
         destinationDirectory.set(project.layout.buildDirectory.dir("fsm"))
@@ -59,9 +52,7 @@ abstract class FSM: Jar() {
             project.moduleScopeDependencies().forEach { lib.from(it.file) }
             project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME).resolve().forEach { lib.from(it) }
             lib.from(project.tasks.named(JavaPlugin.JAR_TASK_NAME))
-            pluginExtension.getWebApps().values
-                .map { project -> project.configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME) }
-                .forEach { lib.from(it) }
+            project.configurations.getByName(FSMPlugin.WEBAPPS_CONFIGURATION_NAME).resolve().forEach { lib.from(it) }
             pluginExtension.getWebApps().values
                 .map { project -> project.tasks.named(JavaPlugin.JAR_TASK_NAME) }
                 .filter { task -> task.isPresent }
@@ -227,15 +218,6 @@ abstract class FSM: Jar() {
         }
     }
 
-
-    /**
-     * Adds files to the classpath to include in the FSM archive.
-     *
-     * @param classpathToAdd The files to add.
-     */
-    fun addToClasspath(classpathToAdd: FileCollection) {
-        classpath += classpathToAdd
-    }
 
     /**
      * Helper method for executing Unit tests

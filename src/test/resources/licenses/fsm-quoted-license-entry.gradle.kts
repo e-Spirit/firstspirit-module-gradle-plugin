@@ -2,7 +2,7 @@ plugins {
     id("de.espirit.firstspirit-module")
 }
 
-group = "de.espirit"
+group = "com.crownpeak"
 version = "1.0-SNAPSHOT"
 
 repositories {
@@ -16,5 +16,5 @@ repositories {
 
 dependencies {
     // TableLayout has a licenses.csv entry containing quotes, which must be escaped correctly
-    api(group = "tablelayout", name = "TableLayout", version = "20050920")
+    fsModuleCompile(group = "tablelayout", name = "TableLayout", version = "20050920")
 }

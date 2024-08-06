@@ -5,6 +5,8 @@ import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtraPropertiesExtension
+import org.gradle.api.plugins.JavaPlugin
+import org.gradle.plugins.fsm.FSMPlugin.Companion.WEBAPPS_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
@@ -25,6 +27,8 @@ class WebAppComponentsTest {
         project.plugins.apply(FSMAnnotationsPlugin::class.java)
         project.plugins.apply(FSMConfigurationsPlugin::class.java)
         project.extensions.create("fsmPlugin", FSMPluginExtension::class.java)
+        val webAppConfiguration = project.configurations.create(WEBAPPS_CONFIGURATION_NAME)
+        project.configurations.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME).extendsFrom(webAppConfiguration)
         project.setArtifactoryCredentialsFromLocalProperties()
         project.defineArtifactoryForProject()
 

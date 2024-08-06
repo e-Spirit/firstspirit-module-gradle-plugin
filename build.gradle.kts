@@ -12,7 +12,7 @@ plugins {
     id("java-gradle-plugin")
     id("net.researchgate.release") version "3.0.2"
     id("org.ajoberstar.grgit") version "5.0.0"
-    id("com.github.jk1.dependency-license-report") version "2.3"
+    id("com.github.jk1.dependency-license-report") version "2.9"
     id("org.cyclonedx.bom") version "1.7.4"
 }
 

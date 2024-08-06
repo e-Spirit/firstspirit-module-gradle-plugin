@@ -12,24 +12,24 @@ import org.gradle.api.artifacts.Dependency
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.plugins.JavaPlugin
-import org.gradle.api.plugins.JavaPluginExtension
-import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_CONFIGURATIONS
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 import org.gradle.plugins.fsm.tasks.verification.IsolationCheck
 import org.gradle.plugins.fsm.tasks.verification.ValidateDescriptor
 import java.util.*
 
-class FSMPlugin: Plugin<Project> {
+class FSMPlugin : Plugin<Project> {
 
     override fun apply(project: Project) {
         project.plugins.apply(JavaPlugin::class.java)
         project.plugins.apply(FSMConfigurationsPlugin::class.java)
         project.plugins.apply(FSMAnnotationsPlugin::class.java)
+        registerWebappsConfiguration(project)
 
         project.extensions.create(FSM_EXTENSION_NAME, FSMPluginExtension::class.java, project)
 
@@ -47,6 +47,13 @@ class FSMPlugin: Plugin<Project> {
         configureJarTask(project)
         configureLicenseReport(project)
         configureManifest(project)
+    }
+
+    private fun registerWebappsConfiguration(project: Project) {
+        val webAppsConfiguration = project.configurations.create(WEBAPPS_CONFIGURATION_NAME)
+        webAppsConfiguration.description = "Combined Runtime Classpath of all Web-Apps registered with the 'webAppComponent' method."
+        val implementation = project.configurations.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
+        implementation.extendsFrom(webAppsConfiguration)
     }
 
     private fun configureConfigurationTask(project: Project): Task {
@@ -77,10 +84,6 @@ class FSMPlugin: Plugin<Project> {
 
         removeDefaultJarArtifactFromArchives(project)
 
-        val javaPlugin = project.extensions.getByType(JavaPluginExtension::class.java)
-        val runtimeClasspath = javaPlugin.sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).runtimeClasspath
-
-        fsmTask.dependsOn(runtimeClasspath)
         fsmTask.dependsOn(project.tasks.getByName(GENERATE_LICENSE_REPORT_TASK_NAME))
         fsmTask.dependsOn(JavaPlugin.JAR_TASK_NAME)
         fsmTask.dependsOn(configurationTask)
@@ -88,9 +91,6 @@ class FSMPlugin: Plugin<Project> {
 
         // Validate FSM immediately
         fsmTask.finalizedBy(validateTask)
-
-        val outputs = project.tasks.getByName(JavaPlugin.JAR_TASK_NAME).outputs.files
-        fsmTask.addToClasspath(runtimeClasspath + outputs)
 
         return fsmTask
     }
@@ -126,16 +126,22 @@ class FSMPlugin: Plugin<Project> {
         jarTask.exclude("module-isolated.xml")
     }
 
+    /**
+     * Configures the generation of the FSM license report. A CSV license file is added into the module's META-INF/
+     * directory. Additionally, we attempt to include all license texts into a subfolder.
+     * All licenses of third-party libs included in the FSM should be included, i.e.,
+     *
+     * - Libraries added with `fsModuleCompile`, `fsServerCompile` or `fsWebCompile`
+     * - Libraries included from web apps added with the `webAppComponent` method in the `firstSpiritModule` block
+     * - Libraries included with the `libraries` method in the `firstSpiritModule` block
+     */
     private fun configureLicenseReport(project: Project) {
         val licenseReportTask = project.tasks.withType(ReportTask::class.java).first()
 
+        // Library names and web apps are only available after the configuration phase
         val preparationAction = { _: Task ->
-            val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
-            val configurationNames = mutableListOf(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME)
-            // Library names are only available after the configuration phase
-            configurationNames.addAll(fsmPluginExtension.libraries.asSequence().mapNotNull { it.configuration?.name })
             with(project.extensions.getByType(LicenseReportExtension::class.java)) {
-                configurations = configurationNames.toTypedArray()
+                configurations = getLicenseReportConfigurations(project).toTypedArray()
             }
         }
         licenseReportTask.doFirst(preparationAction)
@@ -151,9 +157,16 @@ class FSMPlugin: Plugin<Project> {
         with(project.extensions.getByType(LicenseReportExtension::class.java)) {
             // Set output directory for the report data.
             outputDir = project.layout.buildDirectory.dir(FSM.LICENSES_DIR_NAME).get().asFile.absolutePath
-            configurations = arrayOf(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME)
+            configurations = arrayOf(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME) // Replaced with the correct configurations later, see preparationAction above
             renderers = arrayOf(CsvReportRenderer())
         }
+    }
+
+    private fun getLicenseReportConfigurations(project: Project): Set<String> {
+        val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+        return FS_CONFIGURATIONS + // fsModuleCompile, fsServerCompile, fsWebCompile
+                fsmPluginExtension.libraries.asSequence().mapNotNull { it.configuration?.name } + // library components
+                WEBAPPS_CONFIGURATION_NAME // webapps declared with the 'webAppComponent' method
     }
 
     private fun configureManifest(project: Project) {
@@ -205,6 +218,7 @@ class FSMPlugin: Plugin<Project> {
         const val VALIDATE_DESCRIPTOR_TASK_NAME = "validateDescriptor"
         const val ISOLATION_CHECK_TASK_NAME = "checkIsolation"
         const val GENERATE_LICENSE_REPORT_TASK_NAME = "generateLicenseReport"
+        const val WEBAPPS_CONFIGURATION_NAME = "fsmWebappsRuntime"
         const val VERSIONS_PROPERTIES_FILE = "/fsm-gradle-plugin/versions.properties"
     }
 

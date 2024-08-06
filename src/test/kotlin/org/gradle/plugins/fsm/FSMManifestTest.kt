@@ -28,7 +28,7 @@ class FSMManifestTest {
     fun manifest() {
         // Copy test project files from resources folder to temp dir
         val resourcesUrl = FSMManifestTest::class.java.classLoader.getResource("manifest")
-            ?: error("manifest not found")
+            ?: error("test project files not found")
         val resourcesPath = Paths.get(resourcesUrl.toURI())
         resourcesPath.toFile().copyRecursively(testDir)
 

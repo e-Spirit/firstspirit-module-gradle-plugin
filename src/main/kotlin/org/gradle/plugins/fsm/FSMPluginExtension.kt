@@ -4,7 +4,6 @@ import de.espirit.mavenplugins.fsmchecker.ComplianceLevel
 import org.gradle.api.Action
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
-import org.gradle.api.plugins.JavaPlugin
 
 open class FSMPluginExtension(val project: Project) {
 
@@ -21,12 +20,14 @@ open class FSMPluginExtension(val project: Project) {
     fun webAppComponent(webAppName: String, webAppProject: Project) {
         fsmWebApps[webAppName] = webAppProject
 
+        // Register webapp dependency in extra configuration
+        val webAppsConfiguration = project.configurations.getByName(FSMPlugin.WEBAPPS_CONFIGURATION_NAME)
         // This is the same as
         //    implementation project("projectName", configuration: "default")
         // and is required because of an error with the variant selection regarding the license report plugin.
         // For more information, see https://github.com/jk1/Gradle-License-Report/issues/170
         val projectDependency = project.dependencies.project(mapOf("path" to webAppProject.path, "configuration" to "default"))
-        project.dependencies.add(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, projectDependency)
+        project.dependencies.add(webAppsConfiguration.name, projectDependency)
     }
 
     /**

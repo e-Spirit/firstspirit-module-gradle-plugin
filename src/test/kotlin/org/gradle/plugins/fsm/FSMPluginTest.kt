@@ -50,12 +50,11 @@ class FSMPluginTest {
     }
 
     @Test
-    fun `FSM-task depends on jar and classes tasks`() {
+    fun `FSM-task depends on jar task`() {
         project.plugins.apply(FSMPlugin.NAME)
 
         val fsm = project.tasks.getByName(FSMPlugin.FSM_TASK_NAME)
-        assertThat(fsm).dependsOn(JavaPlugin.JAR_TASK_NAME, JavaPlugin.CLASSES_TASK_NAME,
-            FSMPlugin.GENERATE_LICENSE_REPORT_TASK_NAME, FSMPlugin.CONFIGURE_FSM_TASK_NAME)
+        assertThat(fsm).dependsOn(JavaPlugin.JAR_TASK_NAME, FSMPlugin.GENERATE_LICENSE_REPORT_TASK_NAME, FSMPlugin.CONFIGURE_FSM_TASK_NAME)
     }
 
     @Test

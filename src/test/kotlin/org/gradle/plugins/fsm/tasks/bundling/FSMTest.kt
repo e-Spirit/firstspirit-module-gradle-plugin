@@ -496,7 +496,6 @@ class FSMTest {
             assertThat(fsm.getEntry("web0.xml")).isNotNull
             assertThat(fsm.getEntry("web1.xml")).isNotNull
         }
-
     }
 
     @Test
@@ -519,7 +518,6 @@ class FSMTest {
             assertThat(fsm.getEntry("lib/slf4j-api-2.0.6.jar")).isNotNull
         }
     }
-
 
     @Test
     fun `do not include local jar dependencies`(@TempDir tempDir: Path) {
