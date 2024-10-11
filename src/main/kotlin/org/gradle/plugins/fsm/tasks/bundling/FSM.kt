@@ -47,41 +47,41 @@ abstract class FSM: Jar() {
     }
 
     fun lazyConfiguration() {
-        into("lib") { lib ->
-            project.serverScopeDependencies().forEach { lib.from(it.file) }
-            project.moduleScopeDependencies().forEach { lib.from(it.file) }
-            project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME).resolve().forEach { lib.from(it) }
-            lib.from(project.tasks.named(JavaPlugin.JAR_TASK_NAME))
-            project.configurations.getByName(FSMPlugin.WEBAPPS_CONFIGURATION_NAME).resolve().forEach { lib.from(it) }
+        into("lib") {
+            project.serverScopeDependencies().forEach { from(it.file) }
+            project.moduleScopeDependencies().forEach { from(it.file) }
+            project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME).resolve().forEach { from(it) }
+            from(project.tasks.named(JavaPlugin.JAR_TASK_NAME))
+            project.configurations.getByName(FSMPlugin.WEBAPPS_CONFIGURATION_NAME).resolve().forEach { from(it) }
             pluginExtension.getWebApps().values
                 .map { project -> project.tasks.named(JavaPlugin.JAR_TASK_NAME) }
                 .filter { task -> task.isPresent }
                 .map { task -> task.map { it.outputs.files.singleFile } }
-                .forEach { jarFile -> lib.from(jarFile) }
+                .forEach { jarFile -> from(jarFile) }
             pluginExtension.libraries
                 .asSequence().map { it.configuration }.filterNotNull()
                 .flatMap { LibraryComponents.getResolvedDependencies(project, it) }
-                .forEach { lib.from(it.file) }
+                .forEach { from(it.file) }
         }
 
         // include licenses report
         into("META-INF") {
-            it.from(project.layout.buildDirectory.dir(LICENSES_DIR_NAME)) { from ->
-                from.include("licenses.csv")
+            from(project.layout.buildDirectory.dir(LICENSES_DIR_NAME)) {
+                include("licenses.csv")
             }
         }
 
         // include license texts
-        into("/") { into ->
-            with(into.from(project.layout.buildDirectory.dir(LICENSES_DIR_NAME))) {
+        into("/") {
+            from(project.layout.buildDirectory.dir(LICENSES_DIR_NAME)) {
                 includeEmptyDirs = false
-                eachFile { file ->
+                eachFile {
                     // Set output path
                     // - Remove "META-INF/" directory from collected licenses
                     // - Add .txt if the file doesn't have an extension
-                    file.path = "META-INF/licenses/" + file.path.replace("META-INF/", "/")
-                    if (!file.name.contains(".")) {
-                        file.path += ".txt"
+                    path = "META-INF/licenses/" + path.replace("META-INF/", "/")
+                    if (!name.contains(".")) {
+                        path += ".txt"
                     }
                 }
                 exclude("licenses.csv")
@@ -94,7 +94,7 @@ abstract class FSM: Jar() {
             copyResourceFolderToFsm(it)
         }
 
-        with(metaInf) {
+        metaInf {
             if (pluginExtension.moduleDirName != null) {
                 // include module-isolated.xml file
                 val moduleDirPath = trimPathToDirectory(pluginExtension.moduleDirName)

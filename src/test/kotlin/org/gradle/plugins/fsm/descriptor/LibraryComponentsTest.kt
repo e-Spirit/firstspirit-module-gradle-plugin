@@ -32,12 +32,11 @@ class LibraryComponentsTest {
 
     @Test
     fun `basic attributes`() {
-        extension.libraries.create("myLib") {
-            it.displayName = "myDisplayName"
-            it.description = "myDesc"
-            it.hidden = true
-            it.configurable = "com.crownpeak.fsm.demo.Config"
-        }
+        val myLib = extension.libraries.create("myLib")
+        myLib.displayName = "myDisplayName"
+        myLib.description = "myDesc"
+        myLib.hidden = true
+        myLib.configurable = "com.crownpeak.fsm.demo.Config"
 
         val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
@@ -65,9 +64,7 @@ class LibraryComponentsTest {
     fun `configuration resolution`() {
         project.dependencies.add(FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:2.0.6")
 
-        extension.libraries.create("myLib") {
-            it.configuration = project.configurations.getByName(FS_SERVER_COMPILE_CONFIGURATION_NAME)
-        }
+        extension.libraries.create("myLib").configuration = project.configurations.getByName(FS_SERVER_COMPILE_CONFIGURATION_NAME)
 
         val moduleDescriptor = ModuleDescriptor(project)
 
@@ -85,9 +82,7 @@ class LibraryComponentsTest {
 
         project.dependencies.add("customConfiguration", "org.slf4j:slf4j-api:2.0.6")
 
-        extension.libraries.create("myLib") {
-            it.configuration = customConfiguration
-        }
+        extension.libraries.create("myLib").configuration = customConfiguration
 
         val moduleDescriptor = ModuleDescriptor(project)
 
@@ -113,9 +108,7 @@ class LibraryComponentsTest {
 
     @Test
     fun `empty resources block when no dependencies are defined`() {
-        extension.libraries.create("myLib") {
-            it.configuration = project.configurations.create("emptyConfiguration")
-        }
+        extension.libraries.create("myLib").configuration = project.configurations.create("emptyConfiguration")
 
         val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
@@ -132,9 +125,7 @@ class LibraryComponentsTest {
         project.dependencies.add("customConfiguration",
             project.fsDependency("org.slf4j:slf4j-api:2.0.6", "2.0.0", "2.0.99"))
 
-        extension.libraries.create("myLib") {
-            it.configuration = customConfiguration
-        }
+        extension.libraries.create("myLib").configuration = customConfiguration
 
         val moduleDescriptor = ModuleDescriptor(project)
 
@@ -152,9 +143,7 @@ class LibraryComponentsTest {
         val dependency = project.dependencies.create("de.espirit.firstspirit:fs-api:5.2.221111:javadoc")
         customConfiguration.dependencies.add(dependency)
 
-        extension.libraries.create("myLib") {
-            it.configuration = customConfiguration
-        }
+        extension.libraries.create("myLib").configuration = customConfiguration
 
         val moduleDescriptor = ModuleDescriptor(project)
 
@@ -174,9 +163,7 @@ class LibraryComponentsTest {
         val runtimeDependency = project.dependencies.create("org.slf4j:slf4j-api:2.0.0")
         fsModuleConfigration.dependencies.add(runtimeDependency)
 
-        extension.libraries.create("myLib") {
-            it.configuration = customConfiguration
-        }
+        extension.libraries.create("myLib").configuration = customConfiguration
 
         val moduleDescriptor = ModuleDescriptor(project)
 

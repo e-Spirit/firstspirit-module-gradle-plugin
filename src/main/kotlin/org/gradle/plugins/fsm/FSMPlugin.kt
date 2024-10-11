@@ -11,8 +11,11 @@ import org.gradle.api.Task
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.plugins.JavaBasePlugin
+import org.gradle.api.plugins.JavaBasePlugin.VERIFICATION_GROUP
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
@@ -47,6 +50,7 @@ class FSMPlugin : Plugin<Project> {
         configureJarTask(project)
         configureLicenseReport(project)
         configureManifest(project)
+        configureComplianceCheckTask(project)
     }
 
     private fun registerWebappsConfiguration(project: Project) {
@@ -103,19 +107,19 @@ class FSMPlugin : Plugin<Project> {
 
     private fun configureValidateTask(validateTask: TaskProvider<ValidateDescriptor>, fsmTask: FSM) {
         validateTask.configure {
-            it.description = "Validates the module descriptor."
-            it.group = LifecycleBasePlugin.VERIFICATION_GROUP
-            it.inputs.file(fsmTask.outputs.files.singleFile)
-            it.dependsOn(fsmTask)
+            description = "Validates the module descriptor."
+            group = LifecycleBasePlugin.VERIFICATION_GROUP
+            inputs.file(fsmTask.outputs.files.singleFile)
+            dependsOn(fsmTask)
         }
     }
 
     private fun configureIsolationCheckTask(project: Project, fsmTask: FSM): TaskProvider<IsolationCheck> {
         val isolationCheck = project.tasks.register(ISOLATION_CHECK_TASK_NAME, IsolationCheck::class.java) {
-            it.description = "Verifies the isolation of resources in the FSM."
-            it.group = LifecycleBasePlugin.VERIFICATION_GROUP
-            it.inputs.file(fsmTask.outputs.files.singleFile)
-            it.dependsOn(fsmTask)
+            description = "Verifies the isolation of resources in the FSM."
+            group = LifecycleBasePlugin.VERIFICATION_GROUP
+            inputs.file(fsmTask.outputs.files.singleFile)
+            dependsOn(fsmTask)
         }
 
         return isolationCheck
@@ -176,9 +180,9 @@ class FSMPlugin : Plugin<Project> {
         // the project has already been evaluated, causing Gradle to throw an exception
         // Because of this, we use the task execution graph to find all Jar Tasks and configure them
 
-        project.gradle.taskGraph.whenReady { taskGraph ->
+        project.gradle.taskGraph.whenReady {
             project.logger.info("Configuring JAR manifests...")
-            taskGraph.allTasks.filterIsInstance<Jar>().forEach { task ->
+            allTasks.filterIsInstance<Jar>().forEach { task ->
                 val buildJdk = "${System.getProperty("java.runtime.version")} (${System.getProperty("java.vendor")})"
                 project.logger.info("Configuring task of project ${task.project.name}, task name: ${task.path}")
                 if (task is FSM) {
@@ -210,6 +214,61 @@ class FSMPlugin : Plugin<Project> {
     }
 
 
+    private fun configureComplianceCheckTask(project: Project) {
+        val fsVersion = project.findProperty("complianceCheckFsVersion")
+            ?: project.findProperty("firstSpirit.version")
+            ?: "5.2.241212"
+        project.logger.info("Compliance Check will use FirstSpirit version $fsVersion")
+
+        val configuration = project.configurations.create("complianceCheck")
+        project.dependencies.let {
+            it.add(configuration.name, "com.tngtech.archunit:archunit-junit5:1.3.0")
+            it.add(configuration.name, "org.jetbrains:annotations:26.0.1")
+            it.add(configuration.name, "de.espirit.firstspirit:fs-isolated-runtime:$fsVersion")
+        }
+
+        val classesDir = project.layout.buildDirectory.dir("classes/checkCompliance").get().asFile
+
+        val copyComplianceCheckClassesTask = project.tasks.register("copyComplianceCheckClasses")
+        copyComplianceCheckClassesTask.configure {
+            doLast {
+                val classesToCopy = listOf(
+                    "com/crownpeak/plugins/fsm/compliance/ComplianceCheck.class",
+                    "com/crownpeak/plugins/fsm/compliance/ModLocationProvider.class",
+                    "com/crownpeak/plugins/fsm/compliance/ModLocationProvider$1.class"
+                )
+
+                classesToCopy.forEach { classToCopy ->
+                    val classStream = FSMPlugin::class.java.classLoader.getResourceAsStream(classToCopy)
+                        ?: error("Compliance test case '$classToCopy' not found")
+                    val classFile = classesDir.resolve(classToCopy)
+                    classFile.parentFile.mkdirs()
+                    classStream.use { source ->
+                        classFile.outputStream().use { target ->
+                            source.copyTo(target)
+                        }
+                    }
+                }
+            }
+        }
+
+
+        val complianceCheckTask = project.tasks.register(COMPLIANCE_CHECK_TASK_NAME, Test::class.java)
+        val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
+        complianceCheckTask.configure {
+            group = VERIFICATION_GROUP
+            description = "Validates if the module is compliant to Crownpeak implementation standards," +
+                    " i.e. if non-API methods are used"
+            dependsOn(copyComplianceCheckClassesTask)
+            useJUnitPlatform()
+            include("com/crownpeak/**")
+            testClassesDirs = project.files(classesDir)
+            classpath = sourceSets.getByName("main").runtimeClasspath + configuration + project.files(classesDir)
+        }
+
+    }
+
+
     companion object {
         const val NAME = "de.espirit.firstspirit-module"
         const val FSM_EXTENSION_NAME = "firstSpiritModule"
@@ -217,6 +276,7 @@ class FSMPlugin : Plugin<Project> {
         const val CONFIGURE_FSM_TASK_NAME = "configureAssembleFSM"
         const val VALIDATE_DESCRIPTOR_TASK_NAME = "validateDescriptor"
         const val ISOLATION_CHECK_TASK_NAME = "checkIsolation"
+        const val COMPLIANCE_CHECK_TASK_NAME = "checkCompliance"
         const val GENERATE_LICENSE_REPORT_TASK_NAME = "generateLicenseReport"
         const val WEBAPPS_CONFIGURATION_NAME = "fsmWebappsRuntime"
         const val VERSIONS_PROPERTIES_FILE = "/fsm-gradle-plugin/versions.properties"

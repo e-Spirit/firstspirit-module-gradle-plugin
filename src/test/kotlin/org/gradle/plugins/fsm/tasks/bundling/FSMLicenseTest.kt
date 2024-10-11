@@ -189,14 +189,14 @@ class FSMLicenseTest {
             }
 
             // should have picked up runtime dependency license from WebApp subproject
-            assertThat(licenses).contains(""""org.slf4j:slf4j-api:2.0.13","http://www.slf4j.org","MIT License","http://www.opensource.org/licenses/mit-license.php"""")
+            assertThat(licenses).contains(""""org.slf4j:slf4j-api:2.0.16","http://www.slf4j.org","MIT License","http://www.opensource.org/licenses/mit-license.php"""")
 
             // but not compile only dependencies
             assertThat(licenses).doesNotContain("fs-isolated-runtime")
             assertThat(licenses).doesNotContain("fs-isolated-webrt")
 
             // check presence of license files
-            assertThat(zipFile.getEntry("META-INF/licenses/slf4j-api-2.0.13.jar/LICENSE.txt")).isNotNull
+            assertThat(zipFile.getEntry("META-INF/licenses/slf4j-api-2.0.16.jar/LICENSE.txt")).isNotNull
         }
     }
 

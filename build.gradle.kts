@@ -6,10 +6,10 @@ import java.nio.file.Files
 import java.util.*
 
 plugins {
-    kotlin("jvm") version "1.9.23"
-    id("maven-publish")
-    id("idea")
-    id("java-gradle-plugin")
+    `kotlin-dsl`
+    `maven-publish`
+    idea
+    `java-gradle-plugin`
     id("net.researchgate.release") version "3.0.2"
     id("org.ajoberstar.grgit") version "5.0.0"
     id("com.github.jk1.dependency-license-report") version "2.9"
@@ -74,6 +74,9 @@ dependencies {
     implementation("org.apache.httpcomponents.client5:httpclient5:5.3.1")
     implementation("com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}")
     implementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
+
+    compileOnly(group = "com.tngtech.archunit", name = "archunit-junit5", version = "1.3.0")
+
     testImplementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
     testImplementation(platform("org.junit:junit-bom:5.10.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")

@@ -89,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "6.4.0"
+    id("de.espirit.firstspirit-module") version "6.5.0"
 }
 ```
 
@@ -105,7 +105,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-annotations") version "6.4.0"
+    id("de.espirit.firstspirit-module-annotations") version "6.5.0"
 }
 ```
 
@@ -117,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "6.4.0"
+    id("de.espirit.firstspirit-module-configurations") version "6.5.0"
 }
 ```
 
@@ -148,39 +148,50 @@ dependencies {
 
 The _de.espirit.firstspirit-module_ plugin defines the following tasks:
 
-Task | Depends on | Type | Description
-:---:|:----------:|:----:| -----------
-assembleFSM            | jar    | FSM             | Assembles an fsm archive containing the FirstSpirit module.
-checkIsolation | fsm    | IsolationCheck  | Checks if the FSM is compliant to the isolated runtime (requires access to a configured FSM Dependency Detector web service).
+| Task            | Depends on | Type           | Description                                                                                                                   |
+|-----------------|------------|----------------|-------------------------------------------------------------------------------------------------------------------------------|
+| assembleFSM     | jar        | FSM            | Assembles an fsm archive containing the FirstSpirit module.                                                                   |
+| checkCompliance | classes    | Test           | Checks if the FSM is compliant to the isolated runtime                                                                        |
+| checkIsolation  | fsm        | IsolationCheck | Checks if the FSM is compliant to the isolated runtime (requires access to a configured FSM Dependency Detector web service). |
 
-###assembleFSM
+### assembleFSM
 The assembleFSM task has the goal to create a FirstSpirit module file (.fsm). The .fsm file contains the module libraries and their dependencies, the module-isolated.xml meta file, and possibly other module resources from the project directory.
 
 For the project that includes the _de.espirit.firstspirit-module_ plugin, a .jar is created containing the compiled Java classes of the project/subproject. The name of this .jar file is composed by the name and version properties of the project/subproject ([project.name]-[project.version].jar). Furthermore a resource entry with the fsm-project-jar with scope="module" is created in the module resource block. Also, if the module contains a WebAppComponent, a WebResource entry is created for the WebApp to make the code available in the context of the web application.
 
 In order for further dependencies to have a resource entry in the module-isolated.xml, the plugin's own configurations (`fsServerCompile`, `fsWebCompile`, etc.) must be used in the dependencies section.
 
+### checkCompliance
+Usage of classes available in the `fs-isolated-runtime.jar` that are marked as internal API may result in incompatibilities with future versions of FirstSpirit. This task validates the module and reports any problems found. Additional checks may be added in the future.
+
+
+### checkIsolation
+Like the `checkCompliance` task, this one checks for non-compliant class usages. It requires a running instance of the "FSM Dependency Detector" web application.
+
+### 
+
 ## Extension properties
 
 The _de.espirit.firstspirit-module_ plugin defines the following extension properties in the `fsm` closure:
 
-Property                    | Type                   | Default                  | Description
-:--------------------------:|:----------------------:|:------------------------:|:-----------
-moduleName			        | String                 | *unset* (project name)	|  The name of the module. If not set the project name is used
-displayName                 | String                 | *unset*             		|  Human-readable name of the module
-moduleDirName               | String                 | *unset*             		|  The name of the directory containing the module-isolated.xml, relative to the project directory.
-isolationDetectorUrl        | String                 | *unset*             		|  If set, this URL is used to connect to the FSM Dependency Detector
-isolationDetectorUsername   | String                 | *unset*             		|  If set, this username is used to connect to the FSM Dependency Detector
-isolationDetectorPassword   | String                 | *unset*             		|  If set, this password is used to connect to the FSM Dependency Detector
-isolationDetectorWhitelist  | String[]               | *unset*                  |  Contains all resources that should not be scanned for dependencies
-contentCreatorComponents    | String[]               | *unset*                  |  Names of components which are meant to be installed with the ContentCreator.
-complianceLevel             | ComplianceLevel        | DEFAULT                  |  Compliance level to check for if isolationDetectorUrl is set
-maxBytecodeVersion          | int                    | 61                       |  Maximum bytecode version for all JAR files of the FSM. Defaults to 61 (JDK 17).
-firstSpiritVersion          | String                 | *unset*             		|  FirstSpirit version used in the isolation check
-minimalFirstSpiritVersion   | String                 | *unset*                  |  Minimal FirstSpirit server version required to install the module. *Supported by FirstSpirit 2023.10 and later.*
-appendDefaultMinVersion     | boolean                | true                     |  If set to true, appends the artifact version as the minVersion attribute to all resource tags (except resources which were explicitly set within FS component annotations)
-projectJarScope             | String                 | "module"                 |  Scope used for the automatically added jar which is built by the default jar task
-addDefaultJarTaskOutputToWebResources   | boolean    | true                  	|  If set to true, adds the default jar task output of the project to web resources of all web-app components.
+| Property                              | Type            | Default                 | Description                                                                                                                                                                |
+|---------------------------------------|-----------------|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| moduleName			                         | String          | *unset* (project name)	 | The name of the module. If not set the project name is used                                                                                                                |
+| displayName                           | String          | *unset*             		  | Human-readable name of the module                                                                                                                                          |
+| moduleDirName                         | String          | *unset*             		  | The name of the directory containing the module-isolated.xml, relative to the project directory.                                                                           |
+| isolationDetectorUrl                  | String          | *unset*             		  | If set, this URL is used to connect to the FSM Dependency Detector                                                                                                         |
+| isolationDetectorUsername             | String          | *unset*             		  | If set, this username is used to connect to the FSM Dependency Detector                                                                                                    |
+| isolationDetectorPassword             | String          | *unset*             		  | If set, this password is used to connect to the FSM Dependency Detector                                                                                                    |
+| isolationDetectorWhitelist            | String[]        | *unset*                 | Contains all resources that should not be scanned for dependencies                                                                                                         |
+| contentCreatorComponents              | String[]        | *unset*                 | Names of components which are meant to be installed with the ContentCreator.                                                                                               |
+| complianceLevel                       | ComplianceLevel | DEFAULT                 | Compliance level to check for if isolationDetectorUrl is set                                                                                                               |
+| maxBytecodeVersion                    | int             | 61                      | Maximum bytecode version for all JAR files of the FSM. Defaults to 61 (JDK 17).                                                                                            |
+| firstSpiritVersion                    | String          | *unset*             		  | FirstSpirit version used in the isolation check                                                                                                                            |
+| minimalFirstSpiritVersion             | String          | *unset*                 | Minimal FirstSpirit server version required to install the module. *Supported by FirstSpirit 2023.10 and later.*                                                           |
+| appendDefaultMinVersion               | boolean         | true                    | If set to true, appends the artifact version as the minVersion attribute to all resource tags (except resources which were explicitly set within FS component annotations) |
+| projectJarScope                       | String          | "module"                | Scope used for the automatically added jar which is built by the default jar task                                                                                          |
+| addDefaultJarTaskOutputToWebResources | boolean         | true                  	 | If set to true, adds the default jar task output of the project to web resources of all web-app components.                                                                |
+
 ### Example
 
 ```kotlin
@@ -207,17 +218,17 @@ You may provide your custom _module-isolated.xml_ resource in your project by pl
 Furthermore, the _module-isolated.xml_ is filtered by the plugin and predefined placeholders are replaced.
 The following placeholders in the _module-isolated.xml_ will be replaced at build time:
 
-Placeholder | Value | Description
--------|-------|------------
-$name | project.name / moduleName | Name of the FSM
-$displayName | project.name | Human-readable display name of the FSM 
-$version | project.version | Version of the FSM
-$description | project.description | Description of the FSM
-$artifact | project.jar.archiveName | Artifact (jar) name of the FSM
-$class | complex (see module example) | The class name of the class implementing the FirstSpirit module interface
-$components | complex (see component example) | All FirstSpirit components that can be found in the FSM archive
-$minimalFirstSpiritVersion | (unset) | Minimal FirstSpirit server version required to install the module. Supported by FirstSpirit 2023.10 and later.
-$resources | complex (see resource example) | All FirstSpirit resources that can be found in the FSM archive
+| Placeholder                | Value                           | Description                                                                                                    |
+|----------------------------|---------------------------------|----------------------------------------------------------------------------------------------------------------|
+| $name                      | project.name / moduleName       | Name of the FSM                                                                                                |
+| $displayName               | project.name                    | Human-readable display name of the FSM                                                                         |
+| $version                   | project.version                 | Version of the FSM                                                                                             |
+| $description               | project.description             | Description of the FSM                                                                                         |
+| $artifact                  | project.jar.archiveName         | Artifact (jar) name of the FSM                                                                                 |
+| $class                     | complex (see module example)    | The class name of the class implementing the FirstSpirit module interface                                      |
+| $components                | complex (see component example) | All FirstSpirit components that can be found in the FSM archive                                                |
+| $minimalFirstSpiritVersion | (unset)                         | Minimal FirstSpirit server version required to install the module. Supported by FirstSpirit 2023.10 and later. |
+| $resources                 | complex (see resource example)  | All FirstSpirit resources that can be found in the FSM archive                                                 |
 
 If no module-isolated.xml file is provided within the project, a small generic template module-isolated.xml file is used by the plugin.
 This is useful if you don't want to add any custom behaviour to your module-isolated.xml and should be sufficient for most modules.
@@ -441,11 +452,11 @@ The value of `$resources` may contain many more.
 
 The FSM plugin adds the following dependency configurations.
 
-name | Description
------|------------
-fsServerCompile | Same as the usual `implementation` configuration, but the dependency and all transitive dependencies are added to the module-isolated.xml with server scope
-fsModuleCompile | Same as the usual `implementation` configuration, but the dependency and all transitive dependencies are added to the module-isolated.xml with module scope
-fsWebCompile | Same as the usual `implementation` configuration, but the dependency and all transitive dependencies are added to the web-resources tag in the module-isolated.xml
+| name            | Description                                                                                                                                                        |
+|-----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| fsServerCompile | Same as the usual `implementation` configuration, but the dependency and all transitive dependencies are added to the module-isolated.xml with server scope        |
+| fsModuleCompile | Same as the usual `implementation` configuration, but the dependency and all transitive dependencies are added to the module-isolated.xml with module scope        |
+| fsWebCompile    | Same as the usual `implementation` configuration, but the dependency and all transitive dependencies are added to the web-resources tag in the module-isolated.xml |
 
 Dependencies with other scopes than these (for example the regular compile scope) are not treated as a resource to be used for module-isolated.xml file generation.
 That means if you use compile scope, you can compile your source files against it like in any other project, but the resource won't be listed in the module-isolated.xml
@@ -513,19 +524,19 @@ be marked "isolated" automatically, thus reducing conflicts on the classpath.
 
 It is possible to perform an isolation check on the resulting module file to ensure a certain level of compliance to the isolated mode. This check requires access to an *FSM Depedency Detector* web service and can be configured using the extension properties as explained above. Valid values for the compliance level are:
 
-name | Description
------|------------
-MINIMAL | Asserts that there is no use of implementation classes that are not available in the isolated runtime. This ist the minimal requirement to run a module with a server in isolated mode (prevents IMPL_USAGE type dependencies).
-DEFAULT | In addition to MINIMAL, the default compliance level asserts that there is no use of internal FirstSpirit classes, that are not part of the public API. These classes are available in the isolated runtime of the current version and will work in isolated mode, but they are subject to change without prior notice and should therefore be removed for sake of longevity (prevents IMPL_USAGE and RUNTIME_USAGE type dependencies).
-HIGHEST | The highest setting further prohibits the usage of deprecated FirstSpirit API (prevents IMPL_USAGE, RUNTIME_USAGE and DEPRECATED API_USAGE type dependencies)
+| name    | Description                                                                                                                                                                                                                                                                                                                                                                                                                             |
+|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| MINIMAL | Asserts that there is no use of implementation classes that are not available in the isolated runtime. This ist the minimal requirement to run a module with a server in isolated mode (prevents IMPL_USAGE type dependencies).                                                                                                                                                                                                         |
+| DEFAULT | In addition to MINIMAL, the default compliance level asserts that there is no use of internal FirstSpirit classes, that are not part of the public API. These classes are available in the isolated runtime of the current version and will work in isolated mode, but they are subject to change without prior notice and should therefore be removed for sake of longevity (prevents IMPL_USAGE and RUNTIME_USAGE type dependencies). |
+| HIGHEST | The highest setting further prohibits the usage of deprecated FirstSpirit API (prevents IMPL_USAGE, RUNTIME_USAGE and DEPRECATED API_USAGE type dependencies)                                                                                                                                                                                                                                                                           |
 
 #### Dependency types (Isolation level)
 
-name | Description
------|------------
-IMPL_USAGE | Usage of classes which are not part of the isolated runtime
-RUNTIME_USAGE | Usage of classes that are not part of the public API
-DEPRECATED_API_USAGE | Usage of FirstSpirit API that has been deprecated
+| name                 | Description                                                 |
+|----------------------|-------------------------------------------------------------|
+| IMPL_USAGE           | Usage of classes which are not part of the isolated runtime |
+| RUNTIME_USAGE        | Usage of classes that are not part of the public API        |
+| DEPRECATED_API_USAGE | Usage of FirstSpirit API that has been deprecated           |
 
 ## Adding WebApps
 
@@ -571,7 +582,7 @@ You can use the following snippet as a starting point:
 // Groovy
 
 plugins {
-    id 'de.espirit.firstspirit-module' version '6.4.0'
+    id 'de.espirit.firstspirit-module' version '6.5.0'
 }
 
 description = 'Example FSM Gradle build'
@@ -606,7 +617,7 @@ firstSpiritModule {
 // Kotlin
 
 plugins {
-    id("de.espirit.firstspirit-module") version "6.4.0"
+    id("de.espirit.firstspirit-module") version "6.5.0"
 }
 
 description = "Example FSM Gradle build"

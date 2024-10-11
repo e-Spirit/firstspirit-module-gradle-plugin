@@ -9,11 +9,11 @@ object TestProjectUtils {
         project.extensions.add("artifactory_username", System.getProperty("artifactory_username"))
         project.extensions.add("artifactory_password", System.getProperty("artifactory_password"))
 
-        with(project.repositories) {
-            maven {
-                it.url = URI.create("https://artifactory.e-spirit.de/artifactory/repo")
-                it.credentials.username = project.extensions.getByName("artifactory_username") as String
-                it.credentials.password = project.extensions.getByName("artifactory_password") as String
+        project.repositories.maven {
+            url = URI.create("https://artifactory.e-spirit.de/artifactory/repo")
+            credentials {
+                username = project.extensions.getByName("artifactory_username") as String
+                password = project.extensions.getByName("artifactory_password") as String
             }
         }
     }

@@ -37,11 +37,11 @@ fun Project.setArtifactoryCredentialsFromLocalProperties() {
 }
 
 fun Project.defineArtifactoryForProject() {
-    this.repositories.maven { repo ->
-        repo.setUrl("https://artifactory.e-spirit.de/artifactory/repo")
-        repo.credentials { credentials ->
-            credentials.username = property("artifactory_username") as String
-            credentials.password = property("artifactory_password") as String
+    this.repositories.maven {
+        url = URI.create("https://artifactory.e-spirit.de/artifactory/repo")
+        credentials {
+            username = property("artifactory_username") as String
+            password = property("artifactory_password") as String
         }
     }
 }

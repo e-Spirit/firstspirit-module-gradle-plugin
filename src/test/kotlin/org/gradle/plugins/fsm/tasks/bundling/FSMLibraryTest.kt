@@ -32,9 +32,9 @@ class FSMLibraryTest {
         assertThat(fsmFile).exists()
         ZipFile(fsmFile).use { zipFile ->
             // check contents of lib folder
-            assertThat(zipFile.getEntry("lib/slf4j-api-2.0.13.jar")).isNotNull
-            assertThat(zipFile.getEntry("lib/fs-isolated-runtime-5.2.220309.jar")).isNull()
-            assertThat(zipFile.getEntry("lib/fs-isolated-webrt-5.2.220309.jar")).isNull()
+            assertThat(zipFile.getEntry("lib/slf4j-api-2.0.16.jar")).isNotNull
+            assertThat(zipFile.getEntry("lib/fs-isolated-runtime-5.2.241212.jar")).isNull()
+            assertThat(zipFile.getEntry("lib/fs-isolated-webrt-5.2.241212.jar")).isNull()
         }
     }
 }
