@@ -24,10 +24,7 @@ import de.espirit.firstspirit.module.descriptor.ModuleDescriptor
 import de.espirit.firstspirit.scheduling.ScheduleTaskData
 import de.espirit.firstspirit.scheduling.ScheduleTaskForm
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
-import org.gradle.plugins.fsm.util.BaseConfiguration
-import org.gradle.plugins.fsm.util.BaseProjectApp
-import org.gradle.plugins.fsm.util.BaseService
-import org.gradle.plugins.fsm.util.BaseWebApp
+import org.gradle.plugins.fsm.util.*
 import java.awt.Frame
 import javax.swing.JComponent
 
@@ -363,3 +360,24 @@ class TestFilenameFactory : FilenameFactory {
     ]
 )
 class TestUrlFactoryWithParameters : TestMinimalUrlFactoryComponent()
+
+@WebServerComponent(
+    name = "TestMinimalWebServerComponent"
+)
+class TestMinimalWebServerComponent: BaseWebServer()
+
+@WebServerComponent(
+    name = "TestHiddenWebServerComponent",
+    hidden = true
+)
+class TestHiddenWebServerComponent: BaseWebServer()
+
+@WebServerComponent(
+    name = "TestWebServerComponentWithParameters",
+    displayName = "TestDisplayName",
+    description = "TestDescription",
+    configurable = TestWebServerComponentWithParameters.TestConfigurable::class,
+)
+class TestWebServerComponentWithParameters : BaseWebServer() {
+    class TestConfigurable : BaseConfiguration()
+}

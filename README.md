@@ -89,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "6.5.2"
+    id("de.espirit.firstspirit-module") version "6.6.0"
 }
 ```
 
@@ -105,7 +105,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-annotations") version "6.5.2"
+    id("de.espirit.firstspirit-module-annotations") version "6.6.0"
 }
 ```
 
@@ -117,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "6.5.2"
+    id("de.espirit.firstspirit-module-configurations") version "6.6.0"
 }
 ```
 
@@ -237,24 +237,20 @@ Your module may include one or more FirstSpirit components. With the annotations
 
 #### Annotations
 
+##### com.espirit.moddev.components.annotations.@GadgetComponent
+Should be added to a class implementing the GomElement interface in order to render the appropriate GomElement configuration into the module-isolated.xml.
+
 ##### com.espirit.moddev.components.annotations.@ModuleComponent
 A module developer may provide an implementation of the Module interface to participate in the lifecycle of the module. With the @ModuleComponent Annotation on the respective implementation, a Configuration Class may be specified to be used in the module configuration at runtime.
-
-##### com.espirit.moddev.components.annotations.@ServiceComponent
-Should be added to a class implementing the Service interface in order to render the appropriate Service configuration into the module-isolated.xml.
 
 ##### com.espirit.moddev.components.annotations.@ProjectAppComponent
 Should be added to a class implementing the ProjectApp interface in order to render the appropriate ProjectApp configuration into the module-isolated.xml.
 
-##### com.espirit.moddev.components.annotations.@WebAppComponent
-Should be added to a class implementing the WebApp interface in order to render the appropriate WebApp configuration into the module-isolated.xml.
-Please note, that if you configure a webXml attribute, you need to have a matching web.xml file inside your project in a subfolder of fsm-resources, or else the installation of the .fsm on the FirstSpirit server will fail.
-
-##### com.espirit.moddev.components.annotations.@WebResource
-The @WebResource annotation is used within a @WebAppComponent configuration to define one or more web resources (javascript, css, images etc. ) used by the web application. Resources referenced in a @WebResource should be placed in the fsm-resources folder.   
-
 ##### com.espirit.moddev.components.annotations.@PublicComponent
 Should be added to a class implementing the Public interface in order to render the appropriate Public configuration into the module-isolated.xml.
+
+##### com.espirit.moddev.components.annotations.@ServiceComponent
+Should be added to a class implementing the Service interface in order to render the appropriate Service configuration into the module-isolated.xml.
 
 ##### com.espirit.moddev.components.annotations.@ScheduleTaskComponent
 Should be added to a class implementing the ScheduleTaskApplication in order to render the appropriate ScheduleTaskApplication configuration into the module-isolated.xml.
@@ -269,10 +265,18 @@ is <u>NOT</u> in server scope. To make this work the following can be done.
 With this a `.fsm` file is generated which includes a jar with all the classes which are needed in server scope and the module-isolated.xml with the corresponding resource entry.
 
 ##### com.espirit.moddev.components.annotations.@UrlFactoryComponent
-Should be added to a class implementing the UrlFactory in order to render the appropriate UrlFactory configuration into the module-isolated.xml.
+Should be added to a class implementing the UrlFactory interface in order to render the appropriate UrlFactory configuration into the module-isolated.xml.
 
-##### com.espirit.moddev.components.annotations.@GadgetComponent
-Should be added to a class implementing the GomElement in order to render the appropriate GomElement configuration into the module-isolated.xml.
+##### com.espirit.moddev.components.annotations.@WebAppComponent
+Should be added to a class implementing the WebApp interface in order to render the appropriate WebApp configuration into the module-isolated.xml.
+Please note, that if you configure a webXml attribute, you need to have a matching web.xml file inside your project in a subfolder of fsm-resources, or else the installation of the .fsm on the FirstSpirit server will fail.
+
+##### com.espirit.moddev.components.annotations.@WebResource
+The @WebResource annotation is used within a @WebAppComponent configuration to define one or more web resources (javascript, css, images etc. ) used by the web application. Resources referenced in a @WebResource should be placed in the fsm-resources folder.   
+
+##### com.espirit.moddev.components.annotations.@WebServerComponent
+Should be added to a class implementing the WebServer interface in order to render the appropriate web server configuration into the module-isolated.xml.
+
 
 #### Library Components
 
@@ -580,7 +584,7 @@ You can use the following snippet as a starting point:
 // Groovy
 
 plugins {
-    id 'de.espirit.firstspirit-module' version '6.5.2'
+    id 'de.espirit.firstspirit-module' version '6.6.0'
 }
 
 description = 'Example FSM Gradle build'
@@ -615,7 +619,7 @@ firstSpiritModule {
 // Kotlin
 
 plugins {
-    id("de.espirit.firstspirit-module") version "6.5.2"
+    id("de.espirit.firstspirit-module") version "6.6.0"
 }
 
 description = "Example FSM Gradle build"

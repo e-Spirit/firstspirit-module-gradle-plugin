@@ -27,6 +27,7 @@ class Components(private val project: Project, private val scanResult: Component
             components(GadgetComponent::class, ::nodesForGadgetComponent, scanResult).forEach(this::addElement)
             components(UrlFactoryComponent::class, ::nodesForUrlFactoryComponent, scanResult).forEach(this::addElement)
             components(ServiceComponent::class, ::nodesForServiceComponent, scanResult).forEach(this::addElement)
+            components(WebServerComponent::class, ::nodesForWebServerComponent, scanResult).forEach(this::addElement)
             ProjectAppComponents(project, scanResult).nodes.forEach(this::addElement)
             LibraryComponents(project).nodes.forEach(this::addElement)
 
@@ -149,6 +150,25 @@ class Components(private val project: Project, private val scanResult: Component
                     "displayname" { -annotation.getString("displayName") }
                     "description" { -annotation.getString("description") }
                     "class" { -serviceComponent.name }
+                    annotation.getClassNameOrNull("configurable", Configuration::class)?.let { "configurable" { -it } }
+                    if (annotation.getString("hidden").toBoolean()) {
+                        "hidden" { -"true" }
+                    }
+                }
+            }
+    }
+
+
+    @Suppress("DuplicatedCode")
+    private fun nodesForWebServerComponent(webServerComponent: ClassInfo): List<Node> {
+        return webServerComponent.annotationInfo
+            .filter { it.isClass(WebServerComponent::class) }
+            .map { annotation ->
+                xml("web-server") {
+                    "name" { -annotation.getString("name") }
+                    "displayname" { -annotation.getString("displayName") }
+                    "description" { -annotation.getString("description") }
+                    "class" { -webServerComponent.name }
                     annotation.getClassNameOrNull("configurable", Configuration::class)?.let { "configurable" { -it } }
                     if (annotation.getString("hidden").toBoolean()) {
                         "hidden" { -"true" }
