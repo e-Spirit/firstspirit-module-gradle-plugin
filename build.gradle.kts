@@ -1,6 +1,7 @@
 import com.github.jk1.license.filter.LicenseBundleNormalizer
 import net.researchgate.release.ReleaseExtension
 import org.apache.tools.ant.taskdefs.condition.Os
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.net.URI
 import java.nio.file.Files
 import java.util.*
@@ -10,10 +11,10 @@ plugins {
     `maven-publish`
     idea
     `java-gradle-plugin`
-    id("net.researchgate.release") version "3.0.2"
+    id("net.researchgate.release") version "3.1.0"
     id("org.ajoberstar.grgit") version "5.0.0"
     id("com.github.jk1.dependency-license-report") version "2.9"
-    id("org.cyclonedx.bom") version "1.7.4"
+    id("org.cyclonedx.bom") version "1.10.0"
 }
 
 tasks.withType<JavaCompile> {
@@ -21,8 +22,8 @@ tasks.withType<JavaCompile> {
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions {
-        jvmTarget = "11"
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
     }
 }
 
@@ -116,7 +117,7 @@ sourceSets {
     }
 }
 
-val writePropertiesToResourceFile = tasks.create("writePropertiesToResourceFile") {
+val writePropertiesToResourceFile by tasks.registering {
     outputs.upToDateWhen { false }
     doLast {
         val props = Properties()
@@ -152,7 +153,7 @@ tasks.jar {
 /**
  * Bundles together test classes for component scan tests
  */
-val testJar = tasks.create<Jar>("testJar") {
+val testJar by tasks.registering(Jar::class) {
     dependsOn(tasks.testClasses)
     archiveClassifier.set("tests")
     from("build/classes/groovy/test")
@@ -175,7 +176,7 @@ tasks.test {
     systemProperty("artifactory_password", findProperty("artifactory_password") as String)
     systemProperty("gradle.version", gradle.gradleVersion)
     systemProperty("version", version)
-    systemProperty("testJar", testJar.archiveFile.get().asFile.absolutePath)
+    systemProperty("testJar", testJar.get().archiveFile.get().asFile.absolutePath)
     systemProperty("classesDir", layout.buildDirectory.dir("classes").get().asFile.absolutePath)
 
     if (Os.isFamily(Os.FAMILY_WINDOWS)) {
@@ -187,7 +188,7 @@ tasks.test {
     useJUnitPlatform()
 }
 
-val integrationTest by tasks.creating(Test::class.java) {
+val integrationTest by tasks.registering(Test::class) {
     filter {
         includeTestsMatching("*IT")
     }

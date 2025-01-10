@@ -89,7 +89,8 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
 
             // fsm-resources directory of root project and fsWebCompile subprojects (shared between all webapps)
             webResources.addAll(projectDependencies
-                .map(ProjectDependency::getDependencyProject)
+                .map(ProjectDependency::getPath)
+                .map(project::project)
                 .flatMap(this::fsmResources)
             )
 
@@ -99,7 +100,7 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
 
                 // fsm-resources directory of current web-app
                 // - safety check to avoid duplicates
-                if (!projectDependencies.map(ProjectDependency::getDependencyProject).contains(webAppProject)) {
+                if (!projectDependencies.map(ProjectDependency::getPath).map(project::project).contains(webAppProject)) {
                     webResources.addAll(fsmResources(webAppProject))
                 }
 

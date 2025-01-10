@@ -22,7 +22,8 @@ fun Jar.addManifestAttribute(name: String, value: Any) {
 fun Project.compileDependencies(): List<Project> {
     val compileClasspath = project.configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
     val projectDependencies = compileClasspath.allDependencies.withType(ProjectDependency::class.java)
-        .map { it.dependencyProject }
+        .map { it.path }
+        .map { project(it) }
         .filter { it.plugins.hasPlugin(JavaPlugin::class.java) }
     return listOf(project) + projectDependencies
 }

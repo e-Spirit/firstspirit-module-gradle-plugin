@@ -156,7 +156,9 @@ abstract class FSM: Jar() {
     }
 
     @TaskAction
-    fun generateModuleXml() {
+    override fun copy() {
+        super.copy()
+
         logger.info("Generating module.xml files")
         val archive = archiveFile.get().asFile
         logger.info("Found archive ${archive.path}")
@@ -227,8 +229,7 @@ abstract class FSM: Jar() {
 
         Files.createDirectories(archiveFile.get().asFile.parentFile.toPath())
         Files.createFile(archiveFile.get().asFile.toPath())
-        super.copy()
-        generateModuleXml()
+        copy()
     }
 
 

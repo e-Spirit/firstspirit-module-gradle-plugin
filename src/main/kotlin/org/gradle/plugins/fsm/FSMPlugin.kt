@@ -60,11 +60,7 @@ class FSMPlugin : Plugin<Project> {
         implementation.extendsFrom(webAppsConfiguration)
     }
 
-    private fun configureConfigurationTask(project: Project): Task {
-        val configurationTask = project.tasks.create(CONFIGURE_FSM_TASK_NAME)
-        configurationTask.dependsOn(project.tasks.getByName(GENERATE_LICENSE_REPORT_TASK_NAME))
-        configurationTask.dependsOn(JavaPlugin.JAR_TASK_NAME)
-
+    private fun configureConfigurationTask(project: Project): TaskProvider<Task> {
         @Suppress("ObjectLiteralToLambda") // Lambdas cannot be used as Gradle task inputs
         val action = object : Action<Task> {
             override fun execute(t: Task) {
@@ -72,29 +68,35 @@ class FSMPlugin : Plugin<Project> {
             }
         }
 
-        configurationTask.doLast(action)
+        val configurationTask = project.tasks.register(CONFIGURE_FSM_TASK_NAME) {
+            dependsOn(project.tasks.getByName(GENERATE_LICENSE_REPORT_TASK_NAME))
+            dependsOn(JavaPlugin.JAR_TASK_NAME)
+            doLast(action)
+        }
 
         return configurationTask
     }
 
     private fun configureFsmTask(
         project: Project,
-        configurationTask: Task,
+        configurationTask: TaskProvider<Task>,
         validateTask: TaskProvider<ValidateDescriptor>
-    ): FSM {
-        val fsmTask = project.tasks.create(FSM_TASK_NAME, FSM::class.java)
-        fsmTask.description = "Assembles an fsmTask archive containing the FirstSpirit module."
-        fsmTask.group = BasePlugin.BUILD_GROUP
-
+    ): TaskProvider<FSM> {
         removeDefaultJarArtifactFromArchives(project)
 
-        fsmTask.dependsOn(project.tasks.getByName(GENERATE_LICENSE_REPORT_TASK_NAME))
-        fsmTask.dependsOn(JavaPlugin.JAR_TASK_NAME)
-        fsmTask.dependsOn(configurationTask)
-        project.tasks.getByName("assemble").dependsOn(fsmTask)
+        val fsmTask = project.tasks.register(FSM_TASK_NAME, FSM::class.java) {
+            description = "Assembles an fsmTask archive containing the FirstSpirit module."
+            group = BasePlugin.BUILD_GROUP
 
-        // Validate FSM immediately
-        fsmTask.finalizedBy(validateTask)
+            dependsOn(project.tasks.getByName(GENERATE_LICENSE_REPORT_TASK_NAME))
+            dependsOn(JavaPlugin.JAR_TASK_NAME)
+            dependsOn(configurationTask)
+
+            // Validate FSM immediately
+            finalizedBy(validateTask)
+        }
+
+        project.tasks.getByName("assemble").dependsOn(fsmTask)
 
         return fsmTask
     }
@@ -105,20 +107,20 @@ class FSMPlugin : Plugin<Project> {
         archivesConfig.artifacts.clear()
     }
 
-    private fun configureValidateTask(validateTask: TaskProvider<ValidateDescriptor>, fsmTask: FSM) {
+    private fun configureValidateTask(validateTask: TaskProvider<ValidateDescriptor>, fsmTask: TaskProvider<FSM>) {
         validateTask.configure {
             description = "Validates the module descriptor."
             group = LifecycleBasePlugin.VERIFICATION_GROUP
-            inputs.file(fsmTask.outputs.files.singleFile)
+            inputs.file(fsmTask.map { it.outputs.files.singleFile })
             dependsOn(fsmTask)
         }
     }
 
-    private fun configureIsolationCheckTask(project: Project, fsmTask: FSM): TaskProvider<IsolationCheck> {
+    private fun configureIsolationCheckTask(project: Project, fsmTask: TaskProvider<FSM>): TaskProvider<IsolationCheck> {
         val isolationCheck = project.tasks.register(ISOLATION_CHECK_TASK_NAME, IsolationCheck::class.java) {
             description = "Verifies the isolation of resources in the FSM."
             group = LifecycleBasePlugin.VERIFICATION_GROUP
-            inputs.file(fsmTask.outputs.files.singleFile)
+            inputs.file(fsmTask.map { it.outputs.files.singleFile })
             dependsOn(fsmTask)
         }
 

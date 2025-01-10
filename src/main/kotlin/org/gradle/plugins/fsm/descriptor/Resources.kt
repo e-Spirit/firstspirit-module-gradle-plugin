@@ -102,7 +102,7 @@ class Resources(private val project: Project, private val webXmlPaths: List<Stri
             val projectDependencies = config.allDependencies.withType(ProjectDependency::class.java)
             for (projectDependency in projectDependencies) {
                 val scope = if (it == FS_MODULE_COMPILE_CONFIGURATION_NAME) { "module" } else { "server" }
-                projects.add(projectDependency.dependencyProject to scope)
+                projects.add(project.project(projectDependency.path) to scope)
             }
         }
 

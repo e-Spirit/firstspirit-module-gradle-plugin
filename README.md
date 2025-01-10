@@ -1,4 +1,4 @@
-# [Gradle](http://www.gradle.org/) plugin to build [FirstSpirit](http://www.e-spirit.com/en/product/advantage/advantages.html) modules (FSMs)
+# [Gradle](https://gradle.org/) plugin to build [FirstSpirit](https://www.crownpeak.com/de/products/content-management/) modules (FSMs)
 
 ## Usage
 
@@ -89,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "6.5.0"
+    id("de.espirit.firstspirit-module") version "6.5.1"
 }
 ```
 
@@ -105,7 +105,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-annotations") version "6.5.0"
+    id("de.espirit.firstspirit-module-annotations") version "6.5.1"
 }
 ```
 
@@ -117,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "6.5.0"
+    id("de.espirit.firstspirit-module-configurations") version "6.5.1"
 }
 ```
 
@@ -167,8 +167,6 @@ Usage of classes available in the `fs-isolated-runtime.jar` that are marked as i
 
 ### checkIsolation
 Like the `checkCompliance` task, this one checks for non-compliant class usages. It requires a running instance of the "FSM Dependency Detector" web application.
-
-### 
 
 ## Extension properties
 
@@ -582,7 +580,7 @@ You can use the following snippet as a starting point:
 // Groovy
 
 plugins {
-    id 'de.espirit.firstspirit-module' version '6.5.0'
+    id 'de.espirit.firstspirit-module' version '6.5.1'
 }
 
 description = 'Example FSM Gradle build'
@@ -617,7 +615,7 @@ firstSpiritModule {
 // Kotlin
 
 plugins {
-    id("de.espirit.firstspirit-module") version "6.5.0"
+    id("de.espirit.firstspirit-module") version "6.5.1"
 }
 
 description = "Example FSM Gradle build"
