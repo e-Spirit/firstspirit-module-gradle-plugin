@@ -16,6 +16,7 @@ import org.gradle.api.plugins.JavaPlugin
 import org.gradle.plugins.fsm.DeclaredWebAppChecker
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
+import org.gradle.plugins.fsm.dependencyProject
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.xml
 import java.io.File
@@ -89,8 +90,7 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
 
             // fsm-resources directory of root project and fsWebCompile subprojects (shared between all webapps)
             webResources.addAll(projectDependencies
-                .map(ProjectDependency::getPath)
-                .map(project::project)
+                .map { it.dependencyProject(project) }
                 .flatMap(this::fsmResources)
             )
 
@@ -100,7 +100,7 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
 
                 // fsm-resources directory of current web-app
                 // - safety check to avoid duplicates
-                if (!projectDependencies.map(ProjectDependency::getPath).map(project::project).contains(webAppProject)) {
+                if (!projectDependencies.map { it.dependencyProject(project) }.contains(webAppProject)) {
                     webResources.addAll(fsmResources(webAppProject))
                 }
 

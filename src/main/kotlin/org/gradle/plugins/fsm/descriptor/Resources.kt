@@ -7,6 +7,7 @@ import org.gradle.api.logging.Logging
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_MODULE_COMPILE_CONFIGURATION_NAME
+import org.gradle.plugins.fsm.dependencyProject
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.PrintOptions
 import org.redundent.kotlin.xml.xml
@@ -102,7 +103,7 @@ class Resources(private val project: Project, private val webXmlPaths: List<Stri
             val projectDependencies = config.allDependencies.withType(ProjectDependency::class.java)
             for (projectDependency in projectDependencies) {
                 val scope = if (it == FS_MODULE_COMPILE_CONFIGURATION_NAME) { "module" } else { "server" }
-                projects.add(project.project(projectDependency.path) to scope)
+                projects.add(projectDependency.dependencyProject(project) to scope)
             }
         }
 

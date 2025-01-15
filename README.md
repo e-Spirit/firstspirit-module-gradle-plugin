@@ -89,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "6.5.1"
+    id("de.espirit.firstspirit-module") version "6.5.2"
 }
 ```
 
@@ -105,7 +105,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-annotations") version "6.5.1"
+    id("de.espirit.firstspirit-module-annotations") version "6.5.2"
 }
 ```
 
@@ -117,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "6.5.1"
+    id("de.espirit.firstspirit-module-configurations") version "6.5.2"
 }
 ```
 
@@ -580,7 +580,7 @@ You can use the following snippet as a starting point:
 // Groovy
 
 plugins {
-    id 'de.espirit.firstspirit-module' version '6.5.1'
+    id 'de.espirit.firstspirit-module' version '6.5.2'
 }
 
 description = 'Example FSM Gradle build'
@@ -615,7 +615,7 @@ firstSpiritModule {
 // Kotlin
 
 plugins {
-    id("de.espirit.firstspirit-module") version "6.5.1"
+    id("de.espirit.firstspirit-module") version "6.5.2"
 }
 
 description = "Example FSM Gradle build"

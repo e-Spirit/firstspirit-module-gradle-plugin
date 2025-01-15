@@ -30,7 +30,7 @@ class FSMPluginExtensionTest {
 
         // Ensure the project has a compile dependency on the subprojects
         val dependencyProjects = project.configurations.getByName(FSMPlugin.WEBAPPS_CONFIGURATION_NAME)
-            .dependencies.filterIsInstance<ProjectDependency>().map(ProjectDependency::getPath).map(project::project)
+            .dependencies.filterIsInstance<ProjectDependency>().map { it.dependencyProject(project) }
         assertThat(dependencyProjects).containsExactly(webAppSubprojectA, webAppSubprojectB)
     }
 
