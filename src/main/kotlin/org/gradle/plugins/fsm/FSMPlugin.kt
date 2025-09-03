@@ -219,12 +219,13 @@ class FSMPlugin : Plugin<Project> {
     private fun configureComplianceCheckTask(project: Project) {
         val fsVersion = project.findProperty("complianceCheckFsVersion")
             ?: project.findProperty("firstSpirit.version")
-            ?: "5.2.241212"
+            ?: "5.2.250909"
         project.logger.info("Compliance Check will use FirstSpirit version $fsVersion")
 
         val configuration = project.configurations.create("complianceCheck")
         project.dependencies.let {
-            it.add(configuration.name, "com.tngtech.archunit:archunit-junit5:1.3.0")
+            it.add(configuration.name, "org.junit.platform:junit-platform-launcher:1.13.4")
+            it.add(configuration.name, "com.tngtech.archunit:archunit-junit5:1.4.1")
             it.add(configuration.name, "org.jetbrains:annotations:26.0.1")
             it.add(configuration.name, "de.espirit.firstspirit:fs-isolated-runtime:$fsVersion")
         }

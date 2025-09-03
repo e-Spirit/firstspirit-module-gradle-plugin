@@ -1,3 +1,7 @@
+# Upgrading to 7.0.0
+
+* With version 7.0.0, the minimal required Gradle version has been raised to 8.11.
+
 # Upgrading from 6.0.0 to 6.1.0
 
 * Dependencies not defined using fs-configurations like `fsModuleCompile` will no longer be placed in the `lib`

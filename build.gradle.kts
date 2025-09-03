@@ -71,7 +71,7 @@ dependencies {
     implementation("com.github.jk1:gradle-license-report:2.3")
     implementation("org.redundent:kotlin-xml-builder:1.9.1")
     implementation("org.json:json:20240303")
-    implementation("org.apache.maven:maven-artifact:3.9.6")
+    implementation("org.apache.maven:maven-artifact:3.9.11")
     implementation("org.apache.httpcomponents.client5:httpclient5:5.3.1")
     implementation("com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}")
     implementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
@@ -79,12 +79,12 @@ dependencies {
     compileOnly(group = "com.tngtech.archunit", name = "archunit-junit5", version = "1.3.0")
 
     testImplementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
-    testImplementation(platform("org.junit:junit-bom:5.10.3"))
+    testImplementation(platform("org.junit:junit-bom:5.13.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testImplementation("org.assertj:assertj-core:3.26.3")
-    testImplementation("org.mockito:mockito-junit-jupiter:5.12.0")
-    testImplementation("org.ow2.asm:asm:9.7")
+    testImplementation("org.assertj:assertj-core:3.27.4")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.19.0")
+    testImplementation("org.ow2.asm:asm:9.8")
     testImplementation(gradleTestKit())
 }
 

@@ -1,5 +1,6 @@
 package org.gradle.plugins.fsm
 
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.plugins.JavaPlugin
@@ -28,13 +29,10 @@ fun Project.compileDependencies(): List<Project> {
     return listOf(project) + projectDependencies
 }
 
-/**
- * Use deprecated method when Gradle version older than 8.11 is used.
- */
-@Suppress("DEPRECATION")
 fun ProjectDependency.dependencyProject(project: Project): Project {
     return if (GradleVersion.current() < GradleVersion.version("8.11")) {
-        this.dependencyProject
+        throw GradleException("Support for Gradle versions older than 8.11 has been removed." +
+                " Please update your Gradle wrapper.")
     } else {
         project.project(this.path)
     }
