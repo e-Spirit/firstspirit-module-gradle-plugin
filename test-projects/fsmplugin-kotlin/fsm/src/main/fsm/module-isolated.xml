@@ -22,4 +22,7 @@ $resources
             </resources>
         </library>
     </components>
+    <resources>
+$resources
+    </resources>
 </module>

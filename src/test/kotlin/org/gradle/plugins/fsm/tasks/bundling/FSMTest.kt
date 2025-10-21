@@ -1,8 +1,10 @@
 package org.gradle.plugins.fsm.tasks.bundling
 
 import org.assertj.core.api.Assertions.*
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
 import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.plugins.fsm.FSMPluginExtension
@@ -32,7 +34,7 @@ class FSMTest {
 
     private lateinit var project: Project
 
-    private lateinit var fsm: FSM
+    private lateinit var fsm: TaskProvider<FSM>
 
     @BeforeEach
     fun setUp() {
@@ -41,41 +43,41 @@ class FSMTest {
 
         project.plugins.apply(FSMPlugin.NAME)
 
-        fsm = project.tasks.getByName(FSMPlugin.FSM_TASK_NAME) as FSM
-
-        fsm.archiveBaseName.set("testbasename")
-        fsm.archiveAppendix.set("testappendix")
-        fsm.archiveVersion.set("1.0")
+        fsm = project.tasks.named(FSMPlugin.FSM_TASK_NAME, FSM::class.java) {
+            archiveBaseName.set("testbasename")
+            archiveAppendix.set("testappendix")
+            archiveVersion.set("1.0")    
+        }
     }
 
     @Test
-    fun testExecute() {
-        fsm.execute()
-        assertThat(fsm.destinationDirectory.get().asFile).isDirectory
-        assertThat(fsm.archiveFile.get().asFile).isFile
+    fun execute() {
+        fsm.get().execute()
+        assertThat(fsm.get().destinationDirectory.get().asFile).isDirectory
+        assertThat(fsm.get().archiveFile.get().asFile).isFile
     }
 
     @Test
-    fun fsmExtensionUsed() {
-        assertThat(fsm.archiveExtension.get()).isEqualTo(FSM.FSM_EXTENSION)
+    fun `FSM extension used`() {
+        assertThat(fsm.get().archiveExtension.get()).isEqualTo(FSM.FSM_EXTENSION)
     }
 
 
     @Test
-    fun theTaskNameShouldBeComposedByAVerbAndAnObject() {
+    fun `task name should be composed by a verb and an object`() {
         val verb = "assemble"
         val obj = "FSM"
         assertThat(project.tasks.getByName(verb + obj)).isNotNull
     }
 
     @Test
-    fun jarBaseNameIsUsed() {
+    fun `jar base name is used`() {
         project.version = "0.0.1-SNAPSHOT"
         with(project.tasks.getByName("jar") as Jar) {
             archiveBaseName.set("xxxxx")
         }
         copyTestJar()
-        fsm.execute()
+        fsm.get().execute()
 
         assertThat(moduleXml())
             .describedAs("module-isolated.xml should contain a 'global' resource with the correctly named jar task output in module scope!")
@@ -89,7 +91,7 @@ class FSMTest {
     fun `default jar output is module-scoped by default`() {
         project.version = "0.0.1"
         copyTestJar()
-        fsm.execute()
+        fsm.get().execute()
 
         assertThat(moduleXml())
             .contains("""<resource mode="isolated" name=":test" scope="module" version="0.0.1">lib/test-0.0.1.jar</resource>""")
@@ -103,7 +105,7 @@ class FSMTest {
         val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
         pluginExtension.projectJarScope = "server"
 
-        fsm.execute()
+        fsm.get().execute()
 
         assertThat(moduleXml())
             .contains("""<resource mode="isolated" name=":test" scope="server" version="0.0.1">lib/test-0.0.1.jar</resource>""")
@@ -120,8 +122,8 @@ class FSMTest {
 
     @Test
     fun archivePathUsed() {
-        assertThat(fsm.archiveFile.get().asFile).isEqualTo(project.layout.buildDirectory.dir("fsm").get().asFile
-            .resolve(fsm.archiveFile.get().asFile.name))
+        assertThat(fsm.get().archiveFile.get().asFile).isEqualTo(project.layout.buildDirectory.dir("fsm").get().asFile
+            .resolve(fsm.get().archiveFile.get().asFile.name))
     }
 
     @Test
@@ -130,17 +132,18 @@ class FSMTest {
         val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
         pluginExtension.displayName = displayName
 
-        fsm.execute()
+        fsm.get().execute()
 
         assertThat(moduleXml()).contains("""<displayname>${displayName}</displayname>""")
     }
 
     @Test
-    fun moduleDirNameUsed() {
+    fun `module dir name used`() {
         val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
-        pluginExtension.moduleDirName = this::class.java.classLoader.getResource("module-isolated.xml")?.path
+        val resource = this::class.java.classLoader.getResource("module-isolated.xml")!!
+        pluginExtension.moduleDirName = Paths.get(resource.toURI()).parent.toString()
 
-        fsm.execute()
+        fsm.get().execute()
 
         assertThat(moduleXml()).contains("""<custom-tag>custom</custom-tag>""")
     }
@@ -152,9 +155,10 @@ class FSMTest {
         project.description = "Module for variable replacement test"
         pluginExtension.vendor = "Crownpeak Technology GmbH"
         pluginExtension.minimalFirstSpiritVersion = "5.2.230909"
-        pluginExtension.moduleDirName = this::class.java.classLoader.getResource("module-isolated.xml")?.path
+        val resource = this::class.java.classLoader.getResource("module-isolated.xml")!!
+        pluginExtension.moduleDirName = Paths.get(resource.toURI()).parent.toString()
 
-        fsm.execute()
+        fsm.get().execute()
 
         assertThat(moduleXml()).containsIgnoringNewLines("""
             <name>${project.name}</name>
@@ -168,59 +172,56 @@ class FSMTest {
     }
 
     @Test
-    fun moduleDirContainsNoRelevantFiles() {
+    fun `file specified for moduleDir`() {
+        val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+        pluginExtension.moduleDirName = this::class.java.classLoader.getResource("module-isolated.xml")?.path
+
+        assertThatExceptionOfType(GradleException::class.java).isThrownBy { fsm.get().execute() }
+    }
+
+    @Test
+    fun `module dir contains no relevant files`() {
         val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
         pluginExtension.moduleDirName = "some/empty/dir"
+        Files.createDirectories(project.file("some/empty/dir").toPath())
 
-        assertThatThrownBy { fsm.execute() }
+        assertThatThrownBy { fsm.get() }
+            .isInstanceOf(GradleException::class.java)
+            .rootCause()
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessage("No module.xml or module-isolated.xml found in moduleDir some/empty/dir")
     }
 
     @Test
-    fun moduleDirContainsOnlyModuleXML() {
+    fun `module dir contains only module-xml`() {
         val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
         pluginExtension.moduleDirName = this::class.java.classLoader.getResource("legacyonly")?.path
 
-        fsm.execute()
+        fsm.get().execute()
 
         assertThat(moduleXml()).contains("""<custom-tag>custom-legacy</custom-tag>""")
     }
 
     @Test
-    fun moduleDirContainsOnlyModuleIsolatedXML() {
+    fun `module dir contains only module-isolated-xml`() {
         val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
         pluginExtension.moduleDirName = this::class.java.classLoader.getResource("isolatedonly")?.path
 
-        fsm.execute()
+        fsm.get().execute()
 
         assertThat(moduleXml()).contains("""<custom-tag>custom</custom-tag>""")
     }
 
     @Test
-    fun moduleDirContainsBothXML() {
+    fun `module dir contains both XML`() {
         val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
         pluginExtension.moduleDirName = this::class.java.classLoader.getResource("bothxml")?.path
 
-        assertThatThrownBy { fsm.execute() }
+        assertThatThrownBy { fsm.get().execute() }
+            .isInstanceOf(GradleException::class.java)
+            .rootCause()
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("legacy modules are no longer supported")
-    }
-
-    @Test
-    fun trimRemovesFileNameFromPath() {
-        val testPath = "some/directory/containing/a.file"
-        val trimmedPath = fsm.trimPathToDirectory(testPath)
-
-        assertThat(trimmedPath).isEqualTo("some/directory/containing")
-    }
-
-    @Test
-    fun trimIgnoresDotsInDirectoryNames() {
-        val testPath = "a/directory/containing/a.dot/in/a/folder/name"
-        val trimmedPath = fsm.trimPathToDirectory(testPath)
-
-        assertThat(trimmedPath).isEqualTo("a/directory/containing/a.dot/in/a/folder/name")
     }
 
     @Test
@@ -229,51 +230,51 @@ class FSMTest {
         val vendor = "ACME"
         pluginExtension.vendor = vendor
 
-        fsm.execute()
+        fsm.get().execute()
 
         assertThat(moduleXml()).contains("""<vendor>${vendor}</vendor>""")
     }
 
     @Test
-    fun resourceIsConfiguredAsIsolatedByDefault() {
+    fun `resource is configured as isolated by default`() {
         project.repositories.add(project.repositories.mavenCentral())
         project.dependencies.add("fsModuleCompile", "com.google.guava:guava:24.0-jre")
 
-        fsm.execute()
+        fsm.get().execute()
 
         assertThat(moduleXml()).contains("""<resource minVersion="24.0-jre" mode="isolated" name="com.google.guava:guava" scope="module" version="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
     }
 
     @Test
-    fun resourceHasMinAndMaxVersionWhenConfigured() {
+    fun `resource has min and max version when configured`() {
         project.repositories.add(project.repositories.mavenCentral())
         project.dependencies.add("fsModuleCompile", project.fsDependency("com.google.guava:guava:24.0-jre", "0.0.1", "99.0.0"))
 
         val dependencyConfigurations = project.plugins.getPlugin(FSMConfigurationsPlugin::class.java).getDependencyConfigurations()
         assertThat(dependencyConfigurations).containsExactly(MinMaxVersion("com.google.guava:guava:24.0-jre", "0.0.1", "99.0.0"))
-        fsm.execute()
+        fsm.get().execute()
 
         assertThat(moduleXml()).contains("""<resource maxVersion="99.0.0" minVersion="0.0.1" mode="isolated" name="com.google.guava:guava" scope="module" version="24.0-jre">lib/guava-24.0-jre.jar</resource>""")
     }
 
     @Test
-    fun testLicensesCsvIsPresent() {
-        fsm.execute()
+    fun `licenses CSV is present`() {
+        fsm.get().execute()
         assertThat(moduleXml()).contains("<licenses>META-INF/licenses.csv</licenses>")
     }
 
 
     @Test
-    fun testFsmResourceFilesAreUsed() {
+    fun `FSM resource-files are used`() {
         project.version = "1.0.0"
-        val fsmResourcesProjectFolder = fsm.project.file("src/main/fsm-resources").toPath()
-        val fsmResourcesNestedProjectFolder = fsm.project.file("src/main/fsm-resources/resourcesFolder").toPath()
+        val fsmResourcesProjectFolder = project.file("src/main/fsm-resources").toPath()
+        val fsmResourcesNestedProjectFolder = project.file("src/main/fsm-resources/resourcesFolder").toPath()
         Files.createDirectories(fsmResourcesNestedProjectFolder)
         fsmResourcesProjectFolder.resolve("testResource.txt").writeText("Test")
         fsmResourcesNestedProjectFolder.resolve("testNested0.txt").writeText("Test")
         fsmResourcesNestedProjectFolder.resolve("testNested1.txt").writeText("Test")
 
-        fsm.execute()
+        fsm.get().execute()
 
         assertThat(moduleXml()).contains("""<resource mode="isolated" name="${project.group}:${project.name}-testResource.txt" scope="module" version="1.0.0">testResource.txt</resource>""")
         assertThat(moduleXml()).contains("""<resource mode="isolated" name="${project.group}:${project.name}-resourcesFolder" scope="module" version="1.0.0">resourcesFolder</resource>""")
@@ -288,7 +289,7 @@ class FSMTest {
 
 
     @Test
-    fun testFsmResourceFilesAreUsedForEachWebApp() {
+    fun `FSM resource-files are used for each Web-App`() {
         project.version = "1.0.0"
 
         copyTestJar()
@@ -335,7 +336,7 @@ class FSMTest {
         fsmPluginExtension.webAppComponent("TestWebAppA", webProjectA)
         fsmPluginExtension.webAppComponent("TestWebAppB", webProjectB)
 
-        fsm.execute()
+        fsm.get().execute()
 
         // Test resource entries
         withFsmFile { fsm ->
@@ -370,7 +371,7 @@ class FSMTest {
         val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
         fsmPluginExtension.webAppComponent("TestWebAppA", webProject)
 
-        fsm.execute()
+        fsm.get().execute()
 
         assertThat(moduleXml()).contains("""<resource minVersion="unspecified" name="test:lib" version="unspecified">lib/lib.jar</resource>""")
 
@@ -400,7 +401,7 @@ class FSMTest {
         val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
         fsmPluginExtension.webAppComponent("TestWebAppA", webProject)
 
-        fsm.execute()
+        fsm.get().execute()
 
         assertThat(moduleXml()).contains("""<resource name="test:web" version="unspecified">lib/web.jar</resource>""")
 
@@ -410,7 +411,24 @@ class FSMTest {
     }
 
     @Test
-    fun testFsmResourceFilesDetectDuplicates() {
+    fun `do not include FSM resource-files for default configurations like implementation`() {
+        val subProjectDir = testDir.resolve("sub")
+        val subProject = ProjectBuilder.builder().withName("sub").withProjectDir(subProjectDir).withParent(project).build()
+        subProject.plugins.apply("java")
+        project.dependencies.add("implementation", subProject)
+        val resourcePath = subProjectDir.resolve(FSM.FSM_RESOURCES_PATH).resolve("sub.png")
+        resourcePath.parentFile.mkdirs()
+        resourcePath.createNewFile()
+
+        fsm.get().execute()
+
+        withFsmFile { fsm ->
+            assertThat(fsm.getEntry("sub.png")).isNull()
+        }
+    }
+
+    @Test
+    fun `detect duplicates in FSM resource-files`() {
         project.version = "1.0.0"
 
         // Create dummy test projects
@@ -458,17 +476,71 @@ class FSMTest {
         nestedB.resolve("n1.txt").writeText("n1.txt")
         nestedB.resolve("n3.txt").writeText("n3.txt")
 
-        fsm.execute()
+        fsm.get().execute()
 
         // The following files should be detected as duplicates. They will overwrite each other in the FSM archive
-        assertThat(fsm.duplicateFsmResourceFiles).containsExactlyInAnyOrder(
+        assertThat(fsm.get().duplicateFsmResourceFiles).containsExactlyInAnyOrder(
             File("1.txt"),
             File("nested/n1.txt")
         )
     }
 
     @Test
-    fun testWebXmlResourcesAreExcludedFromResources() {
+    fun `include transitive fsm-resources`() {
+        val implDir = testDir.resolve("impl")
+        val apiDir = implDir.resolve("api")
+        val impl = ProjectBuilder.builder().withName("impl").withProjectDir(implDir).withParent(project).build()
+        val api = ProjectBuilder.builder().withName("api").withProjectDir(apiDir).withParent(project).build()
+        impl.plugins.apply("java")
+        api.plugins.apply("java")
+
+        project.dependencies.add(FS_MODULE_COMPILE_CONFIGURATION_NAME, impl)
+        impl.dependencies.add(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, api)
+
+        val fsmResourcesProjectFolder = api.file("src/main/fsm-resources").toPath()
+        Files.createDirectories(fsmResourcesProjectFolder)
+        Files.createFile(fsmResourcesProjectFolder.resolve("test.txt"))
+
+        fsm.get().execute()
+
+        assertThat(moduleXml()).contains("""<resource mode="isolated" name="test:api-test.txt" scope="module" version="unspecified">test.txt</resource>""")
+
+        withFsmFile { fsm ->
+            assertThat(fsm.getEntry("test.txt")).isNotNull
+        }
+    }
+
+    @Test
+    fun `include transitive fsm-resources for web-apps`() {
+        copyTestJar()
+
+        val webDir = testDir.resolve("web_a")
+        val apiDir = webDir.resolve("api")
+        val web = ProjectBuilder.builder().withName("web_a").withProjectDir(webDir).withParent(project).build()
+        val api = ProjectBuilder.builder().withName("api").withProjectDir(apiDir).withParent(project).build()
+        defineArtifactoryForProject(web)
+        web.plugins.apply("java")
+        api.plugins.apply("java")
+
+        val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+        fsmPluginExtension.webAppComponent("TestWebAppA", web)
+        web.dependencies.add(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, api)
+
+        val fsmResourcesProjectFolder = api.file(FSM.FSM_RESOURCES_PATH).toPath()
+        Files.createDirectories(fsmResourcesProjectFolder)
+        Files.createFile(fsmResourcesProjectFolder.resolve("test.txt"))
+
+        fsm.get().execute()
+
+        assertThat(moduleXml()).contains("""<resource name="test:api-test.txt" version="unspecified">test.txt</resource>""")
+
+        withFsmFile { fsm ->
+            assertThat(fsm.getEntry("test.txt")).isNotNull
+        }
+    }
+
+    @Test
+    fun `web-xml resources are excluded from resources`() {
         /**
          * web.xml and web0.xml files are used by our test webcomponent implementations.
          * Those should be excluded from the resources tags in the module-isolated.xml, because
@@ -478,13 +550,13 @@ class FSMTest {
 
         copyTestJar()
 
-        val fsmResourcesTestProjectFolder = fsm.project.file("src/main/fsm-resources").toPath()
+        val fsmResourcesTestProjectFolder = project.file("src/main/fsm-resources").toPath()
         Files.createDirectories(fsmResourcesTestProjectFolder)
         fsmResourcesTestProjectFolder.resolve("web.xml").writeText("<xml></xml>")
         fsmResourcesTestProjectFolder.resolve("web0.xml").writeText("<xml></xml>")
         fsmResourcesTestProjectFolder.resolve("web1.xml").writeText("<xml></xml>")
 
-        fsm.execute()
+        fsm.get().execute()
 
         val moduleXml = moduleXml()
         assertThat(moduleXml).doesNotContain("""<resource mode="isolated" name="${project.group}:${project.name}-web.xml" scope="module" version="1.0.0">web.xml</resource>""")
@@ -507,7 +579,7 @@ class FSMTest {
         configuration.dependencies.add(project.dependencies.create("org.slf4j:slf4j-api:2.0.6"))
         libWithCustomConfiguration.configuration = configuration
 
-        fsm.execute()
+        fsm.get().execute()
 
         val moduleXml = moduleXml()
         assertThat(moduleXml).contains("<library>")
@@ -528,7 +600,7 @@ class FSMTest {
         project.dependencies.add(FS_MODULE_COMPILE_CONFIGURATION_NAME, project.files(localModuleJar))
         project.dependencies.add(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, project.files(localImplJar))
 
-        fsm.execute()
+        fsm.get().execute()
 
         assertThat(moduleXml()).contains("<resources/>")
 
@@ -550,7 +622,7 @@ class FSMTest {
 
 
     private fun moduleXml(): String {
-        val fsmFile = testDir.resolve("build").resolve("fsm").resolve(fsm.archiveFile.get().asFile.name)
+        val fsmFile = testDir.resolve("build").resolve("fsm").resolve(fsm.get().archiveFile.get().asFile.name)
         assertThat(fsmFile).exists()
         ZipFile(fsmFile).use { zipFile ->
             val xmlFileName = "META-INF/module-isolated.xml"
@@ -563,7 +635,7 @@ class FSMTest {
     }
 
     private fun withFsmFile(f: (ZipFile) -> Unit) {
-        val fsmFile = testDir.resolve("build").resolve("fsm").resolve(fsm.archiveFile.get().asFile.name)
+        val fsmFile = testDir.resolve("build").resolve("fsm").resolve(fsm.get().archiveFile.get().asFile.name)
         assertThat(fsmFile).exists()
         ZipFile(fsmFile).use {
             f.invoke(it)

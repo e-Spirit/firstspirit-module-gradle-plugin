@@ -9,7 +9,7 @@ open class FSMPluginExtension(val project: Project) {
 
     private val fsmWebApps: MutableMap<String, Project> = mutableMapOf()
 
-    val libraries: NamedDomainObjectContainer<LibraryDeclaration> = project.container(LibraryDeclaration::class.java)
+    val libraries = project.objects.domainObjectContainer(LibraryDeclaration::class.java)
 
     /**
      * Registers a web-app to a given subproject

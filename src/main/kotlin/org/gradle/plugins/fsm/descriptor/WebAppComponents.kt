@@ -8,7 +8,6 @@ import io.github.classgraph.AnnotationInfo
 import io.github.classgraph.ClassInfo
 import org.gradle.api.GradleException
 import org.gradle.api.Project
-import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
@@ -16,7 +15,8 @@ import org.gradle.api.plugins.JavaPlugin
 import org.gradle.plugins.fsm.DeclaredWebAppChecker
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
-import org.gradle.plugins.fsm.dependencyProject
+import org.gradle.plugins.fsm.projectDependencies
+import org.gradle.plugins.fsm.runtimeProjectDependencies
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.xml
 import java.io.File
@@ -84,25 +84,19 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
                     .filter { it.isClass(WebAppComponent::class) }
                     .first()
             val webCompileConfiguration = project.configurations.getByName(FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME)
-            val projectDependencies = webCompileConfiguration.allDependencies.withType(ProjectDependency::class.java)
+            val projectDependencies = webCompileConfiguration.projectDependencies(project)
 
-            val webResources = mutableListOf<Node>()
+            val webResources = LinkedHashSet<Node>()
 
             // fsm-resources directory of root project and fsWebCompile subprojects (shared between all webapps)
-            webResources.addAll(projectDependencies
-                .map { it.dependencyProject(project) }
-                .flatMap(this::fsmResources)
-            )
+            webResources.addAll(projectDependencies.flatMap(this::fsmResources))
 
             val webAppName = annotation.getString("name")
             if (declaredWebApps.containsKey(webAppName)) {
                 val webAppProject = declaredWebApps[webAppName]!!
 
-                // fsm-resources directory of current web-app
-                // - safety check to avoid duplicates
-                if (!projectDependencies.map { it.dependencyProject(project) }.contains(webAppProject)) {
-                    webResources.addAll(fsmResources(webAppProject))
-                }
+                // fsm-resources directories of current web-app and all its dependencies
+                webAppProject.runtimeProjectDependencies().flatMap { fsmResources(it) }.forEach { webResources.add(it) }
 
                 // compile dependencies of web-app subproject -
                 // If we registered a subproject for a given web-app, evaluate its compile dependencies
@@ -199,7 +193,7 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
             fsmWebResourcesFolder.listFiles()?.map { file ->
                 val relPath = fsmWebResourcesFolder.toPath().relativize(file.toPath())
                 xml("resource") {
-                    attribute("name", relPath)
+                    attribute("name", "${project.group}:${project.name}-$relPath")
                     attribute("version", project.version)
                     -relPath.toString()
                 }

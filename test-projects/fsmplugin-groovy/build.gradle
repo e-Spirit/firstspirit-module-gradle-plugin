@@ -1,7 +1,7 @@
 buildscript {
     ext {
         guavaProperty = 'com.google.guava:guava'
-        guavaVersionProperty = '24.0-jre'
+        guavaVersionProperty = '33.5.0-jre'
     }
 }
 

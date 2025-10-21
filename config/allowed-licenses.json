@@ -22,7 +22,7 @@
     {
       "moduleLicense": null,
       "moduleName": "com.github.jk1:gradle-license-report",
-      "moduleVersion": "2.3"
+      "moduleVersion": "2.9"
     },
     {
       "moduleName": "^(com|de).espirit\\..*"

@@ -1,6 +1,5 @@
 import de.espirit.mavenplugins.fsmchecker.ComplianceLevel.HIGHEST
 import org.gradle.plugins.fsm.configurations.fsDependency
-import java.util.zip.ZipFile
 
 plugins {
     java
@@ -8,28 +7,29 @@ plugins {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 val customLib: Configuration by configurations.creating
 
 dependencies {
-    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.230909")
+    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.251108")
 
     fsServerCompile(project(":api"))
     fsModuleCompile(project(":impl"))
     fsWebCompile(project(":web"))
     fsModuleCompile(project(":web"))
-    fsModuleCompile(fsDependency(mapOf("dependency" to "joda-time:joda-time:2.10")))
+    fsModuleCompile(fsDependency(mapOf("dependency" to "joda-time:joda-time:2.14.0")))
     fsModuleCompile(fsDependency("commons-logging:commons-logging:1.2", "1.0", "1.5"))
-    fsModuleCompile(fsDependency("org.apache.activemq:activemq-all:5.14.2"))
+    fsModuleCompile(fsDependency("org.apache.activemq:activemq-all:6.1.7"))
 
-    fsWebCompile(fsDependency("org.apache.activemq:activemq-all:5.14.2"))
+    fsWebCompile(fsDependency("org.apache.activemq:activemq-all:6.1.7"))
 
-    customLib("org.slf4j:slf4j-api:2.0.6")
+    customLib("org.slf4j:slf4j-api:2.0.17")
 
-    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+    testImplementation("org.junit.jupiter:junit-jupiter:6.0.0")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.jar {
@@ -59,28 +59,6 @@ firstSpiritModule {
     }
 }
 
-val fsmArchivePath = layout.buildDirectory.file("fsm/fsm-${project.version}.fsm").get().asFile
-
-val testFsmIsProduced by tasks.creating {
-    dependsOn(tasks.assembleFSM)
-
-    doLast {
-        logger.info("Searching for fsm file in $fsmArchivePath")
-        assert(fsmArchivePath.exists())
-    }
-}
-
-val testZipFileContainsModuleXml by tasks.creating {
-    dependsOn(tasks.assembleFSM)
-
-    doLast {
-        val fsmFile = ZipFile(fsmArchivePath)
-        val moduleXml = fsmFile.entries().toList().first { "META-INF/module-isolated.xml" == it.getName() }
-        assert(moduleXml != null)
-    }
-}
-
 tasks.test {
-    dependsOn(tasks.assembleFSM, testFsmIsProduced, testZipFileContainsModuleXml)
     useJUnitPlatform()
 }

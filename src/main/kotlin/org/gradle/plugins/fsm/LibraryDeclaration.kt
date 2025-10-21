@@ -3,7 +3,7 @@ package org.gradle.plugins.fsm
 import org.gradle.api.Named
 import org.gradle.api.artifacts.Configuration
 
-class LibraryDeclaration(private val libName: String): Named {
+open class LibraryDeclaration(private val libName: String): Named {
 
     override fun getName(): String {
         return libName

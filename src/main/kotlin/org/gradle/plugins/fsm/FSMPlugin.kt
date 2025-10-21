@@ -4,7 +4,6 @@ import com.github.jk1.license.LicenseReportExtension
 import com.github.jk1.license.LicenseReportPlugin
 import com.github.jk1.license.render.CsvReportRenderer
 import com.github.jk1.license.task.ReportTask
-import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -38,9 +37,8 @@ class FSMPlugin : Plugin<Project> {
 
         project.plugins.apply(LicenseReportPlugin::class.java)
 
-        val configurationTask = configureConfigurationTask(project)
         val validateTask = project.tasks.register(VALIDATE_DESCRIPTOR_TASK_NAME, ValidateDescriptor::class.java)
-        val fsmTask = configureFsmTask(project, configurationTask, validateTask)
+        val fsmTask = configureFsmTask(project, validateTask)
 
         configureValidateTask(validateTask, fsmTask)
         val isolationCheck = configureIsolationCheckTask(project, fsmTask)
@@ -60,26 +58,8 @@ class FSMPlugin : Plugin<Project> {
         implementation.extendsFrom(webAppsConfiguration)
     }
 
-    private fun configureConfigurationTask(project: Project): TaskProvider<Task> {
-        @Suppress("ObjectLiteralToLambda") // Lambdas cannot be used as Gradle task inputs
-        val action = object : Action<Task> {
-            override fun execute(t: Task) {
-                (project.tasks.getByName(FSM_TASK_NAME) as FSM).lazyConfiguration()
-            }
-        }
-
-        val configurationTask = project.tasks.register(CONFIGURE_FSM_TASK_NAME) {
-            dependsOn(project.tasks.getByName(GENERATE_LICENSE_REPORT_TASK_NAME))
-            dependsOn(JavaPlugin.JAR_TASK_NAME)
-            doLast(action)
-        }
-
-        return configurationTask
-    }
-
     private fun configureFsmTask(
         project: Project,
-        configurationTask: TaskProvider<Task>,
         validateTask: TaskProvider<ValidateDescriptor>
     ): TaskProvider<FSM> {
         removeDefaultJarArtifactFromArchives(project)
@@ -90,7 +70,6 @@ class FSMPlugin : Plugin<Project> {
 
             dependsOn(project.tasks.getByName(GENERATE_LICENSE_REPORT_TASK_NAME))
             dependsOn(JavaPlugin.JAR_TASK_NAME)
-            dependsOn(configurationTask)
 
             // Validate FSM immediately
             finalizedBy(validateTask)
@@ -276,7 +255,6 @@ class FSMPlugin : Plugin<Project> {
         const val NAME = "de.espirit.firstspirit-module"
         const val FSM_EXTENSION_NAME = "firstSpiritModule"
         const val FSM_TASK_NAME = "assembleFSM"
-        const val CONFIGURE_FSM_TASK_NAME = "configureAssembleFSM"
         const val VALIDATE_DESCRIPTOR_TASK_NAME = "validateDescriptor"
         const val ISOLATION_CHECK_TASK_NAME = "checkIsolation"
         const val COMPLIANCE_CHECK_TASK_NAME = "checkCompliance"

@@ -10,9 +10,11 @@ import org.gradle.plugins.fsm.FSMPlugin.Companion.WEBAPPS_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
+import org.gradle.plugins.fsm.tasks.bundling.FSM
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.nio.file.Files
 
 class WebAppComponentsTest {
 
@@ -250,6 +252,65 @@ class WebAppComponentsTest {
 
         val jarTaskOutput = webResources.single { it.attributes["name"] == "webapps-test-project:web" }
         assertThat(jarTaskOutput.attributes["version"]).isEqualTo(webAppProject.version)
+    }
+
+    @Test
+    fun `include jar of sub-project defined as dependency of web-app project`() {
+        val webAppProject = ProjectBuilder.builder().withParent(project).withName("web").build()
+        webAppProject.plugins.apply("java")
+        webAppProject.version = "0.1"
+        webAppProject.repositories.add(webAppProject.repositories.mavenCentral())
+        webAppProject.dependencies.add("implementation", "org.slf4j:slf4j-api:2.0.17")
+
+        val webAppSubProject = ProjectBuilder.builder().withParent(webAppProject).withName("web_sub").build()
+        webAppSubProject.plugins.apply("java")
+        webAppSubProject.version = "0.1"
+        webAppSubProject.repositories.add(webAppProject.repositories.mavenCentral())
+        webAppSubProject.dependencies.add("implementation", "tools.jackson.core:jackson-core:3.0.4")
+
+        project.dependencies.add(FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, webAppProject)
+        webAppProject.dependencies.add("implementation", webAppSubProject)
+
+        val moduleDescriptor = ModuleDescriptor(project)
+        val components = moduleDescriptor.components.node
+        val webAppComponent = components.filter { it.childText("name") == "TestWebAppA" }.single()
+        val webResourcesTag = webAppComponent.filter("web-resources").single()
+        val webResources = webResourcesTag.filter("resource")
+
+        assertThat(webResources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }).isNotEmpty
+        assertThat(webResources.filter { it.attributes["name"] == "tools.jackson.core:jackson-core" }).isNotEmpty
+    }
+
+    @Test
+    fun `include resources of sub-project defined as dependency of web-app project`() {
+        val webAppProject = ProjectBuilder.builder().withParent(project).withName("web").build()
+        webAppProject.plugins.apply("java")
+        webAppProject.version = "0.1"
+
+        val webAppResourceFile = webAppProject.projectDir.resolve(FSM.FSM_RESOURCES_PATH).resolve("web.png")
+        Files.createDirectories(webAppResourceFile.toPath().parent)
+        webAppResourceFile.createNewFile()
+
+        val webAppSubProject = ProjectBuilder.builder().withParent(webAppProject).withName("web_sub").build()
+        webAppSubProject.plugins.apply("java")
+        webAppSubProject.version = "0.1"
+        webAppSubProject.repositories.add(webAppProject.repositories.mavenCentral())
+
+        val webAppSubResourceFile = webAppSubProject.projectDir.resolve(FSM.FSM_RESOURCES_PATH).resolve("web_sub.png")
+        Files.createDirectories(webAppSubResourceFile.toPath().parent)
+        webAppSubResourceFile.createNewFile()
+
+        project.dependencies.add(FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, webAppProject)
+        webAppProject.dependencies.add("implementation", webAppSubProject)
+
+        val moduleDescriptor = ModuleDescriptor(project)
+        val components = moduleDescriptor.components.node
+        val webAppComponent = components.filter { it.childText("name") == "TestWebAppA" }.single()
+        val webResourcesTag = webAppComponent.filter("web-resources").single()
+        val webResources = webResourcesTag.filter("resource")
+
+        assertThat(webResources.filter { it.textContent() == "web.png" }).isNotEmpty
+        assertThat(webResources.filter { it.textContent() == "web_sub.png" }).isNotEmpty
     }
 
     @Test

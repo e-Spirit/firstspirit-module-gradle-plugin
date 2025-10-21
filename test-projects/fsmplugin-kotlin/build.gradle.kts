@@ -3,7 +3,7 @@ plugins {
 }
 
 extra["guavaProperty"] = "com.google.guava:guava"
-extra["guavaVersionProperty"] = "24.0-jre"
+extra["guavaVersionProperty"] = "33.5.0-jre"
 
 allprojects {
 

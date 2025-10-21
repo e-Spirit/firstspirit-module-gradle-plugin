@@ -3,6 +3,7 @@ package org.gradle.plugins.fsm.tasks.verification
 import com.github.jk1.license.task.ReportTask
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.gradle.api.Project
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.tasks.bundling.FSM
@@ -20,7 +21,7 @@ class ValidateDescriptorTest {
 
     private lateinit var testDir: File
 
-    private lateinit var fsmTask: FSM
+    private lateinit var fsmTask: TaskProvider<FSM>
     private lateinit var validateTask: ValidateDescriptor
 
     @BeforeEach
@@ -32,7 +33,7 @@ class ValidateDescriptorTest {
 
         project.plugins.apply(FSMPlugin.NAME)
 
-        fsmTask = project.tasks.getByName(FSMPlugin.FSM_TASK_NAME) as FSM
+        fsmTask = project.tasks.named(FSMPlugin.FSM_TASK_NAME, FSM::class.java)
         validateTask = project.tasks.getByName(FSMPlugin.VALIDATE_DESCRIPTOR_TASK_NAME) as ValidateDescriptor
     }
     
@@ -484,7 +485,7 @@ class ValidateDescriptorTest {
 
     private fun buildFSM() {
         (project.tasks.getByName(FSMPlugin.GENERATE_LICENSE_REPORT_TASK_NAME) as ReportTask).generateReport()
-        fsmTask.execute()
+        fsmTask.get().execute()
     }
     
 }

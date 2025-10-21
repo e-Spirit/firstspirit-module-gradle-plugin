@@ -89,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "7.0.0"
+    id("de.espirit.firstspirit-module") version "7.0.1"
 }
 ```
 
@@ -105,7 +105,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-annotations") version "7.0.0"
+    id("de.espirit.firstspirit-module-annotations") version "7.0.1"
 }
 ```
 
@@ -117,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "7.0.0"
+    id("de.espirit.firstspirit-module-configurations") version "7.0.1"
 }
 ```
 
@@ -454,11 +454,11 @@ The value of `$resources` may contain many more.
 
 The FSM plugin adds the following dependency configurations.
 
-| name            | Description                                                                                                                                                        |
-|-----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| fsServerCompile | Same as the usual `implementation` configuration, but the dependency and all transitive dependencies are added to the module-isolated.xml with server scope        |
-| fsModuleCompile | Same as the usual `implementation` configuration, but the dependency and all transitive dependencies are added to the module-isolated.xml with module scope        |
-| fsWebCompile    | Same as the usual `implementation` configuration, but the dependency and all transitive dependencies are added to the web-resources tag in the module-isolated.xml |
+| name            | Description                                                                                                                                                                        |
+|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| fsServerCompile | Same as the usual `implementation` configuration, but the dependency and all transitive dependencies are added to the module-isolated.xml with server scope                        |
+| fsModuleCompile | Same as the usual `implementation` configuration, but the dependency and all transitive dependencies are added to the module-isolated.xml with module scope                        |
+| fsWebCompile    | Same as the usual `implementation` configuration, but the dependency and all transitive dependencies are added to the web-resources tag of all web-apps in the module-isolated.xml |
 
 Dependencies with other scopes than these (for example the regular compile scope) are not treated as a resource to be used for module-isolated.xml file generation.
 That means if you use compile scope, you can compile your source files against it like in any other project, but the resource won't be listed in the module-isolated.xml
@@ -584,7 +584,7 @@ You can use the following snippet as a starting point:
 // Groovy
 
 plugins {
-    id 'de.espirit.firstspirit-module' version '7.0.0'
+    id 'de.espirit.firstspirit-module' version '7.0.1'
 }
 
 description = 'Example FSM Gradle build'
@@ -599,8 +599,6 @@ dependencies {
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
-
-    implementation 'com.espirit.moddev.components:annotations:3.0.0'
 }
 
 test {
@@ -619,7 +617,7 @@ firstSpiritModule {
 // Kotlin
 
 plugins {
-    id("de.espirit.firstspirit-module") version "7.0.0"
+    id("de.espirit.firstspirit-module") version "7.0.1"
 }
 
 description = "Example FSM Gradle build"
@@ -634,8 +632,6 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.2")
-
-    implementation("com.espirit.moddev.components:annotations:3.0.0")
 }
 
 tasks.withType<Test> {

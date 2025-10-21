@@ -75,18 +75,15 @@ class FSMConfigurationsPlugin : Plugin<Project> {
 
         val fsServerCompileConfiguration = configurationContainer
             .create(FS_SERVER_COMPILE_CONFIGURATION_NAME)
-            .setVisible(false)
             .setDescription("Added automatically to module-isolated.xml with server scope")
 
         val fsModuleCompileConfiguration = configurationContainer
             .create(FS_MODULE_COMPILE_CONFIGURATION_NAME)
             .extendsFrom(fsServerCompileConfiguration)
-            .setVisible(false)
             .setDescription("Added automatically to module-isolated.xml with module scope")
 
         val fsWebCompileConfiguration = configurationContainer
             .create(FS_WEB_COMPILE_CONFIGURATION_NAME)
-            .setVisible(false)
             .setDescription("Added automatically to web resources of WebApp components in module-isolated.xml")
 
         configurationContainer.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)

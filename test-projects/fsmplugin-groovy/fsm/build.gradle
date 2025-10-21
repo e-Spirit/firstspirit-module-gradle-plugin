@@ -1,37 +1,38 @@
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPluginKt
 
-import java.util.zip.ZipFile
-
 plugins {
     id 'java'
     id 'de.espirit.firstspirit-module'
 }
 
-sourceCompatibility = 11
-targetCompatibility = 11
+java {
+    sourceCompatibility = 17
+    targetCompatibility = 17
+}
 
 configurations {
     customLib
 }
 
 dependencies {
-    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.230212'
+    compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.251108'
 
     fsServerCompile project(':api')
     fsModuleCompile project(':impl')
     fsWebCompile project(':web')
     fsModuleCompile project(':web')
     use (FSMConfigurationsPluginKt) {
-        fsModuleCompile fsDependency(dependency: 'joda-time:joda-time:2.10')
+        fsModuleCompile fsDependency(dependency: 'joda-time:joda-time:2.14.0')
         fsModuleCompile fsDependency('commons-logging:commons-logging:1.2', '1.0', '1.5')
-        fsModuleCompile fsDependency('org.apache.activemq:activemq-all:5.14.2')
+        fsModuleCompile fsDependency('org.apache.activemq:activemq-all:6.1.7')
 
-        fsWebCompile fsDependency('org.apache.activemq:activemq-all:5.14.2')
+        fsWebCompile fsDependency('org.apache.activemq:activemq-all:6.1.7')
     }
 
-    customLib 'org.slf4j:slf4j-api:2.0.6'
+    customLib 'org.slf4j:slf4j-api:2.0.17'
 
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:6.0.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 jar {
@@ -43,7 +44,7 @@ firstSpiritModule {
     displayName = 'test-project displayName'
     isolationDetectorUrl = 'https://fsdev.e-spirit.de/FsmDependencyDetector/'
     complianceLevel = "HIGHEST"
-    firstSpiritVersion = '5.2.230909'
+    firstSpiritVersion = '5.2.251108'
     minimalFirstSpiritVersion = '5.2.230909'
     vendor = "Crownpeak Technology GmbH"
     fsmDependencies = ['otherModuleName', 'yetAnotherModule']
@@ -62,28 +63,6 @@ firstSpiritModule {
     }
 }
 
-def fsmArchivePath = layout.buildDirectory.file("fsm/fsm-${project.version}.fsm").get().asFile
-
-task testFsmIsProduced {
-    dependsOn assembleFSM
-
-    doLast {
-        logger.info("Searching for fsm file in $fsmArchivePath")
-        assert fsmArchivePath.exists()
-    }
-}
-
-task testZipFileContainsModuleXml {
-    dependsOn assembleFSM
-
-    doLast {
-        ZipFile fsmFile = new ZipFile(fsmArchivePath)
-        def moduleXml = fsmFile.entries().find { "META-INF/module-isolated.xml" == it.getName() }
-        assert moduleXml != null
-    }
-}
-
 test {
-    dependsOn testFsmIsProduced, testZipFileContainsModuleXml
     useJUnitPlatform()
 }

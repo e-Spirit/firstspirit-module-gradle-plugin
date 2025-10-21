@@ -36,7 +36,6 @@ class FSMConfigurationsPluginTest {
 
         assertThat(implementationConfig.extendsFrom.map { it.name })
             .containsAll(FSMConfigurationsPlugin.FS_CONFIGURATIONS)
-        assertThat(implementationConfig.isVisible).isFalse
         assertThat(implementationConfig.isTransitive).isTrue
     }
 
@@ -47,7 +46,6 @@ class FSMConfigurationsPluginTest {
 
         assertThat(fsModuleCompileConfig.extendsFrom.map { it.name })
             .containsExactly(FSMConfigurationsPlugin.FS_SERVER_COMPILE_CONFIGURATION_NAME)
-        assertThat(fsModuleCompileConfig.isVisible).isFalse
         assertThat(fsModuleCompileConfig.isTransitive).isTrue
     }
 

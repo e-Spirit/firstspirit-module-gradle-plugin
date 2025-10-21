@@ -1,20 +1,26 @@
 package org.gradle.plugins.fsm.tasks.bundling
 
+import org.gradle.api.GradleException
 import org.gradle.api.Project
+import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.jvm.tasks.Jar
-import org.gradle.plugins.fsm.FSMPlugin
+import org.gradle.plugins.fsm.FSMPlugin.Companion.FSM_TASK_NAME
+import org.gradle.plugins.fsm.FSMPlugin.Companion.WEBAPPS_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.FSMPluginExtension
-import org.gradle.plugins.fsm.compileDependencies
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_MODULE_COMPILE_CONFIGURATION_NAME
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_SERVER_COMPILE_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_WEB_COMPILE_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.descriptor.LibraryComponents
 import org.gradle.plugins.fsm.descriptor.ModuleDescriptor
 import org.gradle.plugins.fsm.descriptor.moduleScopeDependencies
 import org.gradle.plugins.fsm.descriptor.serverScopeDependencies
+import org.gradle.plugins.fsm.projectDependencies
+import org.jetbrains.annotations.TestOnly
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.FileSystem
@@ -44,24 +50,30 @@ abstract class FSM: Jar() {
         destinationDirectory.set(project.layout.buildDirectory.dir("fsm"))
         pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
         duplicatesStrategy = DuplicatesStrategy.WARN
-    }
 
-    fun lazyConfiguration() {
+        configureProjectDependencies()
         into("lib") {
-            project.serverScopeDependencies().forEach { from(it.file) }
-            project.moduleScopeDependencies().forEach { from(it.file) }
-            project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME).resolve().forEach { from(it) }
+            from(project.provider { project.serverScopeDependencies().map { it.file } })
+            from(project.provider { project.moduleScopeDependencies().map { it.file } })
+            from(project.provider {
+                project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME).resolve()
+            })
             from(project.tasks.named(JavaPlugin.JAR_TASK_NAME))
-            project.configurations.getByName(FSMPlugin.WEBAPPS_CONFIGURATION_NAME).resolve().forEach { from(it) }
-            pluginExtension.getWebApps().values
-                .map { project -> project.tasks.named(JavaPlugin.JAR_TASK_NAME) }
-                .filter { task -> task.isPresent }
-                .map { task -> task.map { it.outputs.files.singleFile } }
-                .forEach { jarFile -> from(jarFile) }
-            pluginExtension.libraries
-                .asSequence().map { it.configuration }.filterNotNull()
-                .flatMap { LibraryComponents.getResolvedDependencies(project, it) }
-                .forEach { from(it.file) }
+            from(project.provider {
+                project.configurations.getByName(WEBAPPS_CONFIGURATION_NAME).resolve()
+            })
+            from(project.provider {
+                pluginExtension.getWebApps().values
+                    .mapNotNull { it.tasks.findByName(JavaPlugin.JAR_TASK_NAME) }
+                    .map { it.outputs.files.singleFile }
+            })
+            from(project.provider {
+                pluginExtension.libraries
+                    .asSequence().mapNotNull { it.configuration }
+                    .flatMap { LibraryComponents.getResolvedDependencies(project, it) }
+                    .map { it.file }
+                    .toList()
+            })
         }
 
         // include licenses report
@@ -89,15 +101,23 @@ abstract class FSM: Jar() {
             }
         }
 
+        copyResourceFolderToFsm(project)
+
         // Merge fsm-resources folders of projects added as dependency
-        project.compileDependencies().forEach {
-            copyResourceFolderToFsm(it)
-        }
+        listOf(
+            FS_MODULE_COMPILE_CONFIGURATION_NAME, FS_SERVER_COMPILE_CONFIGURATION_NAME,
+            FS_WEB_COMPILE_CONFIGURATION_NAME, WEBAPPS_CONFIGURATION_NAME)
+            .flatMap { project.configurations.getByName(it).projectDependencies(project) }
+            .distinct()
+            .forEach { copyResourceFolderToFsm(it) }
 
         metaInf {
             if (pluginExtension.moduleDirName != null) {
                 // include module-isolated.xml file
-                val moduleDirPath = trimPathToDirectory(pluginExtension.moduleDirName)
+                val moduleDirPath = project.file(pluginExtension.moduleDirName ?: "")
+                if (!moduleDirPath.isDirectory) {
+                    throw GradleException("moduleDirName '$moduleDirPath' is not a directory!")
+                }
 
                 val deprecatedModuleXmlFileName = "module.xml"
                 val isolatedModuleXmlFileName = "module-isolated.xml"
@@ -123,6 +143,25 @@ abstract class FSM: Jar() {
         }
     }
 
+    /**
+     * Jars of project dependencies need to exist before the FSM is built
+     */
+    private fun configureProjectDependencies() {
+        val fsModuleCompileConfiguration = project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME)
+        fsModuleCompileConfiguration.allDependencies.filterIsInstance<ProjectDependency>().forEach {
+            project.tasks.named(FSM_TASK_NAME).configure {
+                dependsOn(project.project(it.path).tasks.named(JavaPlugin.JAR_TASK_NAME))
+            }
+        }
+
+        val fsServerCompileConfiguration = project.configurations.getByName(FS_SERVER_COMPILE_CONFIGURATION_NAME)
+        fsServerCompileConfiguration.allDependencies.filterIsInstance<ProjectDependency>().forEach {
+            project.tasks.named(FSM_TASK_NAME).configure {
+                dependsOn(project.project(it.path).tasks.named(JavaPlugin.JAR_TASK_NAME))
+            }
+        }
+    }
+
     private fun copyResourceFolderToFsm(dep: Project) {
         val fsmResourcesPath = dep.projectDir.absolutePath + '/' + FSM_RESOURCES_PATH
         val fsmResourcesFolder = File(fsmResourcesPath)
@@ -143,17 +182,6 @@ abstract class FSM: Jar() {
         }
     }
 
-    
-    // Checks if a path contains a filename and removes the filename
-    fun trimPathToDirectory(path: String?): String {
-        if (path != null) {
-            if (path.lastIndexOf("/") < path.lastIndexOf(".")) {
-                return path.substring(0, path.lastIndexOf("/"))
-            }
-            return path
-        }
-        return ""
-    }
 
     @TaskAction
     override fun copy() {
@@ -178,6 +206,7 @@ abstract class FSM: Jar() {
         }
     }
 
+    @Suppress("CanConvertToMultiDollarString") // Not supported in Kotlin shipped with Gradle 8.11
     private fun writeModuleDescriptorToZipFile(fs: FileSystem, unfilteredModuleXml: String?) {
         val filteredModuleXml: String
 
@@ -224,9 +253,8 @@ abstract class FSM: Jar() {
     /**
      * Helper method for executing Unit tests
      */
+    @TestOnly
     fun execute() {
-        lazyConfiguration()
-
         Files.createDirectories(archiveFile.get().asFile.parentFile.toPath())
         Files.createFile(archiveFile.get().asFile.toPath())
         copy()

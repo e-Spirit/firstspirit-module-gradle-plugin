@@ -54,7 +54,7 @@ class FSMPluginTest {
         project.plugins.apply(FSMPlugin.NAME)
 
         val fsm = project.tasks.getByName(FSMPlugin.FSM_TASK_NAME)
-        assertThat(fsm).dependsOn(JavaPlugin.JAR_TASK_NAME, FSMPlugin.GENERATE_LICENSE_REPORT_TASK_NAME, FSMPlugin.CONFIGURE_FSM_TASK_NAME)
+        assertThat(fsm).dependsOn(JavaPlugin.JAR_TASK_NAME, FSMPlugin.GENERATE_LICENSE_REPORT_TASK_NAME)
     }
 
     @Test

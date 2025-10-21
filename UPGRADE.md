@@ -1,3 +1,7 @@
+# Upgrading to 7.0.1
+
+* Resources for web-app components now use a consistent naming pattern which includes the project name.
+
 # Upgrading to 7.0.0
 
 * With version 7.0.0, the minimal required Gradle version has been raised to 8.11.

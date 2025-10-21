@@ -12,7 +12,6 @@ plugins {
     idea
     `java-gradle-plugin`
     id("net.researchgate.release") version "3.1.0"
-    id("org.ajoberstar.grgit") version "5.0.0"
     id("com.github.jk1.dependency-license-report") version "2.9"
     id("org.cyclonedx.bom") version "1.10.0"
 }
@@ -29,7 +28,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 
 val fsmAnnotationsVersion = "3.3.0"
 
-val branchName: String = grgit.branch.current().name
+val branchName = rootDir.resolve(".git/HEAD").readText().substringAfterLast("/").trim()
 Regex("(?:.*/)?[^A-Z]*([A-Z]+-[0-9]+).*").matchEntire(branchName)?.let {
     project.version = "${it.groupValues[1]}-SNAPSHOT"
 }
@@ -48,43 +47,42 @@ repositories {
 
 gradlePlugin {
     plugins {
-        create("firstSpiritModule") {
+        register("firstSpiritModule") {
             id = "de.espirit.firstspirit-module"
             implementationClass = "org.gradle.plugins.fsm.FSMPlugin"
         }
-        create("firstSpiritModuleAnnotations") {
+        register("firstSpiritModuleAnnotations") {
             id = "de.espirit.firstspirit-module-annotations"
             implementationClass = "org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin"
         }
-        create("firstSpiritModuleConfigurations") {
+        register("firstSpiritModuleConfigurations") {
             id = "de.espirit.firstspirit-module-configurations"
             implementationClass = "org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin"
         }
     }
 }
 
-val fsRuntimeVersion = "5.2.240809" // FirstSpirit 2024-08
+val fsRuntimeVersion = "5.2.251108" // FirstSpirit 2025-11
 
 dependencies {
     implementation(gradleApi())
-    implementation("io.github.classgraph:classgraph:4.8.172")
-    implementation("com.github.jk1:gradle-license-report:2.3")
-    implementation("org.redundent:kotlin-xml-builder:1.9.1")
-    implementation("org.json:json:20240303")
+    implementation("io.github.classgraph:classgraph:4.8.184")
+    implementation("com.github.jk1:gradle-license-report:2.9")
+    implementation("org.redundent:kotlin-xml-builder:1.9.3")
+    implementation("org.json:json:20250517")
     implementation("org.apache.maven:maven-artifact:3.9.11")
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.3.1")
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.5.1")
     implementation("com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}")
     implementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
 
-    compileOnly(group = "com.tngtech.archunit", name = "archunit-junit5", version = "1.3.0")
+    compileOnly("com.tngtech.archunit:archunit-junit5:1.4.1")
 
     testImplementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
-    testImplementation(platform("org.junit:junit-bom:5.13.4"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.14.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testImplementation("org.assertj:assertj-core:3.27.4")
-    testImplementation("org.mockito:mockito-junit-jupiter:5.19.0")
-    testImplementation("org.ow2.asm:asm:9.8")
+    testImplementation("org.assertj:assertj-core:3.27.7")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.21.0")
+    testImplementation("org.ow2.asm:asm:9.9")
     testImplementation(gradleTestKit())
 }
 

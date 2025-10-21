@@ -14,6 +14,7 @@ classes
 # Gradle Files #
 build/
 .gradle
+/.kotlin/
 /.nb-gradle/
 
 # IntelliJ IDEA files #

@@ -9,6 +9,7 @@ import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_MODULE_COMPILE_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_SERVER_COMPILE_CONFIGURATION_NAME
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_WEB_COMPILE_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.configurations.fsDependency
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
@@ -122,6 +123,28 @@ class ResourcesTest {
 
 
     @Test
+    fun `do not include resources from web-apps in global resources`() {
+        val webProject = ProjectBuilder.builder().withName("webapp").withParent(project).build()
+        webProject.configurations.create("default")
+        val fsmResourceFile = webProject.projectDir.resolve("src/main/fsm-resources/webapp/image.png")
+        Files.createDirectories(fsmResourceFile.toPath().parent)
+        fsmResourceFile.createNewFile()
+        fsmResourceFile.resolveSibling("web.xml").createNewFile()
+
+        val projectDependency = project.dependencies.project(mapOf("path" to ":webapp"))
+        project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME).dependencies.add(projectDependency)
+
+        val resources = Resources(project, listOf("web.xml")).node
+
+        // Web-Resource should not be present in global resources
+        assertThat(resources.children).hasSize(1)
+        val fsmResource = resources.children[0] as Node
+        assertThat(fsmResource.attributes["name"]).isEqualTo(":test")
+        assertThat(fsmResource.textContent()).isEqualTo("lib/test.jar")
+    }
+
+
+    @Test
     fun `server scope override for project resource`() {
         val subProject = ProjectBuilder.builder().withName("depProject").withParent(project).build()
         subProject.configurations.create("default")
@@ -138,6 +161,31 @@ class ResourcesTest {
         assertThat(resources.children).hasSize(2)
         val fsmResource = resources.children[1] as Node
         assertThat(fsmResource.attributes["scope"]).isEqualTo("server")
+    }
+
+
+    @Test
+    fun `transitive resources`() {
+        val subProject = ProjectBuilder.builder().withName("subProject").withParent(project).build()
+        subProject.plugins.apply("java")
+        val subSubProject = ProjectBuilder.builder().withName("subSubProject").withParent(project).build()
+        subSubProject.configurations.create("default")
+
+        val fsmResourceFile = subSubProject.projectDir.resolve("src/main/fsm-resources/content.txt")
+        Files.createDirectories(fsmResourceFile.toPath().parent)
+        fsmResourceFile.createNewFile()
+
+        val projectDependency = project.dependencies.project(mapOf("path" to ":subProject"))
+        project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(projectDependency)
+
+        val subProjectDependency = subProject.dependencies.project(mapOf("path" to ":subSubProject"))
+        subProject.configurations.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME).dependencies.add(subProjectDependency)
+
+        val resources = Resources(project, emptyList()).node
+
+        assertThat(resources.children).hasSize(3)
+        val resource = resources.filter { it.attributes["name"] == "test:subSubProject-content.txt" }.single()
+        assertThat(resource.textContent()).isEqualTo("content.txt")
     }
 
 

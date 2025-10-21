@@ -2,6 +2,7 @@ package org.gradle.plugins.fsm.tasks.bundling
 
 import org.assertj.core.api.Assertions.assertThat
 import org.gradle.api.Project
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.plugins.fsm.FSMPlugin
 import org.gradle.plugins.fsm.util.TestProjectUtils.defineArtifactoryForProject
 import org.gradle.testfixtures.ProjectBuilder
@@ -17,7 +18,7 @@ class FSMTestResources {
     private lateinit var testDir: File
     private lateinit var project: Project
 
-    private lateinit var fsm: FSM
+    private lateinit var fsm: TaskProvider<FSM>
 
     @BeforeEach
     fun setUp(@TempDir tempDir: File) {
@@ -28,11 +29,11 @@ class FSMTestResources {
 
         project.plugins.apply(FSMPlugin.NAME)
 
-        fsm = project.tasks.getByName(FSMPlugin.FSM_TASK_NAME) as FSM
-
-        fsm.archiveBaseName.set("testbasename")
-        fsm.archiveAppendix.set("testappendix")
-        fsm.archiveVersion.set("1.0")
+        fsm = project.tasks.named(FSMPlugin.FSM_TASK_NAME, FSM::class.java) {
+            archiveBaseName.set("testbasename")
+            archiveAppendix.set("testappendix")
+            archiveVersion.set("1.0")
+        }
     }
 
     @Test
@@ -43,7 +44,7 @@ class FSMTestResources {
         // has com.google.j2objc:j2objc-annotations:1.1
         project.dependencies.add("fsModuleCompile", "com.google.guava:guava:24.0-jre")
 
-        fsm.execute()
+        fsm.get().execute()
         val xml = moduleXml()
         assertThat(xml).contains("""<resource name="com.google.j2objc:j2objc-annotations" scope="module" mode="isolated" version="1.1" minVersion="1.1">lib/j2objc-annotations-1.1.jar</resource>""")
         withFsmFile { fsm ->
@@ -57,7 +58,7 @@ class FSMTestResources {
         // has com.google.j2objc:j2objc-annotations:1.1
         project.dependencies.add("fsServerCompile", "com.google.guava:guava:24.0-jre")
 
-        fsm.execute()
+        fsm.get().execute()
         val xml = moduleXml()
         assertThat(xml).contains("""<resource name="com.google.j2objc:j2objc-annotations" scope="server" mode="isolated" version="1.1" minVersion="1.1">lib/j2objc-annotations-1.1.jar</resource>""")
         withFsmFile { fsm ->
@@ -75,7 +76,7 @@ class FSMTestResources {
         project.dependencies.add("fsServerCompile", "com.google.guava:guava:24.0-jre")
         project.dependencies.add("fsModuleCompile", "com.google.j2objc:j2objc-annotations:0.9.8")
 
-        fsm.execute()
+        fsm.get().execute()
         val xml = moduleXml()
         assertThat(xml).contains("""<resource minVersion="1.1" mode="isolated" name="com.google.j2objc:j2objc-annotations" scope="server" version="1.1">lib/j2objc-annotations-1.1.jar</resource>""")
         withFsmFile { fsm ->
@@ -90,7 +91,7 @@ class FSMTestResources {
         project.dependencies.add("fsServerCompile", "com.google.guava:guava:24.0-jre")
         project.dependencies.add("fsModuleCompile", "com.google.j2objc:j2objc-annotations:1.3")
 
-        fsm.execute()
+        fsm.get().execute()
         val xml = moduleXml()
         assertThat(xml).contains("""<resource minVersion="1.3" mode="isolated" name="com.google.j2objc:j2objc-annotations" scope="server" version="1.3">lib/j2objc-annotations-1.3.jar</resource>""")
         withFsmFile { fsm ->
@@ -105,7 +106,7 @@ class FSMTestResources {
         project.dependencies.add("fsModuleCompile", "com.google.guava:guava:24.0-jre")
         project.dependencies.add("fsServerCompile", "com.google.j2objc:j2objc-annotations:0.9.8")
 
-        fsm.execute()
+        fsm.get().execute()
         val xml = moduleXml()
         assertThat(xml).contains("""<resource minVersion="1.1" mode="isolated" name="com.google.j2objc:j2objc-annotations" scope="server" version="1.1">lib/j2objc-annotations-1.1.jar</resource>""")
         withFsmFile { fsm ->
@@ -120,7 +121,7 @@ class FSMTestResources {
         project.dependencies.add("fsModuleCompile", "com.google.guava:guava:24.0-jre")
         project.dependencies.add("fsServerCompile", "com.google.j2objc:j2objc-annotations:1.3")
 
-        fsm.execute()
+        fsm.get().execute()
         val xml = moduleXml()
         assertThat(xml).contains("""<resource minVersion="1.3" mode="isolated" name="com.google.j2objc:j2objc-annotations" scope="server" version="1.3">lib/j2objc-annotations-1.3.jar</resource>""")
         withFsmFile { fsm ->
@@ -130,7 +131,7 @@ class FSMTestResources {
     }
 
     private fun moduleXml(): String {
-        val fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.archiveFile.get().asFile.name)
+        val fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.get().archiveFile.get().asFile.name)
         assertThat(fsmFile).exists()
         val zipFile =  ZipFile(fsmFile.toFile())
         zipFile.use {
@@ -144,7 +145,7 @@ class FSMTestResources {
     }
 
     private fun withFsmFile(f: (ZipFile) -> Unit) {
-        val fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.archiveFile.get().asFile.name)
+        val fsmFile = testDir.toPath().resolve("build").resolve("fsm").resolve(fsm.get().archiveFile.get().asFile.name)
         assertThat(fsmFile).exists()
         val zipFile = ZipFile(fsmFile.toFile())
         zipFile.use {
