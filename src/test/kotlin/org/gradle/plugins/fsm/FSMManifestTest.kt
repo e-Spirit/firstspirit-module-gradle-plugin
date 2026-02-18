@@ -32,7 +32,7 @@ class FSMManifestTest {
         val resourcesPath = Paths.get(resourcesUrl.toURI())
         resourcesPath.toFile().copyRecursively(testDir)
 
-        // Execute a gradle build
+        // Execute a Gradle build
         val result = GradleRunner.create()
             .withProjectDir(testDir)
             .withArguments(FSMPlugin.FSM_TASK_NAME)

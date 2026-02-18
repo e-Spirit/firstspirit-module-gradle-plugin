@@ -15,6 +15,8 @@ import org.gradle.plugins.fsm.configurations.MinMaxVersion
 import org.gradle.plugins.fsm.configurations.fsDependency
 import org.gradle.plugins.fsm.util.TestProjectUtils.defineArtifactoryForProject
 import org.gradle.testfixtures.ProjectBuilder
+import org.gradle.testkit.runner.GradleRunner
+import org.gradle.testkit.runner.TaskOutcome
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -60,14 +62,6 @@ class FSMTest {
     @Test
     fun `FSM extension used`() {
         assertThat(fsm.get().archiveExtension.get()).isEqualTo(FSM.FSM_EXTENSION)
-    }
-
-
-    @Test
-    fun `task name should be composed by a verb and an object`() {
-        val verb = "assemble"
-        val obj = "FSM"
-        assertThat(project.tasks.getByName(verb + obj)).isNotNull
     }
 
     @Test
@@ -185,11 +179,9 @@ class FSMTest {
         pluginExtension.moduleDirName = "some/empty/dir"
         Files.createDirectories(project.file("some/empty/dir").toPath())
 
-        assertThatThrownBy { fsm.get() }
+        assertThatThrownBy { fsm.get().execute() }
             .isInstanceOf(GradleException::class.java)
-            .rootCause()
-            .isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessage("No module.xml or module-isolated.xml found in moduleDir some/empty/dir")
+            .hasMessageStartingWith("No module-isolated.xml found in moduleDir ")
     }
 
     @Test
@@ -197,9 +189,9 @@ class FSMTest {
         val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
         pluginExtension.moduleDirName = this::class.java.classLoader.getResource("legacyonly")?.path
 
-        fsm.get().execute()
-
-        assertThat(moduleXml()).contains("""<custom-tag>custom-legacy</custom-tag>""")
+        assertThatThrownBy { fsm.get().execute() }
+            .isInstanceOf(GradleException::class.java)
+            .hasMessageStartingWith("No module-isolated.xml found in moduleDir ")
     }
 
     @Test
@@ -213,15 +205,55 @@ class FSMTest {
     }
 
     @Test
-    fun `module dir contains both XML`() {
-        val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
-        pluginExtension.moduleDirName = this::class.java.classLoader.getResource("bothxml")?.path
+    fun `pick up module dir after task instantiation`() {
+        testDir.resolve("settings.gradle.kts").writeText("""rootProject.name = "FSMTest"""")
+        testDir.resolve("build.gradle.kts").writeText(
+            $$"""
+                plugins {
+                    id("de.espirit.firstspirit-module")
+                }
+                
+                repositories {
+                    maven(url = "https://artifactory.e-spirit.de/artifactory/repo") {
+                        credentials {
+                            username = "${System.getProperty("artifactory_username")}"
+                            password = "${System.getProperty("artifactory_password")}"
+                        }
+                    }
+                }
 
-        assertThatThrownBy { fsm.get().execute() }
-            .isInstanceOf(GradleException::class.java)
-            .rootCause()
-            .isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessageContaining("legacy modules are no longer supported")
+                version = "7.0.3"
+                
+                // Initialize task
+                tasks.assembleFSM.get()
+                
+                // Configure afterwards
+                firstSpiritModule {
+                    moduleDirName = "template"
+                }
+            """.trimIndent()
+        )
+        testDir.resolve("template").mkdirs()
+        testDir.resolve("template/module-isolated.xml").writeText(
+            """
+            <module>
+                <name>pick_up_module_dir_after_task_instantiation</name>
+                <version>7.0.3</version>
+            </module>
+            """.trimIndent())
+
+        // Execute the Gradle build
+        val result = GradleRunner.create()
+            .withProjectDir(testDir)
+            .withArguments(FSMPlugin.FSM_TASK_NAME)
+            .withPluginClasspath()
+            .build()
+        assertThat(result.task(':' + FSMPlugin.FSM_TASK_NAME)?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+
+        // get result
+        val fsmFile = testDir.resolve("build/fsm/FSMTest-7.0.3.fsm")
+        assertThat(fsmFile).exists()
+        assertThat(moduleXml(fsmFile)).contains("pick_up_module_dir_after_task_instantiation")
     }
 
     @Test
@@ -443,9 +475,9 @@ class FSMTest {
         // a
         // +-+ fsm-resources
         //   +-+ nested
-        //   | +-- n1.txt    <-- duplicate
+        //   | +-- n1.txt    <-- duplicate, also present in subproject b
         //   | +-- n2.txt
-        //   +-- 1.txt       <-- duplicate
+        //   +-- 1.txt       <-- duplicate, also present in subproject b
         //   +-- 2.txt
         val subprojectAResources = Files.createDirectories(subprojectAFile.toPath().resolve(FSM.FSM_RESOURCES_PATH))
         subprojectAResources.resolve("1.txt").writeText("1.txt")
@@ -465,9 +497,9 @@ class FSMTest {
         // b
         // +-+ fsm-resources
         //   +-+ nested
-        //   | +-- n1.txt    <-- duplicate
+        //   | +-- n1.txt    <-- duplicate, also present in subproject a
         //   | +-- n3.txt
-        //   +-- 1.txt       <-- duplicate
+        //   +-- 1.txt       <-- duplicate, also present in subproject a
         //   +-- 3.txt
         val subprojectBResources = Files.createDirectories(subprojectBFile.toPath().resolve(FSM.FSM_RESOURCES_PATH))
         subprojectBResources.resolve("1.txt").writeText("1.txt")
@@ -478,11 +510,9 @@ class FSMTest {
 
         fsm.get().execute()
 
-        // The following files should be detected as duplicates. They will overwrite each other in the FSM archive
-        assertThat(fsm.get().duplicateFsmResourceFiles).containsExactlyInAnyOrder(
-            File("1.txt"),
-            File("nested/n1.txt")
-        )
+        val duplicates = fsm.get().fsmResourceFileToProject.filter { it.value.size > 1 }
+        assertThat(duplicates).hasSize(2)
+        assertThat(duplicates.keys).containsExactlyInAnyOrder(File("1.txt"), File("nested/n1.txt"))
     }
 
     @Test
@@ -623,6 +653,11 @@ class FSMTest {
 
     private fun moduleXml(): String {
         val fsmFile = testDir.resolve("build").resolve("fsm").resolve(fsm.get().archiveFile.get().asFile.name)
+        return moduleXml(fsmFile)
+    }
+
+
+    private fun moduleXml(fsmFile: File): String {
         assertThat(fsmFile).exists()
         ZipFile(fsmFile).use { zipFile ->
             val xmlFileName = "META-INF/module-isolated.xml"
@@ -633,6 +668,7 @@ class FSMTest {
             }
         }
     }
+
 
     private fun withFsmFile(f: (ZipFile) -> Unit) {
         val fsmFile = testDir.resolve("build").resolve("fsm").resolve(fsm.get().archiveFile.get().asFile.name)

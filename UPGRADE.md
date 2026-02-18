@@ -1,6 +1,13 @@
+# Upgrading to 7.0.3
+
+* The deprecated module descriptor `module.xml` is no longer supported, please rename any existing template
+  to `module-isolated.xml`. In case both files were present, it is sufficient to just delete `module.xml` because
+  it will be ignored anyway.
+
 # Upgrading to 7.0.1
 
 * Resources for web-app components now use a consistent naming pattern which includes the project name.
+* This version removes some lazy initialization. Please refrain from using `tasks.assembleFSM.get()` if possible.
 
 # Upgrading to 7.0.0
 

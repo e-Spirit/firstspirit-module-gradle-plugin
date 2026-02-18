@@ -4,17 +4,20 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.file.DuplicatesStrategy
+import org.gradle.api.file.FileCollection
+import org.gradle.api.file.ProjectLayout
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.jvm.tasks.Jar
-import org.gradle.plugins.fsm.FSMPlugin.Companion.FSM_TASK_NAME
 import org.gradle.plugins.fsm.FSMPlugin.Companion.WEBAPPS_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_MODULE_COMPILE_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_SERVER_COMPILE_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_WEB_COMPILE_CONFIGURATION_NAME
+import org.gradle.plugins.fsm.dependencyProject
 import org.gradle.plugins.fsm.descriptor.LibraryComponents
 import org.gradle.plugins.fsm.descriptor.ModuleDescriptor
 import org.gradle.plugins.fsm.descriptor.moduleScopeDependencies
@@ -27,29 +30,28 @@ import java.nio.file.FileSystem
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
-import java.util.zip.ZipFile
+import javax.inject.Inject
 
 abstract class FSM: Jar() {
 
     private val pluginExtension: FSMPluginExtension
 
     /**
-     * Contains all resource file paths added with an fsm-resources folder.
-     * Used for duplicate checking
-     */
-    private val fsmResourceFiles = mutableSetOf<File>()
-
-    /**
      * Contains all resource file paths of all fsm-resources folders that are duplicates. Used for duplicate warning
      */
     @Internal("Visible for tests")
-    val duplicateFsmResourceFiles = mutableSetOf<File>()
+    val fsmResourceFileToProject = mutableMapOf<File, MutableSet<Project>>()
+
+    @get:Inject
+    abstract val layout: ProjectLayout
 
     init {
         archiveExtension.set(FSM_EXTENSION)
         destinationDirectory.set(project.layout.buildDirectory.dir("fsm"))
         pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
         duplicatesStrategy = DuplicatesStrategy.WARN
+
+        pluginExtension.moduleDirName?.let { inputs.dir(layout.projectDirectory.dir(it)) }
 
         configureProjectDependencies()
         into("lib") {
@@ -101,44 +103,24 @@ abstract class FSM: Jar() {
             }
         }
 
-        copyResourceFolderToFsm(project)
+        into("/") {
+            from(fsmResourcesFolder(project))
 
-        // Merge fsm-resources folders of projects added as dependency
-        listOf(
-            FS_MODULE_COMPILE_CONFIGURATION_NAME, FS_SERVER_COMPILE_CONFIGURATION_NAME,
-            FS_WEB_COMPILE_CONFIGURATION_NAME, WEBAPPS_CONFIGURATION_NAME)
-            .flatMap { project.configurations.getByName(it).projectDependencies(project) }
-            .distinct()
-            .forEach { copyResourceFolderToFsm(it) }
+            // Merge fsm-resources folders of projects added as dependency
+            from(project.provider {
+                listOf(
+                    FS_MODULE_COMPILE_CONFIGURATION_NAME, FS_SERVER_COMPILE_CONFIGURATION_NAME,
+                    FS_WEB_COMPILE_CONFIGURATION_NAME, WEBAPPS_CONFIGURATION_NAME)
+                    .flatMap { project.configurations.getByName(it).projectDependencies(project) }
+                    .distinct()
+                    .map { fsmResourcesFolder(it) }
+            })
+        }
 
-        metaInf {
-            if (pluginExtension.moduleDirName != null) {
-                // include module-isolated.xml file
-                val moduleDirPath = project.file(pluginExtension.moduleDirName ?: "")
-                if (!moduleDirPath.isDirectory) {
-                    throw GradleException("moduleDirName '$moduleDirPath' is not a directory!")
-                }
-
-                val deprecatedModuleXmlFileName = "module.xml"
-                val isolatedModuleXmlFileName = "module-isolated.xml"
-                val deprecatedModuleXml = project.file("$moduleDirPath/$deprecatedModuleXmlFileName")
-                val moduleIsolatedXml = project.file("$moduleDirPath/$isolatedModuleXmlFileName")
-
-                from(moduleDirPath)
-
-                if (!deprecatedModuleXml.exists() && !moduleIsolatedXml.exists()) {
-                    throw IllegalArgumentException("No module.xml or module-isolated.xml found in moduleDir " + pluginExtension.moduleDirName)
-                } else if (deprecatedModuleXml.exists() && moduleIsolatedXml.exists()) {
-                    throw IllegalArgumentException("Both xml files exist in moduleDir " + moduleDirPath +
-                            " but legacy modules are no longer supported. Please remove the old module.xml file.")
-                } else if (deprecatedModuleXml.exists() && !moduleIsolatedXml.exists()) {
-                    logger.warn("Found only a module.xml in moduleDir " + moduleDirPath +
-                            ". Renaming it to module-isolated.xml")
-                    include(deprecatedModuleXmlFileName)
-                    rename { filename -> filename.replace("module.xml", "module-isolated.xml") }
-                } else if (!deprecatedModuleXml.exists() && moduleIsolatedXml.exists()) {
-                    include(isolatedModuleXmlFileName)
-                }
+        doFirst {
+            // Warn about duplicate fsm-resources files
+            fsmResourceFileToProject.filter { it.value.size > 1 }.forEach { (file, projects) ->
+                logger.warn("File {} found in multiple projects: {}", file, projects)
             }
         }
     }
@@ -147,38 +129,39 @@ abstract class FSM: Jar() {
      * Jars of project dependencies need to exist before the FSM is built
      */
     private fun configureProjectDependencies() {
-        val fsModuleCompileConfiguration = project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME)
-        fsModuleCompileConfiguration.allDependencies.filterIsInstance<ProjectDependency>().forEach {
-            project.tasks.named(FSM_TASK_NAME).configure {
-                dependsOn(project.project(it.path).tasks.named(JavaPlugin.JAR_TASK_NAME))
-            }
-        }
+        dependsOn(project.provider {
+            project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME)
+                .allDependencies
+                .filterIsInstance<ProjectDependency>()
+                .map { it.dependencyProject(project) }
+                .map { it.tasks.named(JavaPlugin.JAR_TASK_NAME) }
+        })
 
-        val fsServerCompileConfiguration = project.configurations.getByName(FS_SERVER_COMPILE_CONFIGURATION_NAME)
-        fsServerCompileConfiguration.allDependencies.filterIsInstance<ProjectDependency>().forEach {
-            project.tasks.named(FSM_TASK_NAME).configure {
-                dependsOn(project.project(it.path).tasks.named(JavaPlugin.JAR_TASK_NAME))
-            }
-        }
+        dependsOn(project.provider {
+            project.configurations.getByName(FS_SERVER_COMPILE_CONFIGURATION_NAME)
+                .allDependencies
+                .filterIsInstance<ProjectDependency>()
+                .map { it.dependencyProject(project) }
+                .map { it.tasks.named(JavaPlugin.JAR_TASK_NAME) }
+        })
     }
 
-    private fun copyResourceFolderToFsm(dep: Project) {
-        val fsmResourcesPath = dep.projectDir.absolutePath + '/' + FSM_RESOURCES_PATH
-        val fsmResourcesFolder = File(fsmResourcesPath)
-        if (fsmResourcesFolder.exists()) {
-            logger.info("Adding folder $fsmResourcesPath from project ${dep.name} to fsm")
-            // Record duplicates to warn later
-            fsmResourcesFolder.walk().filter { it.isFile }.forEach { file ->
-                val relativePath = file.relativeTo(fsmResourcesFolder)
-                if (!fsmResourceFiles.add(relativePath)) {
-                    duplicateFsmResourceFiles.add(relativePath)
+    private fun fsmResourcesFolder(dep: Project): Provider<FileCollection> {
+        return project.provider {
+            val fsmResourcesPath = dep.projectDir.absolutePath + '/' + FSM_RESOURCES_PATH
+            val fsmResourcesFolder = File(fsmResourcesPath)
+            if (fsmResourcesFolder.exists()) {
+                logger.info("Adding folder $fsmResourcesPath from project ${dep.name} to fsm")
+                // Record files to warn about duplicates later
+                fsmResourcesFolder.walk().filter { it.isFile }.forEach { file ->
+                    val relativePath = file.relativeTo(fsmResourcesFolder)
+                    fsmResourceFileToProject.getOrPut(relativePath) { mutableSetOf() }.add(dep)
                 }
+                project.files(fsmResourcesPath)
+            } else {
+                logger.debug("Not adding folder $fsmResourcesPath from project ${dep.name} to fsm, because it doesn't exist.")
+                project.files()
             }
-            into("/") {
-                from(fsmResourcesPath)
-            }
-        } else {
-            logger.debug("Not adding folder $fsmResourcesPath from project ${dep.name} to fsm, because it doesn't exist.")
         }
     }
 
@@ -191,18 +174,7 @@ abstract class FSM: Jar() {
         val archive = archiveFile.get().asFile
         logger.info("Found archive ${archive.path}")
         FileSystems.newFileSystem(archive.toPath(), javaClass.classLoader).use { fs ->
-            ZipFile(archive).use { zipFile ->
-                writeModuleDescriptorToZipFile(fs, getUnfilteredModuleXml(zipFile))
-            }
-        }
-
-        // Test if any duplicate fsm-resources files could overwrite each other
-        if (duplicateFsmResourceFiles.isNotEmpty()) {
-            val warningMessage = StringBuilder("Warning: Multiple files in fsm-resources with same path found! Files may be overwritten by each other in the FSM archive!\n")
-            duplicateFsmResourceFiles.forEach {
-                warningMessage.append("- ${it}\n")
-            }
-            logger.warn(warningMessage.toString())
+            writeModuleDescriptorToZipFile(fs, getUnfilteredModuleXml())
         }
     }
 
@@ -239,13 +211,21 @@ abstract class FSM: Jar() {
         }
     }
 
-    private fun getUnfilteredModuleXml(zipFile: ZipFile): String? {
-        val moduleXmlFile = zipFile.getEntry("META-INF/module-isolated.xml")
-        return if (moduleXmlFile == null) {
-            logger.info("module-isolated.xml not found in ZipArchive ${zipFile.name}, using an empty one")
-            null
+    private fun getUnfilteredModuleXml(): String? {
+        val moduleDirName = pluginExtension.moduleDirName ?: return null
+
+        val moduleDirPath = layout.projectDirectory.dir(moduleDirName).asFile
+        if (!moduleDirPath.isDirectory) {
+            throw GradleException("moduleDirName '$moduleDirPath' is not a directory!")
+        }
+
+        val moduleXmlFileName = "module-isolated.xml"
+        val moduleXml = moduleDirPath.resolve(moduleXmlFileName)
+
+        return if (moduleXml.exists()) {
+            moduleXml.readText()
         } else {
-            zipFile.getInputStream(moduleXmlFile).use { it.bufferedReader().readText() }
+            throw GradleException("No $moduleXmlFileName found in moduleDir $moduleDirPath")
         }
     }
 
