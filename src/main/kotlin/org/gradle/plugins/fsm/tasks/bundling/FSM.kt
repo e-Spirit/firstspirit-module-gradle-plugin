@@ -18,10 +18,7 @@ import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.F
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_SERVER_COMPILE_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_WEB_COMPILE_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.dependencyProject
-import org.gradle.plugins.fsm.descriptor.LibraryComponents
-import org.gradle.plugins.fsm.descriptor.ModuleDescriptor
-import org.gradle.plugins.fsm.descriptor.moduleScopeDependencies
-import org.gradle.plugins.fsm.descriptor.serverScopeDependencies
+import org.gradle.plugins.fsm.descriptor.*
 import org.gradle.plugins.fsm.projectDependencies
 import org.jetbrains.annotations.TestOnly
 import java.io.File
@@ -36,19 +33,24 @@ abstract class FSM: Jar() {
 
     private val pluginExtension: FSMPluginExtension
 
+    private val configurationsPlugin: FSMConfigurationsPlugin
+
     /**
      * Contains all resource file paths of all fsm-resources folders that are duplicates. Used for duplicate warning
      */
     @Internal("Visible for tests")
-    val fsmResourceFileToProject = mutableMapOf<File, MutableSet<Project>>()
+    val fsmResourceFileToProject = mutableMapOf<File, MutableSet<String>>()
 
     @get:Inject
     abstract val layout: ProjectLayout
+
+    private val fsmGradlePluginContext = FSMGradlePluginContext(project)
 
     init {
         archiveExtension.set(FSM_EXTENSION)
         destinationDirectory.set(project.layout.buildDirectory.dir("fsm"))
         pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+        configurationsPlugin = project.plugins.getPlugin(FSMConfigurationsPlugin::class.java)
         duplicatesStrategy = DuplicatesStrategy.WARN
 
         pluginExtension.moduleDirName?.let { inputs.dir(layout.projectDirectory.dir(it)) }
@@ -64,17 +66,8 @@ abstract class FSM: Jar() {
             from(project.provider {
                 project.configurations.getByName(WEBAPPS_CONFIGURATION_NAME).resolve()
             })
-            from(project.provider {
-                pluginExtension.getWebApps().values
-                    .mapNotNull { it.tasks.findByName(JavaPlugin.JAR_TASK_NAME) }
-                    .map { it.outputs.files.singleFile }
-            })
-            from(project.provider {
-                pluginExtension.libraries
-                    .asSequence().mapNotNull { it.configuration }
-                    .flatMap { LibraryComponents.getResolvedDependencies(project, it) }
-                    .map { it.file }
-                    .toList()
+            from(fsmGradlePluginContext.libraryResources.map { libraryMap ->
+                libraryMap.values.filterNotNull().flatten().map { it.file }
             })
         }
 
@@ -155,7 +148,7 @@ abstract class FSM: Jar() {
                 // Record files to warn about duplicates later
                 fsmResourcesFolder.walk().filter { it.isFile }.forEach { file ->
                     val relativePath = file.relativeTo(fsmResourcesFolder)
-                    fsmResourceFileToProject.getOrPut(relativePath) { mutableSetOf() }.add(dep)
+                    fsmResourceFileToProject.getOrPut(relativePath) { mutableSetOf() }.add(dep.name)
                 }
                 project.files(fsmResourcesPath)
             } else {
@@ -182,19 +175,17 @@ abstract class FSM: Jar() {
     private fun writeModuleDescriptorToZipFile(fs: FileSystem, unfilteredModuleXml: String?) {
         val filteredModuleXml: String
 
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(fsmGradlePluginContext)
 
         if (unfilteredModuleXml != null) {
             // Replace values in XML provided by user
             filteredModuleXml = unfilteredModuleXml
-                .replace("\$name", pluginExtension.moduleName ?: project.name)
-                .replace("\$displayName", pluginExtension.displayName ?: project.name)
-                .replace("\$version", project.version.toString())
+                .replace("\$name", pluginExtension.moduleName ?: fsmGradlePluginContext.projectName.get())
+                .replace("\$displayName", pluginExtension.displayName ?: fsmGradlePluginContext.projectName.get())
+                .replace("\$version", fsmGradlePluginContext.projectVersion.get())
                 .replace("\$minimalFirstSpiritVersion", pluginExtension.minimalFirstSpiritVersion ?: "")
-                .replace("\$description", project.description ?: project.name)
+                .replace("\$description", fsmGradlePluginContext.projectDescription.get())
                 .replace("\$vendor", pluginExtension.vendor ?: "")
-                .replace("\$artifact", project.tasks.named("jar", Jar::class.java).get()
-                    .archiveFileName.getOrElse("unknown-archiveFileName"))
                 .replace("\$class", moduleDescriptor.moduleClass.toString())
                 .replace("\$dependencies", moduleDescriptor.fsmDependencies())
                 .replace("\$resources", moduleDescriptor.resources.innerResourcesToString())

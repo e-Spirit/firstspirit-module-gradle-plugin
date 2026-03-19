@@ -17,8 +17,8 @@ import java.util.Set;
         configurable = SimpleWebApp.WebAppConfigurable.class,
         webXml = "webResourceFolder/web.xml",
         webResources = {
-            @WebResource(path = "someResources/icon.png", name = "${project.webappIconName}", version = "${project.version}", targetPath = "img"),
-            @WebResource(path = "$path", name = "${project.commonsIOWebDependencyName}", version = "${version}", targetPath = "lib")
+            @WebResource(path = "someResources/icon.png", name = "com.espirit.moddev.example.icon.png", version = "${project.version}", targetPath = "img"),
+            @WebResource(path = "$path", name = "commons-io:commons-io", version = "${version}", targetPath = "lib")
         }
 )
 public class SimpleWebApp extends AbstractWebApp {

@@ -2,12 +2,13 @@ package org.gradle.plugins.fsm
 
 import org.assertj.core.api.Assertions.assertThat
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Dependency
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.jvm.tasks.Jar
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
+import org.gradle.plugins.fsm.descriptor.defineArtifactoryForProject
+import org.gradle.plugins.fsm.descriptor.setArtifactoryCredentialsFromLocalProperties
 import org.gradle.plugins.fsm.tasks.bundling.FSM
 import org.gradle.plugins.fsm.util.TaskAssert.Companion.assertThat
 import org.gradle.testfixtures.ProjectBuilder
@@ -21,6 +22,8 @@ class FSMPluginTest {
     @BeforeEach
     fun setUp() {
         project = ProjectBuilder.builder().build()
+        project.setArtifactoryCredentialsFromLocalProperties()
+        project.defineArtifactoryForProject()
     }
 
     @Test
@@ -123,15 +126,6 @@ class FSMPluginTest {
 
         assertThat(checkIsolationTask).dependsOn(fsmTask.name)
     }
-
-    @Test
-    fun `jar-publication removed`() {
-        project.plugins.apply(FSMPlugin.NAME)
-
-        val archiveConfiguration = project.configurations.getByName(Dependency.ARCHIVES_CONFIGURATION)
-        assertThat(archiveConfiguration.allArtifacts).isEmpty()
-    }
-
 
     @Test
     fun `module-XML excluded from jar artifact`() {

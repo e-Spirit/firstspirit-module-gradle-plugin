@@ -3,9 +3,9 @@ package org.gradle.plugins.fsm.descriptor
 import io.github.classgraph.ClassGraph
 import io.github.classgraph.ClassInfoList
 import io.github.classgraph.ScanResult
-import org.gradle.api.Project
-import org.gradle.plugins.fsm.compileDependencies
+import org.gradle.api.provider.Provider
 import java.io.Closeable
+import java.io.File
 import kotlin.reflect.KClass
 
 /**
@@ -18,7 +18,10 @@ import kotlin.reflect.KClass
  *
  * @see ClassGraph
  */
-class ComponentScan(private val project: Project): Closeable {
+class ComponentScan(
+    private val fsmAnnotationsJar: Provider<File>,
+    private val jarFiles: Provider<List<File>>
+): Closeable {
 
     private val scanResult: ScanResult = createClassGraph().scan()
 
@@ -35,14 +38,13 @@ class ComponentScan(private val project: Project): Closeable {
     }
 
     private fun createClassGraph(): ClassGraph {
-        val jarFiles = project.compileDependencies().map { it.buildJar() }
         // Must include annotations dependency to get default values for annotations
-        val annotationsDependency = project.configurations.getByName("fsmAnnotations").singleFile
+        val annotationsDependency = fsmAnnotationsJar.get()
 
         return ClassGraph()
                 .enableClassInfo()
                 .enableAnnotationInfo()
-                .overrideClasspath(jarFiles + annotationsDependency)
+                .overrideClasspath(jarFiles.get() + annotationsDependency)
     }
 
 }

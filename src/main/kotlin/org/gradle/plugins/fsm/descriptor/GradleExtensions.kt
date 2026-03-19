@@ -6,6 +6,7 @@ import org.gradle.api.plugins.JavaPlugin
 import org.gradle.jvm.tasks.Jar
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_MODULE_COMPILE_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_SERVER_COMPILE_CONFIGURATION_NAME
+import org.gradle.plugins.fsm.tasks.bundling.ResolvedDependencyInfo
 import java.io.File
 
 fun ResolvedArtifact.hasSameModuleAs(other: ResolvedArtifact): Boolean {
@@ -24,29 +25,32 @@ fun Project.buildJar(): File {
 /**
  * Returns all artifacts defined on the server scope, i.e. with `fsServerCompile`
  */
-fun Project.serverScopeDependencies(): Set<ResolvedArtifact> {
+fun Project.serverScopeDependencies(): Set<ResolvedDependencyInfo> {
     val fsModuleCompileConfiguration = configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME)
     val fsServerCompileConfiguration = configurations.getByName(FS_SERVER_COMPILE_CONFIGURATION_NAME)
 
     // Remove duplicate resolved resources from module scope
     val resolvedModuleScopeArtifacts = fsModuleCompileConfiguration.resolvedConfiguration.resolvedArtifacts
     val resolvedServerScopeArtifacts = fsServerCompileConfiguration.resolvedConfiguration.resolvedArtifacts
-    return resolvedModuleScopeArtifacts.filter {
-            // Module scope configuration extends server scope configuration, so we need to filter duplicates
-            moduleScoped -> resolvedServerScopeArtifacts.any { it.hasSameModuleAs(moduleScoped) }
-    }.toSet()
+    return resolvedModuleScopeArtifacts
+        // Module scope configuration extends server scope configuration, so we need to filter duplicates
+        .filter { moduleScoped -> resolvedServerScopeArtifacts.any { it.hasSameModuleAs(moduleScoped) } }
+        .map { ResolvedDependencyInfo(it) }
+        .toSet()
 }
 
 
 /**
  * Returns all artifacts on the module scope not superseded by server-scoped dependencies
  */
-fun Project.moduleScopeDependencies(): Set<ResolvedArtifact> {
+fun Project.moduleScopeDependencies(): Set<ResolvedDependencyInfo> {
     val fsModuleCompileConfiguration = configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME)
     val resolvedModuleScopeArtifacts = fsModuleCompileConfiguration.resolvedConfiguration.resolvedArtifacts
 
     // Remove duplicate resolved resources from module scope
-    val cleanedCompileDependenciesModuleScoped = resolvedModuleScopeArtifacts.toMutableSet()
+    val cleanedCompileDependenciesModuleScoped = resolvedModuleScopeArtifacts
+        .map { ResolvedDependencyInfo(it) }
+        .toMutableSet()
     cleanedCompileDependenciesModuleScoped.removeAll(serverScopeDependencies())
     return cleanedCompileDependenciesModuleScoped
 }

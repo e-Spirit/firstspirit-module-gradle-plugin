@@ -222,7 +222,6 @@ The following placeholders in the _module-isolated.xml_ will be replaced at buil
 | $displayName               | project.name                    | Human-readable display name of the FSM                                                                         |
 | $version                   | project.version                 | Version of the FSM                                                                                             |
 | $description               | project.description             | Description of the FSM                                                                                         |
-| $artifact                  | project.jar.archiveName         | Artifact (jar) name of the FSM                                                                                 |
 | $class                     | complex (see module example)    | The class name of the class implementing the FirstSpirit module interface                                      |
 | $components                | complex (see component example) | All FirstSpirit components that can be found in the FSM archive                                                |
 | $minimalFirstSpiritVersion | (unset)                         | Minimal FirstSpirit server version required to install the module. Supported by FirstSpirit 2023.10 and later. |
@@ -381,28 +380,19 @@ via properties injected. Or one can use properties to declare fsm-resource entri
 a webapp component in another subproject.
 
 ```java
-// in a build.gradle
-
-rootProject.ext {
-    webappIconName = 'com.espirit.moddev.example.icon.png'
-    commonsIOWebDependencyName = 'commons-io:commons-io'
-}
-...
-implementation "$commonsIOWebDependencyName:2.6"
-
 // within a @WebComponent usage
 webResources = {
-    @WebResource(path = "someResources/icon.png", name = "${project.webappIconName}", version = "${project.version}", targetPath = "img"),
-    @WebResource(path = "$path", name = "${project.commonsIOWebDependencyName}", version = "${version}", targetPath = "lib")
+    @WebResource(path = "someResources/icon.png", name = "${project.group}:icons", version = "${project.version}", targetPath = "img")
 }
-
 ```
 
-For regular build dependencies, the version property can be used, whereas for file resources, this wouldn't make sense, hence it's not supported.
-Please note that `$project` always refers to the root project of the build.
-This way, the complete project context can be retrieved, if really necessary.
+#### Supported Properties
 
-
+* `project.name`
+* `project.group`
+* `project.version`
+* `path` (relative resource path)
+* `version` (dependency version, not available for file resources)
 
 ### Examples
 
@@ -418,7 +408,6 @@ This way, the complete project context can be retrieved, if really necessary.
 $components
     </components>
     <resources>
-        <resource mode="isolated">lib/$artifact</resource>
 $resources
     </resources>
 </module>

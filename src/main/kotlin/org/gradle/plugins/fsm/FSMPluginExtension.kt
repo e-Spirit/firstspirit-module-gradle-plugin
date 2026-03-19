@@ -1,15 +1,14 @@
 package org.gradle.plugins.fsm
 
 import de.espirit.mavenplugins.fsmchecker.ComplianceLevel
-import org.gradle.api.Action
-import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 
-open class FSMPluginExtension(val project: Project) {
+open class FSMPluginExtension(project: Project) {
 
-    private val fsmWebApps: MutableMap<String, Project> = mutableMapOf()
+    private val fsmWebApps: MutableMap<String, String> = mutableMapOf()
 
     val libraries = project.objects.domainObjectContainer(LibraryDeclaration::class.java)
+    val projectPath = project.path
 
     /**
      * Registers a web-app to a given subproject
@@ -18,12 +17,13 @@ open class FSMPluginExtension(val project: Project) {
      * @param webAppProject The subproject holding the web-app's resources
      */
     fun webAppComponent(webAppName: String, webAppProject: Project) {
-        fsmWebApps[webAppName] = webAppProject
+        fsmWebApps[webAppName] = webAppProject.path
+        val project = webAppProject.project(projectPath)
 
         // Register webapp dependency in extra configuration
         val webAppsConfiguration = project.configurations.getByName(FSMPlugin.WEBAPPS_CONFIGURATION_NAME)
         // This is the same as
-        //    implementation project("projectName", configuration: "default")
+        //    fsmWebappsRuntime(project(webAppProject.path, configuration = "default"))
         // and is required because of an error with the variant selection regarding the license report plugin.
         // For more information, see https://github.com/jk1/Gradle-License-Report/issues/170
         val projectDependency = project.dependencies.project(mapOf("path" to webAppProject.path, "configuration" to "default"))
@@ -39,7 +39,7 @@ open class FSMPluginExtension(val project: Project) {
         webAppComponent(webAppProject.name, webAppProject)
     }
 
-    fun getWebApps(): Map<String, Project> {
+    fun getWebApps(): Map<String, String> {
         return fsmWebApps.toMap()
     }
 
@@ -139,9 +139,5 @@ open class FSMPluginExtension(val project: Project) {
      * Whether to add the default jar task output of the project to web resources of all web-app components.
      */
     var addDefaultJarTaskOutputToWebResources: Boolean = true
-
-    open fun libraries(action: Action<in NamedDomainObjectContainer<LibraryDeclaration>>) {
-        action.execute(libraries)
-    }
 
 }

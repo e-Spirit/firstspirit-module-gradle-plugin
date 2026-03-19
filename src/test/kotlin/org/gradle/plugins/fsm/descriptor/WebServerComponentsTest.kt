@@ -12,21 +12,25 @@ import org.junit.jupiter.api.Test
 class WebServerComponentsTest {
 
     val project: Project = ProjectBuilder.builder().build()
+    private lateinit var moduleDescriptor: ModuleDescriptor
 
     @BeforeEach
     fun setup() {
         project.plugins.apply("java-library")
         project.plugins.apply(FSMAnnotationsPlugin::class.java)
-        project.plugins.apply(FSMConfigurationsPlugin::class.java)
-        project.extensions.create("fsmPlugin", FSMPluginExtension::class.java)
+        val configurationsPlugin = project.plugins.apply(FSMConfigurationsPlugin::class.java)
+        val extension = project.extensions.create("fsmPlugin", FSMPluginExtension::class.java)
         project.setArtifactoryCredentialsFromLocalProperties()
         project.defineArtifactoryForProject()
         project.copyTestJar()
+
+        moduleDescriptor = ModuleDescriptor(
+            fsmGradlePluginContext = FSMGradlePluginContext(project)
+        )
     }
 
     @Test
     fun `minimal web server`() {
-        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "TestMinimalWebServerComponent" }.single()
         assertThat(component.childText("displayname")).isEmpty()
@@ -37,7 +41,6 @@ class WebServerComponentsTest {
 
     @Test
     fun `web server should contain basic information`() {
-        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "TestWebServerComponentWithParameters" }.single()
         assertThat(component.childText("displayname")).isEqualTo("TestDisplayName")
@@ -47,7 +50,6 @@ class WebServerComponentsTest {
 
     @Test
     fun `web server should have no configurable tag if no config class was set`() {
-        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "TestMinimalWebServerComponent" }.single()
         assertThat(component.childText("class")).endsWith(".TestMinimalWebServerComponent")
@@ -56,7 +58,6 @@ class WebServerComponentsTest {
 
     @Test
     fun `web server should not be hidden by default`() {
-        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "TestWebServerComponentWithParameters" }.single()
         assertThat(component.filter("hidden")).isEmpty()
@@ -64,7 +65,6 @@ class WebServerComponentsTest {
 
     @Test
     fun `web server with configurable`() {
-        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "TestWebServerComponentWithParameters" }.single()
         assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestWebServerComponentWithParameters")
@@ -74,7 +74,6 @@ class WebServerComponentsTest {
 
     @Test
     fun `hidden component`() {
-        val moduleDescriptor = ModuleDescriptor(project)
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "TestHiddenWebServerComponent" }.single()
         val hidden = component.filter("hidden").single()

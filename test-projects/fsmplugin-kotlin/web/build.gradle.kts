@@ -9,12 +9,8 @@ java {
     sourceCompatibility = JavaVersion.VERSION_11
 }
 
-val commonsIOWebDependencyName = "commons-io:commons-io"
-rootProject.extra["webappIconName"] = "com.espirit.moddev.example.icon.png"
-rootProject.extra["commonsIOWebDependencyName"] = commonsIOWebDependencyName
-
 dependencies {
     compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.251108")
     fsWebCompile(fsDependency(mapOf("dependency" to "org.apache.commons:commons-lang3:3.19.0")))
-    implementation("$commonsIOWebDependencyName:2.20.0")
+    implementation("commons-io:commons-io:2.20.0")
 }

@@ -12,7 +12,7 @@ plugins {
     idea
     `java-gradle-plugin`
     id("net.researchgate.release") version "3.1.0"
-    id("com.github.jk1.dependency-license-report") version "2.9"
+    id("com.github.jk1.dependency-license-report") version "3.1.1"
     id("org.cyclonedx.bom") version "1.10.0"
 }
 
@@ -67,7 +67,7 @@ val fsRuntimeVersion = "5.2.251108" // FirstSpirit 2025-11
 dependencies {
     implementation(gradleApi())
     implementation("io.github.classgraph:classgraph:4.8.184")
-    implementation("com.github.jk1:gradle-license-report:2.9")
+    implementation("com.github.jk1:gradle-license-report:3.1.1")
     implementation("org.redundent:kotlin-xml-builder:1.9.3")
     implementation("org.json:json:20250517")
     implementation("org.apache.maven:maven-artifact:3.9.11")
@@ -101,8 +101,9 @@ tasks.cyclonedxBom {
     setOutputFormat("json")
 }
 
+val bom by configurations.creating
 val bomFile = layout.buildDirectory.file("reports/bom.json")
-val bomArtifact = artifacts.add("archives", bomFile.get().asFile) {
+val bomArtifact = artifacts.add(bom.name, bomFile.get().asFile) {
     type = "bom"
     extension = "bom"
     builtBy(tasks.cyclonedxBom)

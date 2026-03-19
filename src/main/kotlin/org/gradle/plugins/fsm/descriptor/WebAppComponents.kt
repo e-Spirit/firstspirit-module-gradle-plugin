@@ -8,33 +8,33 @@ import io.github.classgraph.AnnotationInfo
 import io.github.classgraph.ClassInfo
 import org.gradle.api.GradleException
 import org.gradle.api.Project
-import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
-import org.gradle.api.plugins.JavaPlugin
 import org.gradle.plugins.fsm.DeclaredWebAppChecker
-import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
-import org.gradle.plugins.fsm.projectDependencies
-import org.gradle.plugins.fsm.runtimeProjectDependencies
+import org.gradle.plugins.fsm.tasks.bundling.ResolvedDependencyInfo
+import org.gradle.plugins.fsm.tasks.bundling.WebAppProjectInfo
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.xml
 import java.io.File
-import java.util.*
 
-class WebAppComponents(project: Project, private val scanResult: ComponentScan): ComponentsWithResources(project) {
+class WebAppComponents(
+    private val scanResult: ComponentScan,
+    private val fsmGradlePluginContext: FSMGradlePluginContext
+): ComponentsWithResources(fsmGradlePluginContext.runtimeArtifacts) {
 
-    lateinit var webXmlPaths: List<String>
+    val webXmlPaths = mutableListOf<String>()
 
     val nodes by lazy {
         val webAppClasses = scanResult.getClassesWithAnnotation(WebAppComponent::class)
         verify(webAppClasses)
-        nodesForWebApp(webAppClasses)
+        nodesForWebApps(webAppClasses)
     }
 
     private fun verify(webAppClasses: List<ClassInfo>) {
-        val webAppChecker = DeclaredWebAppChecker(project, webAppClasses)
-        val declaredWebApps = project.extensions.getByType(FSMPluginExtension::class.java).getWebApps()
+        val extension = fsmGradlePluginContext.extension
+        val webAppChecker = DeclaredWebAppChecker(extension, webAppClasses)
+        val declaredWebApps = extension.getWebApps()
 
         // Check if web-apps are complete
         // Warn if there is a @WebAppComponent annotation not defined in the `firstSpiritModule` block
@@ -60,146 +60,148 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
         }
     }
 
-    private fun nodesForWebApp(webAppClasses: List<ClassInfo>): List<Node> {
+    private fun nodesForWebApps(webAppClasses: List<ClassInfo>): List<Node> {
         // We might find the same dependencies in different subprojects / configurations, but with different versions
         // Because only one version ends up in the FSM archive, we need to make sure we always use the correct version
-        val allCompileDependencies = project.configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME)
-            .resolvedConfiguration.resolvedArtifacts
-        val sharedWebCompileDependencies = getResolvedDependencies(project,
-            FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, allCompileDependencies)
+        val allCompileDependencies = resolvedArtifacts.get()
+        val sharedWebCompileDependencies = getSharedWebCompileDependencies(allCompileDependencies,
+            fsmGradlePluginContext.fsWebCompileArtifacts.get())
 
-        val webXmlPaths = mutableListOf<String>()
-        val extension = project.extensions.getByType(FSMPluginExtension::class.java)
-        val declaredWebApps = extension.getWebApps()
-        val nodes = mutableListOf<Node>()
-
-        webAppClasses.forEach { webAppClass ->
-            // Report if WebApp does not seem to implement WebApp or AbstractWebApp
-            if (webAppClass.superclass?.name !in WEB_APP_TYPES) {
-                LOGGER.info("Web App '${webAppClass.name}' does not appear to implement interface '${WebApp::class.qualifiedName}'.")
-                LOGGER.info("This might be because the class implements or extends an intermediary type inheriting from ${WebApp::class.simpleName}.")
-            }
-
-            val annotation = webAppClass.annotationInfo
-                    .filter { it.isClass(WebAppComponent::class) }
-                    .first()
-            val webCompileConfiguration = project.configurations.getByName(FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME)
-            val projectDependencies = webCompileConfiguration.projectDependencies(project)
-
-            val webResources = LinkedHashSet<Node>()
-
-            // fsm-resources directory of root project and fsWebCompile subprojects (shared between all webapps)
-            webResources.addAll(projectDependencies.flatMap(this::fsmResources))
-
-            val webAppName = annotation.getString("name")
-            if (declaredWebApps.containsKey(webAppName)) {
-                val webAppProject = declaredWebApps[webAppName]!!
-
-                // fsm-resources directories of current web-app and all its dependencies
-                webAppProject.runtimeProjectDependencies().flatMap { fsmResources(it) }.forEach { webResources.add(it) }
-
-                // compile dependencies of web-app subproject -
-                // If we registered a subproject for a given web-app, evaluate its compile dependencies
-                val webAppProjectDependencies = getResolvedDependencies(webAppProject, JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, allCompileDependencies)
-
-                // Don't want duplicate resources
-                webAppProjectDependencies.removeAll(sharedWebCompileDependencies)
-
-                val jarFile = webAppProject.buildJar()
-                if (!jarFile.exists()) {
-                    Resources.LOGGER.warn("Jar file '$jarFile' not found!")
-                } else if (Resources.isEmptyJarFile(jarFile)) {
-                    Resources.LOGGER.info("Skipping empty Jar file.")
-                } else {
-                    webResources.add(xml("resource") {
-                        attribute("name", "${webAppProject.group}:${webAppProject.name}")
-                        attribute("version", webAppProject.version)
-                        -"lib/${jarFile.name}"
-                    })
-                }
-
-                // Add dependencies
-                webAppProjectDependencies
-                    .map { Resource(project, it, "", false).node }
-                    .forEach(webResources::add)
-            }
-
-            // fsWebCompile for all subprojects
-            sharedWebCompileDependencies
-                .map { Resource(project, it, "", false).node }
-                .forEach(webResources::add)
-
-            val webXmlPath = annotation.getString("webXml")
-            webXmlPaths.add(webXmlPath)
-
-            nodes.add(xml("web-app") {
-                val scopes = annotation.getEnumValues("scope")
-                if (scopes.isNotEmpty()) {
-                    attribute("scopes", scopes.joinToString(",") { it.valueName })
-                }
-                val xmlSchemaVersion = annotation.getString("xmlSchemaVersion")
-                if (xmlSchemaVersion.isNotEmpty()) {
-                    attribute("xml-schema-version", xmlSchemaVersion)
-                }
-                "name" { -webAppName }
-                "displayname" { -annotation.getString("displayName") }
-                "description" { -annotation.getString("description") }
-                "class" { -webAppClass.name }
-                annotation.getClassNameOrNull("configurable", Configuration::class)?.let { "configurable" { -it } }
-                "web-xml" { -webXmlPath }
-                "web-resources" {
-                    val jarFile = project.buildJar()
-                    if (extension.addDefaultJarTaskOutputToWebResources && !Resources.isEmptyJarFile(jarFile)) {
-                        "resource" {
-                            attribute("name", "${project.group}:${project.name}")
-                            attribute("version", project.version)
-                            -"lib/${jarFile.name}"
-                        }
-                    }
-                    nodesForWebResources(annotation).forEach(this::addElement)
-                    webResources.forEach(this::addElement)
-                }
-                if (annotation.getString("hidden").toBoolean()) {
-                    "hidden" { -"true" }
-                }
-            })
-        }
-
-        this.webXmlPaths = webXmlPaths
-
-        return nodes
+        val webAppProjects = fsmGradlePluginContext.webAppProjects.get()
+        return webAppClasses
+            .map { nodeForWebApp(it, webAppProjects, allCompileDependencies, sharedWebCompileDependencies) }
     }
 
     /**
-     * Finds all dependencies of a given configuration and finds the global version of each dependency
+     * Finds all dependencies on the runtime classpath that are also defined for `fsWebCompile`
      *
-     * @param project           The project
-     * @param configurationName The configuration to fetch the dependencies for
-     * @param allDependencies   All dependencies of the project, with the correct version
-     * @return The dependencies of `configurationName`, with the correct version
+     * @param runtimeDependencies   All dependencies available on the runtime classpath of the project
+     * @param fsWebCompileArtifacts Dependencies declared for `fsWebCompile`
+     *
+     * @return All dependencies on the runtime classpath that are also defined for `fsWebCompile`
      */
-    private fun getResolvedDependencies(project: Project, configurationName: String, allDependencies: Set<ResolvedArtifact>): MutableSet<ResolvedArtifact> {
-        val configuration = project.configurations.findByName(configurationName) ?: return Collections.emptySet()
-        val resolvedArtifacts = configuration.resolvedConfiguration.resolvedArtifacts
-        return allDependencies.filter { resource ->
-            resolvedArtifacts.any { it.hasSameModuleAs(resource) }
-        }.toMutableSet()
+    private fun getSharedWebCompileDependencies(
+        runtimeDependencies: Set<ResolvedDependencyInfo>,
+        fsWebCompileArtifacts: Set<ResolvedDependencyInfo>
+    ): Set<ResolvedDependencyInfo> {
+        return runtimeDependencies.filter { dep ->
+            fsWebCompileArtifacts.any { it.hasSameModuleAs(dep) }
+        }.toSet()
     }
 
-    private fun fsmResources(project: Project): List<Node> {
-        val fsmWebResourcesPath = project.projectDir.resolve(FSMConfigurationsPlugin.FSM_RESOURCES_PATH).absolutePath
-        val fsmWebResourcesFolder = File(fsmWebResourcesPath)
-        return if (fsmWebResourcesFolder.exists()) {
-            fsmWebResourcesFolder.listFiles()?.map { file ->
-                val relPath = fsmWebResourcesFolder.toPath().relativize(file.toPath())
-                xml("resource") {
-                    attribute("name", "${project.group}:${project.name}-$relPath")
-                    attribute("version", project.version)
-                    -relPath.toString()
-                }
-            }.orEmpty()
+    private fun nodeForWebApp(
+        webAppClass: ClassInfo,
+        webAppProjects: Map<String, WebAppProjectInfo>,
+        allCompileDependencies: Set<ResolvedDependencyInfo>,
+        sharedWebCompileDependencies: Set<ResolvedDependencyInfo>
+    ): Node {
+        // Report if WebApp does not seem to implement WebApp or AbstractWebApp
+        if (webAppClass.superclass?.name !in WEB_APP_TYPES) {
+            LOGGER.info("Web App '${webAppClass.name}' does not appear to implement interface '${WebApp::class.qualifiedName}'.")
+            LOGGER.info("This might be because the class implements or extends an intermediary type inheriting from ${WebApp::class.simpleName}.")
+        }
+
+        val webResources = LinkedHashSet<Node>()
+        // fsm-resources directory of root project and fsWebCompile subprojects (shared between all webapps)
+        webResources.addAll(fsmGradlePluginContext.webCompileResources.get())
+
+        val annotation = webAppClass.annotationInfo
+            .filter { it.isClass(WebAppComponent::class) }
+            .first()
+        val webAppName = annotation.getString("name")
+        val extension = fsmGradlePluginContext.extension
+        if (extension.getWebApps().containsKey(webAppName)) {
+            val webAppInfo = webAppProjects[webAppName]
+
+            if (webAppInfo != null) {
+                webResources.addAll(resourcesForWebAppProject(webAppInfo, allCompileDependencies))
+            }
+        }
+
+        // fsWebCompile for all subprojects
+        sharedWebCompileDependencies
+            .map { Resource(fsmGradlePluginContext, it, "", false).node }
+            .forEach(webResources::add)
+
+        val webXmlPath = annotation.getString("webXml")
+        webXmlPaths.add(webXmlPath)
+
+        return webAppNode(annotation, webAppName, webAppClass, webXmlPath, webResources)
+    }
+
+    private fun resourcesForWebAppProject(
+        webAppInfo: WebAppProjectInfo,
+        allCompileDependencies: Set<ResolvedDependencyInfo>
+    ): List<Node> {
+        val webResources = mutableListOf<Node>()
+
+        // fsm-resources directories of current web-app and all its dependencies
+        webResources.addAll(webAppInfo.fsmResources)
+
+        // compile dependencies of web-app subproject -
+        // If we registered a subproject for a given web-app, evaluate its compile dependencies
+        val webAppProjectDependencies = allCompileDependencies
+            .filter { dep -> webAppInfo.runtimeArtifacts.any { it.hasSameModuleAs(dep) } }
+            .toMutableSet()
+
+        if (!webAppInfo.jarFile.exists()) {
+            LOGGER.warn("Jar file '${webAppInfo.jarFile}' not found!")
+        } else if (Resources.isEmptyJarFile(webAppInfo.jarFile)) {
+            LOGGER.info("Skipping empty Jar file.")
         } else {
-            emptyList()
+            webResources.add(xml("resource") {
+                attribute("name", "${webAppInfo.group}:${webAppInfo.name}")
+                attribute("version", webAppInfo.version)
+                -"lib/${webAppInfo.jarFile.name}"
+            })
+        }
+
+        // Add dependencies
+        webAppProjectDependencies
+            .map { Resource(fsmGradlePluginContext, it, "", false).node }
+            .forEach(webResources::add)
+
+        return webResources
+    }
+
+    private fun webAppNode(
+        annotation: AnnotationInfo,
+        webAppName: String,
+        webAppClass: ClassInfo,
+        webXmlPath: String,
+        webResources: LinkedHashSet<Node>
+    ): Node = xml("web-app") {
+        val scopes = annotation.getEnumValues("scope")
+        if (scopes.isNotEmpty()) {
+            attribute("scopes", scopes.joinToString(",") { it.valueName })
+        }
+        val xmlSchemaVersion = annotation.getString("xmlSchemaVersion")
+        if (xmlSchemaVersion.isNotEmpty()) {
+            attribute("xml-schema-version", xmlSchemaVersion)
+        }
+        "name" { -webAppName }
+        "displayname" { -annotation.getString("displayName") }
+        "description" { -annotation.getString("description") }
+        "class" { -webAppClass.name }
+        annotation.getClassNameOrNull("configurable", Configuration::class)?.let { "configurable" { -it } }
+        "web-xml" { -webXmlPath }
+        "web-resources" {
+            val jarFile = fsmGradlePluginContext.buildJar.get()
+            if (fsmGradlePluginContext.extension.addDefaultJarTaskOutputToWebResources && !Resources.isEmptyJarFile(jarFile)) {
+                "resource" {
+                    attribute(
+                        "name",
+                        "${fsmGradlePluginContext.projectGroup.get()}:${fsmGradlePluginContext.projectName.get()}"
+                    )
+                    attribute("version", fsmGradlePluginContext.projectVersion.get())
+                    -"lib/${jarFile.name}"
+                }
+            }
+            nodesForWebResources(annotation).forEach(this::addElement)
+            webResources.forEach(this::addElement)
+        }
+        if (annotation.getString("hidden").toBoolean()) {
+            "hidden" { -"true" }
         }
     }
 
@@ -208,9 +210,10 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
         val nodes = mutableListOf<Node>()
 
         resources.forEach { resource ->
-            val nameFromAnnotation = expand(resource.getString("name"), mutableMapOf("project" to project))
+            val projectContext = ProjectContext(fsmGradlePluginContext)
+            val nameFromAnnotation = expand(resource.getString("name"), mutableMapOf("project" to projectContext))
             val dependencyForName = getCompileDependencyForName(nameFromAnnotation)
-            val context = getContextForCurrentResource(dependencyForName)
+            val context = getContextForCurrentResource(dependencyForName, projectContext)
             val versionFromAnnotation = expandVersion(resource.getString("version"), context, nameFromAnnotation, annotation.getString("name"))
             val pathFromAnnotation = expand(resource.getString("path"), context)
 
@@ -234,5 +237,22 @@ class WebAppComponents(project: Project, private val scanResult: ComponentScan):
                 WebApp::class.qualifiedName,
                 AbstractWebApp::class.qualifiedName
         )
+
+        fun fsmResources(project: Project): List<Node> {
+            val fsmWebResourcesPath = project.projectDir.resolve(FSMConfigurationsPlugin.FSM_RESOURCES_PATH).absolutePath
+            val fsmWebResourcesFolder = File(fsmWebResourcesPath)
+            return if (fsmWebResourcesFolder.exists()) {
+                fsmWebResourcesFolder.listFiles()?.map { file ->
+                    val relPath = fsmWebResourcesFolder.toPath().relativize(file.toPath())
+                    xml("resource") {
+                        attribute("name", "${project.group}:${project.name}-$relPath")
+                        attribute("version", project.version)
+                        -relPath.toString()
+                    }
+                }.orEmpty()
+            } else {
+                emptyList()
+            }
+        }
     }
 }

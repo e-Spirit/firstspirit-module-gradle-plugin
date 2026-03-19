@@ -2,9 +2,6 @@ plugins {
     id("base")
 }
 
-extra["guavaProperty"] = "com.google.guava:guava"
-extra["guavaVersionProperty"] = "33.5.0-jre"
-
 allprojects {
 
     version = "0.0.1-SNAPSHOT"

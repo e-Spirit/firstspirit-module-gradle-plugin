@@ -6,13 +6,15 @@ import de.espirit.firstspirit.module.ProjectApp
 import de.espirit.firstspirit.server.module.ModuleInfo.Mode
 import io.github.classgraph.AnnotationInfo
 import io.github.classgraph.ClassInfo
-import org.gradle.api.Project
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.xml
 
-class ProjectAppComponents(project: Project, private val scanResult: ComponentScan) : ComponentsWithResources(project) {
+class ProjectAppComponents(
+    private val scanResult: ComponentScan,
+    private val fsmGradlePluginContext: FSMGradlePluginContext
+) : ComponentsWithResources(fsmGradlePluginContext.runtimeArtifacts) {
 
     val nodes by lazy {
         scanResult.getClassesWithAnnotation(ProjectAppComponent::class)
@@ -56,9 +58,10 @@ class ProjectAppComponents(project: Project, private val scanResult: ComponentSc
         val nodes = mutableListOf<Node>()
 
         resources.forEach { resource ->
-            val nameFromAnnotation = expand(resource.getString("name"), mutableMapOf("project" to project))
+            val projectContext = ProjectContext(fsmGradlePluginContext)
+            val nameFromAnnotation = expand(resource.getString("name"), mutableMapOf("project" to projectContext))
             val dependencyForName = getCompileDependencyForName(nameFromAnnotation)
-            val context = getContextForCurrentResource(dependencyForName)
+            val context = getContextForCurrentResource(dependencyForName, projectContext)
             val versionFromAnnotation = expandVersion(resource.getString("version"), context, nameFromAnnotation, annotation.getString("name"))
             val pathFromAnnotation = expand(resource.getString("path"), context)
 

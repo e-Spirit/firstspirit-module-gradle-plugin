@@ -17,13 +17,14 @@ class LibraryComponentsTest {
 
     val project: Project = ProjectBuilder.builder().build()
 
+    private lateinit var configurationsPlugin: FSMConfigurationsPlugin
     private lateinit var extension: FSMPluginExtension
 
     @BeforeEach
     fun setup() {
         project.plugins.apply("java-library")
         project.plugins.apply(FSMAnnotationsPlugin::class.java)
-        project.plugins.apply(FSMConfigurationsPlugin::class.java)
+        configurationsPlugin = project.plugins.apply(FSMConfigurationsPlugin::class.java)
         extension = project.extensions.create("fsmPlugin", FSMPluginExtension::class.java)
         project.setArtifactoryCredentialsFromLocalProperties()
         project.defineArtifactoryForProject()
@@ -38,7 +39,7 @@ class LibraryComponentsTest {
         myLib.hidden = true
         myLib.configurable = "com.crownpeak.fsm.demo.Config"
 
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = moduleDescriptor()
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name") == "myLib" }.single()
         assertThat(component.childText("displayname")).isEqualTo("myDisplayName")
@@ -51,7 +52,7 @@ class LibraryComponentsTest {
     fun `optional values not rendered if unset`() {
         extension.libraries.create("myLib")
 
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = moduleDescriptor()
         val components = moduleDescriptor.components.node
         val component = components.filter{ it.childText("name") == "myLib" }.single()
         assertThat(component.filter("displayname")).isEmpty()
@@ -66,8 +67,7 @@ class LibraryComponentsTest {
 
         extension.libraries.create("myLib").configuration = project.configurations.getByName(FS_SERVER_COMPILE_CONFIGURATION_NAME)
 
-        val moduleDescriptor = ModuleDescriptor(project)
-
+        val moduleDescriptor = moduleDescriptor()
         val resource = singleResource(moduleDescriptor)
         assertThat(resource.attributes["name"]).isEqualTo("org.slf4j:slf4j-api")
         assertThat(resource.attributes["version"]).isEqualTo("2.0.6")
@@ -84,8 +84,7 @@ class LibraryComponentsTest {
 
         extension.libraries.create("myLib").configuration = customConfiguration
 
-        val moduleDescriptor = ModuleDescriptor(project)
-
+        val moduleDescriptor = moduleDescriptor()
         val resource = singleResource(moduleDescriptor)
         assertThat(resource.attributes["name"]).isEqualTo("org.slf4j:slf4j-api")
         assertThat(resource.attributes["version"]).isEqualTo("2.0.6")
@@ -98,7 +97,7 @@ class LibraryComponentsTest {
     fun `empty resources block when configuration is undefined`() {
         extension.libraries.create("myLib")
 
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = moduleDescriptor()
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "myLib" }.single()
         val resources = component.filter("resources").single()
@@ -110,7 +109,7 @@ class LibraryComponentsTest {
     fun `empty resources block when no dependencies are defined`() {
         extension.libraries.create("myLib").configuration = project.configurations.create("emptyConfiguration")
 
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = moduleDescriptor()
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "myLib" }.single()
         val resources = component.filter("resources").single()
@@ -127,8 +126,7 @@ class LibraryComponentsTest {
 
         extension.libraries.create("myLib").configuration = customConfiguration
 
-        val moduleDescriptor = ModuleDescriptor(project)
-
+        val moduleDescriptor = moduleDescriptor()
         val resource = singleResource(moduleDescriptor)
         assertThat(resource.attributes["name"]).isEqualTo("org.slf4j:slf4j-api")
         assertThat(resource.attributes["version"]).isEqualTo("2.0.6")
@@ -145,8 +143,7 @@ class LibraryComponentsTest {
 
         extension.libraries.create("myLib").configuration = customConfiguration
 
-        val moduleDescriptor = ModuleDescriptor(project)
-
+        val moduleDescriptor = moduleDescriptor()
         val resource = singleResource(moduleDescriptor)
         assertThat(resource.attributes["name"]).isEqualTo("de.espirit.firstspirit:fs-api:javadoc")
         assertThat(resource.attributes["version"]).isEqualTo("5.2.221111")
@@ -165,10 +162,13 @@ class LibraryComponentsTest {
 
         extension.libraries.create("myLib").configuration = customConfiguration
 
-        val moduleDescriptor = ModuleDescriptor(project)
-
+        val moduleDescriptor = moduleDescriptor()
         val resource = singleResource(moduleDescriptor)
         assertThat(resource.attributes["version"]).isEqualTo("2.0.0")
+    }
+
+    private fun moduleDescriptor(): ModuleDescriptor {
+        return ModuleDescriptor(fsmGradlePluginContext = FSMGradlePluginContext(project))
     }
 
     private fun singleResource(moduleDescriptor: ModuleDescriptor): Node {

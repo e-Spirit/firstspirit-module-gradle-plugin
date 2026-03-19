@@ -108,7 +108,7 @@ class TestProjectAppComponentWithoutConfigurable : BaseProjectApp()
     displayName = "TestDisplayName",
     description = "TestDescription",
     configurable = TestConfigurable::class,
-    resources = [Resource(path = "\$path", name = "\${project.jodaConvertDependency}", version = "\$version")]
+    resources = [Resource(path = $$"$path", name = "org.joda:joda-convert", version = $$"$version")]
 )
 class TestProjectAppComponentWithProperties : BaseProjectApp()
 

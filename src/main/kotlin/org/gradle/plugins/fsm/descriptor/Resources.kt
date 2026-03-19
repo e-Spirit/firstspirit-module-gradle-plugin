@@ -1,21 +1,22 @@
 package org.gradle.plugins.fsm.descriptor
 
-import org.gradle.api.Project
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
-import org.gradle.plugins.fsm.FSMPluginExtension
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.PrintOptions
 import org.redundent.kotlin.xml.xml
 import java.io.File
 import java.util.jar.JarFile
 
-class Resources(private val project: Project, private val webXmlPaths: List<String>) {
+class Resources(
+    private val fsmGradlePluginContext: FSMGradlePluginContext,
+    private val webXmlPaths: List<String>
+) {
 
     val node by lazy {
         xml("resources") {
             projectResource()?.let(this::addElement)
-            FsmResources(project, webXmlPaths).fsmResources().forEach(this::addElement)
+            FsmResources(fsmGradlePluginContext.scopedResources, webXmlPaths).fsmResources().forEach(this::addElement)
             dependencies().forEach(this::addElement)
         }
     }
@@ -32,7 +33,7 @@ class Resources(private val project: Project, private val webXmlPaths: List<Stri
      * The jar file assembled for the current project
      */
     private fun projectResource(): Node? {
-        val jarFile = project.buildJar()
+        val jarFile = fsmGradlePluginContext.buildJar.get()
         if (!jarFile.exists()) {
             LOGGER.warn("Jar file '$jarFile' not found!")
             return null
@@ -42,9 +43,9 @@ class Resources(private val project: Project, private val webXmlPaths: List<Stri
         }
 
         return xml("resource") {
-            attribute("name", "${project.group}:${project.name}")
-            attribute("version", project.version)
-            attribute("scope", project.extensions.getByType(FSMPluginExtension::class.java).projectJarScope)
+            attribute("name", "${fsmGradlePluginContext.projectGroup.get()}:${fsmGradlePluginContext.projectName.get()}")
+            attribute("version", fsmGradlePluginContext.projectVersion.get())
+            attribute("scope", fsmGradlePluginContext.extension.projectJarScope)
             attribute("mode", "isolated")
             -"lib/${jarFile.name}"
         }
@@ -56,12 +57,12 @@ class Resources(private val project: Project, private val webXmlPaths: List<Stri
     private fun dependencies(): List<Node> {
         val dependencies = mutableListOf<Node>()
 
-        project.serverScopeDependencies()
-            .map { Resource(project, it, "server").node }
+        fsmGradlePluginContext.serverScopeDependencies.get()
+            .map { Resource(fsmGradlePluginContext, it, "server").node }
             .forEach(dependencies::add)
 
-        project.moduleScopeDependencies()
-            .map { Resource(project, it, "module").node }
+        fsmGradlePluginContext.moduleScopeDependencies.get()
+            .map { Resource(fsmGradlePluginContext, it, "module").node }
             .forEach(dependencies::add)
 
         return dependencies

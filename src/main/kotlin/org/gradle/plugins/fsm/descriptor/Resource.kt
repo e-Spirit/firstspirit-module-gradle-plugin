@@ -1,20 +1,20 @@
 package org.gradle.plugins.fsm.descriptor
 
 import de.espirit.firstspirit.server.module.ModuleInfo
-import org.gradle.api.Project
-import org.gradle.api.artifacts.ResolvedArtifact
-import org.gradle.plugins.fsm.FSMPluginExtension
-import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
+import org.gradle.plugins.fsm.tasks.bundling.ResolvedDependencyInfo
 import org.redundent.kotlin.xml.xml
 
-class Resource(val project: Project, val dependency: ResolvedArtifact, val scope: String, includeMode: Boolean = true) {
+class Resource(
+    val fsmGradlePluginContext: FSMGradlePluginContext,
+    val dependency: ResolvedDependencyInfo,
+    val scope: String,
+    includeMode: Boolean = true
+) {
 
-    private val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
-    private val appendDefaultMinVersion = pluginExtension.appendDefaultMinVersion
+    private val appendDefaultMinVersion = fsmGradlePluginContext.extension.appendDefaultMinVersion
 
     val node by lazy {
-        val dependencyId = dependency.moduleVersion.id
-        val dependencyAsString = "${dependencyId.group}:${dependencyId.name}"
+        val dependencyAsString = "${dependency.groupId}:${dependency.moduleName}"
         val filename = dependency.file.name
 
         // Construct resource identifier
@@ -26,7 +26,7 @@ class Resource(val project: Project, val dependency: ResolvedArtifact, val scope
         }
         val resourceClassifier = if (dependency.classifier.isNullOrEmpty()) { "" } else { ":${dependency.classifier}" }
         val resourceIdentifier = "${dependencyAsString}${resourceClassifier}${resourceExtension}"
-        val minMaxVersionDefinitions = project.plugins.getPlugin(FSMConfigurationsPlugin::class.java).getDependencyConfigurations()
+        val minMaxVersionDefinitions = fsmGradlePluginContext.configurationsPlugin.getDependencyConfigurations()
 
         val optionalMinMaxVersion = minMaxVersionDefinitions.find { it.dependency.startsWith(dependencyAsString) }
 
@@ -38,9 +38,9 @@ class Resource(val project: Project, val dependency: ResolvedArtifact, val scope
             if (includeMode) {
                 attribute("mode", ModuleInfo.Mode.ISOLATED.name.lowercase())
             }
-            attribute("version", dependencyId.version)
+            attribute("version", dependency.moduleVersion)
             if (appendDefaultMinVersion || optionalMinMaxVersion?.minVersion != null) {
-                attribute("minVersion", optionalMinMaxVersion?.minVersion ?: dependencyId.version)
+                attribute("minVersion", optionalMinMaxVersion?.minVersion ?: dependency.moduleVersion)
             }
             if (optionalMinMaxVersion?.maxVersion != null) {
                 attribute("maxVersion", optionalMinMaxVersion.maxVersion)

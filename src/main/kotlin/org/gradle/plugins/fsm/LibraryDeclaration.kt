@@ -32,6 +32,7 @@ open class LibraryDeclaration(private val libName: String): Named {
     /**
      * The Gradle configuration that should be used to resolve the resources of this library.
      */
+    @Transient
     var configuration: Configuration? = null
 
 }

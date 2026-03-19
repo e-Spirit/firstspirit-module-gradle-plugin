@@ -16,7 +16,7 @@ import java.util.Set;
         displayName = "SimpleProjectApp",
         description = "SimpleProjectApp",
         configurable = SimpleProjectApp.TestConfigurable.class,
-        resources = {@Resource(path = "$path", name = "${project.guavaProperty}", version = "$version")})
+        resources = {@Resource(path = "$path", name = "com.google.guava:guava", version = "$version")})
 public class SimpleProjectApp implements ProjectApp {
     @Override
     public void init(ProjectAppDescriptor projectAppDescriptor, ProjectEnvironment projectEnvironment) {

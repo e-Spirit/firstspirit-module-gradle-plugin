@@ -4,7 +4,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.gradle.api.GradleException
 import org.gradle.api.Project
-import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.plugins.fsm.FSMPlugin.Companion.WEBAPPS_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.FSMPluginExtension
@@ -19,6 +18,8 @@ import java.nio.file.Files
 class WebAppComponentsTest {
 
     val project: Project = ProjectBuilder.builder().withName(NAME).build()
+    lateinit var configurationsPlugin: FSMConfigurationsPlugin
+    lateinit var extension: FSMPluginExtension
 
     @BeforeEach
     fun setup() {
@@ -27,19 +28,20 @@ class WebAppComponentsTest {
 
         project.plugins.apply("java-library")
         project.plugins.apply(FSMAnnotationsPlugin::class.java)
-        project.plugins.apply(FSMConfigurationsPlugin::class.java)
-        project.extensions.create("fsmPlugin", FSMPluginExtension::class.java)
+        configurationsPlugin = project.plugins.apply(FSMConfigurationsPlugin::class.java)
+        extension = project.extensions.create("fsmPlugin", FSMPluginExtension::class.java)
         val webAppConfiguration = project.configurations.create(WEBAPPS_CONFIGURATION_NAME)
         project.configurations.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME).extendsFrom(webAppConfiguration)
         project.setArtifactoryCredentialsFromLocalProperties()
         project.defineArtifactoryForProject()
 
         project.copyTestJar()
+
     }
 
     @Test
     fun `minimal web app component`() {
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "TestMinimalWebAppComponentName" }.single()
         assertThat(component.nodeName).isEqualTo("web-app")
@@ -52,7 +54,7 @@ class WebAppComponentsTest {
 
     @Test
     fun `minimal web app component contains build jar of project`() {
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "TestMinimalWebAppComponentName" }.single()
         val webResources = component.filter("web-resources").single()
@@ -65,7 +67,7 @@ class WebAppComponentsTest {
 
     @Test
     fun `web app should contain basic information`() {
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "TestWebAppComponentName" }.single()
         assertThat(component.nodeName).isEqualTo("web-app")
@@ -79,7 +81,7 @@ class WebAppComponentsTest {
 
     @Test
     fun `web app should not be hidden by default`() {
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "TestWebAppComponentName" }.single()
         assertThat(component.filter("hidden")).isEmpty()
@@ -87,7 +89,7 @@ class WebAppComponentsTest {
 
     @Test
     fun `hidden component`() {
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "TestHiddenWebAppComponentName" }.single()
         val hidden = component.filter("hidden").single()
@@ -96,7 +98,7 @@ class WebAppComponentsTest {
 
     @Test
     fun `web app with configurable`() {
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "TestWebAppComponentName" }.single()
         assertThat(component.childText("class")).isEqualTo("org.gradle.plugins.fsm.TestWebAppComponent")
@@ -106,7 +108,7 @@ class WebAppComponentsTest {
 
     @Test
     fun `web app without configurable`() {
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "TestWebAppComponentWithoutConfigurationName" }.single()
         assertThat(component.childText("class")).endsWith(".TestWebAppComponentWithoutConfiguration")
@@ -115,7 +117,7 @@ class WebAppComponentsTest {
 
     @Test
     fun `web app resource with target path`() {
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "TestWebAppComponentName" }.single()
         val webResources = component.filter("web-resources").single()
@@ -125,7 +127,7 @@ class WebAppComponentsTest {
 
     @Test
     fun `web app resources from annotation`() {
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "TestWebAppComponentName" }.single()
         val webResourcesTag = component.filter("web-resources").single()
@@ -148,9 +150,8 @@ class WebAppComponentsTest {
     @Test
     fun `project property interpolation in webapp resources`() {
         project.addClassToTestJar("org/gradle/plugins/fsm/TestWebAppWithProjectProperties.class")
-        project.extensions.getByType(ExtraPropertiesExtension::class.java).set("myCustomVersionPropertyString", 5)
 
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "WebApp with project properties" }.single()
         val webResourcesTag = component.filter("web-resources").single()
@@ -172,7 +173,7 @@ class WebAppComponentsTest {
         project.dependencies.add(FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, "joda-time:joda-time:2.3")
         project.dependencies.add(FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
 
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val components = moduleDescriptor.components.node
         val component = components.filter { it.childText("name") == "TestWebAppComponentName" }.single()
         val webResourcesTag = component.filter("web-resources").single()
@@ -212,7 +213,7 @@ class WebAppComponentsTest {
         fsmPluginExtension.webAppComponent("TestWebAppA", webAppAProject)
         fsmPluginExtension.webAppComponent("TestWebAppB", webAppBProject)
 
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val components = moduleDescriptor.components.node
         val webAppComponentA = components.filter { it.childText("name") == "TestWebAppA" }.single()
         val webResourcesTagA = webAppComponentA.filter("web-resources").single()
@@ -244,7 +245,7 @@ class WebAppComponentsTest {
         val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
         fsmPluginExtension.webAppComponent("TestWebAppA", webAppProject)
 
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val components = moduleDescriptor.components.node
         val webAppComponent = components.filter { it.childText("name") == "TestWebAppA" }.single()
         val webResourcesTag = webAppComponent.filter("web-resources").single()
@@ -271,7 +272,7 @@ class WebAppComponentsTest {
         project.dependencies.add(FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, webAppProject)
         webAppProject.dependencies.add("implementation", webAppSubProject)
 
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val components = moduleDescriptor.components.node
         val webAppComponent = components.filter { it.childText("name") == "TestWebAppA" }.single()
         val webResourcesTag = webAppComponent.filter("web-resources").single()
@@ -303,7 +304,7 @@ class WebAppComponentsTest {
         project.dependencies.add(FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, webAppProject)
         webAppProject.dependencies.add("implementation", webAppSubProject)
 
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val components = moduleDescriptor.components.node
         val webAppComponent = components.filter { it.childText("name") == "TestWebAppA" }.single()
         val webResourcesTag = webAppComponent.filter("web-resources").single()
@@ -324,7 +325,7 @@ class WebAppComponentsTest {
         val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
         fsmPluginExtension.webAppComponent("TestWebAppA", webAppProject)
 
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val components = moduleDescriptor.components.node
         val webAppComponent = components.filter { it.childText("name") == "TestWebAppA" }.single()
         val webResourcesTag = webAppComponent.filter("web-resources").single()
@@ -350,7 +351,7 @@ class WebAppComponentsTest {
         fsmPluginExtension.webAppComponent("TestWebAppB", webAppProjectB)
         fsmPluginExtension.addDefaultJarTaskOutputToWebResources = false
 
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val webResourcesNamesA = moduleDescriptor.components.node
             .filter { it.childText("name") == "TestWebAppA" }.single()
             .filter("web-resources").single()
@@ -380,7 +381,7 @@ class WebAppComponentsTest {
         fsmPluginExtension.webAppComponent("TestWebAppB", webAppProjectB)
         fsmPluginExtension.addDefaultJarTaskOutputToWebResources = true
 
-        val moduleDescriptor = ModuleDescriptor(project)
+        val moduleDescriptor = ModuleDescriptor(FSMGradlePluginContext(project))
         val webResourcesNamesA = moduleDescriptor.components.node
             .filter { it.childText("name") == "TestWebAppA" }.single()
             .filter("web-resources").single()
@@ -408,7 +409,7 @@ class WebAppComponentsTest {
         fsmPluginExtension.webAppComponent("not_existing", webAppAProject)
 
         assertThatExceptionOfType(GradleException::class.java)
-                .isThrownBy { ModuleDescriptor(project).node }
+                .isThrownBy { ModuleDescriptor(FSMGradlePluginContext(project)) }
                 .withMessageContaining("not_existing")
     }
 

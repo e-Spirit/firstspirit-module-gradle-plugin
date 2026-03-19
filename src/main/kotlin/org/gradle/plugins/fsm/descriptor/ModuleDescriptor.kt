@@ -1,14 +1,10 @@
 package org.gradle.plugins.fsm.descriptor
 
 import org.gradle.api.GradleException
-import org.gradle.api.Project
-import org.gradle.plugins.fsm.FSMPluginExtension
 import org.redundent.kotlin.xml.*
 import java.io.ByteArrayInputStream
 
-class ModuleDescriptor(private val project: Project) {
-
-    private val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
+class ModuleDescriptor(private val fsmGradlePluginContext: FSMGradlePluginContext) {
 
     val moduleClass: ModuleComponent
     val components: Components
@@ -19,10 +15,12 @@ class ModuleDescriptor(private val project: Project) {
     init {
         val componentsNode: Node
 
-        ComponentScan(project).use {
-            components = Components(project, it)
+        ComponentScan(fsmGradlePluginContext.fsmAnnotationsJar, fsmGradlePluginContext.projectJarFiles).use {
+            val pluginExtension = fsmGradlePluginContext.extension
+            val configurationsPlugin = fsmGradlePluginContext.configurationsPlugin
+            components = Components(it, pluginExtension, configurationsPlugin, fsmGradlePluginContext)
             componentsNode = components.node
-            resources = Resources(project, components.webXmlPaths)
+            resources = Resources(fsmGradlePluginContext, components.webXmlPaths)
             moduleClass = ModuleComponent(it)
             dependencies = pluginExtension.fsmDependencies.map { xml("depends") { -it } }
 
@@ -60,12 +58,13 @@ class ModuleDescriptor(private val project: Project) {
     }
 
     private fun moduleInformation(descriptor: Node) {
+        val pluginExtension = fsmGradlePluginContext.extension
         with(descriptor) {
-            "name" { -(pluginExtension.moduleName ?: project.name) }
-            "version" { -"${project.version}" }
+            "name" { -(pluginExtension.moduleName ?: fsmGradlePluginContext.projectName.get()) }
+            "version" { -fsmGradlePluginContext.projectVersion.get() }
             pluginExtension.minimalFirstSpiritVersion?.let { if (it.isNotBlank()) { "min-fs-version" { -it } } }
-            "displayname" { -(pluginExtension.displayName ?: project.name) }
-            "description" { -(project.description ?: project.name) }
+            "displayname" { -(pluginExtension.displayName ?: fsmGradlePluginContext.projectName.get()) }
+            "description" { -(fsmGradlePluginContext.projectDescription.get()) }
             "vendor" { -(pluginExtension.vendor ?: "") }
             "licenses" { -"META-INF/licenses.csv" }
         }

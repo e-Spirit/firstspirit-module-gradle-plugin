@@ -13,7 +13,7 @@ java {
 dependencies {
     compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.251108'
     use (FSMConfigurationsPluginKt) {
-        implementation fsDependency(guavaProperty + ':' + guavaVersionProperty)
+        implementation 'com.google.guava:guava:33.5.0-jre'
     }
 
     testImplementation 'org.junit.jupiter:junit-jupiter:6.0.0'

@@ -4,23 +4,18 @@ import groovy.lang.MissingPropertyException
 import groovy.text.SimpleTemplateEngine
 import org.codehaus.groovy.runtime.DefaultGroovyMethods
 import org.gradle.api.GradleException
-import org.gradle.api.Project
-import org.gradle.api.artifacts.ResolvedArtifact
-import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.provider.Provider
+import org.gradle.plugins.fsm.tasks.bundling.ResolvedDependencyInfo
 
-open class ComponentsWithResources(val project: Project) {
+open class ComponentsWithResources(val resolvedArtifacts: Provider<Set<ResolvedDependencyInfo>>) {
 
-    fun getCompileDependencyForName(nameFromAnnotation: String): ResolvedArtifact? {
-        val configuration = project.configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME)
-        return configuration.resolvedConfiguration.resolvedArtifacts.firstOrNull { dependency ->
-            val splitName = dependency.id.componentIdentifier.displayName.split(":")
-            val groupId = splitName[0]
-            val name = splitName[1]
-            nameFromAnnotation == "${groupId}:${name}"
+    protected fun getCompileDependencyForName(nameFromAnnotation: String): ResolvedDependencyInfo? {
+        return resolvedArtifacts.get().firstOrNull { dependency ->
+            nameFromAnnotation == "${dependency.groupId}:${dependency.moduleName}"
         }
     }
 
-    fun expandVersion(versionFromAnnotation: String, context: Map<String, Any>, nameFromAnnotation: String,
+    protected fun expandVersion(versionFromAnnotation: String, context: MutableMap<String, Any>, nameFromAnnotation: String,
                               componentName: String): String {
         try {
             return expand(versionFromAnnotation, context)
@@ -33,25 +28,22 @@ open class ComponentsWithResources(val project: Project) {
     }
 
 
-    fun expand(template: String, context: Map<String, Any>): String {
+    protected fun expand(template: String, context: MutableMap<String, Any>): String {
         return SimpleTemplateEngine().createTemplate(template).make(context).toString()
     }
 
-    fun getContextForCurrentResource(dependency: ResolvedArtifact?): Map<String, Any> {
-        val context = mutableMapOf<String, Any>("project" to project)
+    protected fun getContextForCurrentResource(dependency: ResolvedDependencyInfo?, projectContext: ProjectContext): MutableMap<String, Any> {
+        val context = mutableMapOf<String, Any>("project" to projectContext)
         if (dependency != null) {
             DefaultGroovyMethods.getProperties(dependency).forEach {
                 if (it.value != null) {
                     context[it.key as String] = it.value as Any
                 }
             }
-            context["path"] = getPathInFsmForDependency(dependency)
-            context["version"] = dependency.moduleVersion.id.version
+            context["path"] = "lib/${dependency.file.name}"
+            context["version"] = dependency.moduleVersion
         }
         return context
     }
-
-    private fun getPathInFsmForDependency(artifact: ResolvedArtifact) =
-        "lib/${artifact.name}-${artifact.moduleVersion.id.version}${artifact.classifier ?: ""}.${artifact.extension}"
 
 }

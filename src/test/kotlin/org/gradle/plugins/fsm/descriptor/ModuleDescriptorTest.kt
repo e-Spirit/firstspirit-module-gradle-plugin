@@ -18,7 +18,7 @@ class ModuleDescriptorTest {
     @BeforeEach
     fun setup() {
         project.configure()
-        moduleDescriptor = ModuleDescriptor(project)
+        moduleDescriptor = ModuleDescriptor(fsmGradlePluginContext = FSMGradlePluginContext(project))
     }
 
     @Test
@@ -39,7 +39,7 @@ class ModuleDescriptorTest {
         val project = ProjectBuilder.builder().withName(projectName).build()
         project.configure()
 
-        moduleDescriptor = ModuleDescriptor(project)
+        moduleDescriptor = moduleDescriptor(project)
 
         val nameNode = moduleDescriptor.node.filter("name").single()
         assertThat(nameNode.textContent()).isEqualTo(projectName)
@@ -55,7 +55,7 @@ class ModuleDescriptorTest {
         val extension = project.extensions.getByType(FSMPluginExtension::class.java)
         extension.moduleName = moduleName
 
-        moduleDescriptor = ModuleDescriptor(project)
+        moduleDescriptor = moduleDescriptor(project)
 
         val nameNode = moduleDescriptor.node.filter("name").single()
         assertThat(nameNode.textContent()).isEqualTo(moduleName)
@@ -76,7 +76,7 @@ class ModuleDescriptorTest {
     @Test
     fun `no min-fs-version should not be added if empty`() {
         project.extensions.getByType(FSMPluginExtension::class.java).minimalFirstSpiritVersion = ""
-        moduleDescriptor = ModuleDescriptor(project)
+        moduleDescriptor = moduleDescriptor(project)
 
         val minFsVersionTags = moduleDescriptor.node.filter("min-fs-version")
         assertThat(minFsVersionTags).isEmpty()
@@ -85,7 +85,7 @@ class ModuleDescriptorTest {
     @Test
     fun `min-fs-version should be added if defined`() {
         project.extensions.getByType(FSMPluginExtension::class.java).minimalFirstSpiritVersion = "5.2.230909"
-        moduleDescriptor = ModuleDescriptor(project)
+        moduleDescriptor = moduleDescriptor(project)
 
         val minFsVersionTag = moduleDescriptor.node.filter("min-fs-version").single()
         assertThat(minFsVersionTag.textContent()).isEqualTo("5.2.230909")
@@ -94,7 +94,7 @@ class ModuleDescriptorTest {
     @Test
     fun `module description should be equal to project description`() {
         project.description = "Test project"
-        moduleDescriptor = ModuleDescriptor(project)
+        moduleDescriptor = moduleDescriptor(project)
         val descriptionTag = moduleDescriptor.node.filter("description").single()
         assertThat(descriptionTag.textContent()).isEqualTo(project.description)
     }
@@ -108,7 +108,7 @@ class ModuleDescriptorTest {
     @Test
     fun `module dependencies`() {
         project.extensions.getByType(FSMPluginExtension::class.java).fsmDependencies = listOf("oneFSM", "anotherFSM")
-        moduleDescriptor = ModuleDescriptor(project)
+        moduleDescriptor = moduleDescriptor(project)
         val dependenciesNode = moduleDescriptor.node.filter("dependencies").single()
         val dependencies = dependenciesNode.filter("depends")
         assertThat(dependencies).hasSize(2)
@@ -119,19 +119,23 @@ class ModuleDescriptorTest {
     fun `module tag with two implementation classes`() {
         project.addClassToTestJar("org/gradle/plugins/fsm/TestModuleImpl.class")
         assertThatExceptionOfType(IllegalStateException::class.java)
-            .isThrownBy { ModuleDescriptor(project) }
+            .isThrownBy { moduleDescriptor(project) }
             .withMessageStartingWith("The following classes implementing de.espirit.firstspirit.module.Module were found in your project:")
     }
 
     @Test
     fun `valid string representation of module dependencies`() {
         project.extensions.getByType(FSMPluginExtension::class.java).fsmDependencies = listOf("oneFSM", "anotherFSM")
-        moduleDescriptor = ModuleDescriptor(project)
+        moduleDescriptor = moduleDescriptor(project)
 
         assertThat(moduleDescriptor.fsmDependencies()).isEqualTo("""
             |<depends>oneFSM</depends>
             |<depends>anotherFSM</depends>
             """.trimMargin())
+    }
+
+    private fun moduleDescriptor(project: Project): ModuleDescriptor {
+        return ModuleDescriptor(fsmGradlePluginContext = FSMGradlePluginContext(project))
     }
 
     private fun Project.configure() {

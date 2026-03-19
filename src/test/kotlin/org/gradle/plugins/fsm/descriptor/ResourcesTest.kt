@@ -23,21 +23,23 @@ import java.nio.file.Path
 class ResourcesTest {
 
     val project: Project = ProjectBuilder.builder().build()
+    lateinit var fsmGradlePluginContext: FSMGradlePluginContext
 
     @BeforeEach
     fun setup() {
         project.plugins.apply("java-library")
         project.plugins.apply(FSMAnnotationsPlugin::class.java)
-        project.plugins.apply(FSMConfigurationsPlugin.NAME)
+        project.plugins.apply(FSMConfigurationsPlugin::class.java)
         project.extensions.create("fsmPlugin", FSMPluginExtension::class.java)
         project.setArtifactoryCredentialsFromLocalProperties()
         project.defineArtifactoryForProject()
         project.writeJarFileWithEntries("de/espirit/Test.class")
+        fsmGradlePluginContext = FSMGradlePluginContext(project)
     }
 
     @Test
     fun `plain project resource added`() {
-        val resources = Resources(project, emptyList()).node
+        val resources = Resources(fsmGradlePluginContext, emptyList()).node
 
         val jarName = (resources.children[0] as Node).children[0] as TextElement
         assertThat(jarName.text).isEqualTo("lib/test.jar")
@@ -48,7 +50,7 @@ class ResourcesTest {
     fun `project resource not added when jar is empty`() {
         project.writeJarFileWithEntries()
 
-        val resources = Resources(project, emptyList()).node
+        val resources = Resources(fsmGradlePluginContext, emptyList()).node
         assertThat(resources.children).isEmpty()
     }
 
@@ -64,7 +66,7 @@ class ResourcesTest {
         val projectDependency = project.dependencies.project(mapOf("path" to ":depProject"))
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(projectDependency)
 
-        val resources = Resources(project, emptyList()).node
+        val resources = Resources(fsmGradlePluginContext, emptyList()).node
 
         val fsmResource = resources.children[1] as Node
         assertThat(fsmResource.attributes["name"]).isEqualTo("test:depProject-image.png")
@@ -86,7 +88,7 @@ class ResourcesTest {
         val jar = subProject.tasks.getByName("jar") as Jar
         val customJarName = "myCustomJarName"
         jar.archiveBaseName.set(customJarName)
-        val resources = Resources(project, ArrayList()).node
+        val resources = Resources(fsmGradlePluginContext, ArrayList()).node
 
         // finally resolve & filter
         val nodes = resources.filter { node: Node ->
@@ -114,7 +116,7 @@ class ResourcesTest {
         val projectDependency = project.dependencies.project(mapOf("path" to ":depProject"))
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(projectDependency)
 
-        val resources = Resources(project, emptyList()).node
+        val resources = Resources(fsmGradlePluginContext, emptyList()).node
 
         val fsmResource = resources.children[1] as Node
         assertThat(fsmResource.attributes["name"]).isEqualTo("test:depProject-images")
@@ -134,7 +136,7 @@ class ResourcesTest {
         val projectDependency = project.dependencies.project(mapOf("path" to ":webapp"))
         project.configurations.getByName(FS_WEB_COMPILE_CONFIGURATION_NAME).dependencies.add(projectDependency)
 
-        val resources = Resources(project, listOf("web.xml")).node
+        val resources = Resources(fsmGradlePluginContext, listOf("web.xml")).node
 
         // Web-Resource should not be present in global resources
         assertThat(resources.children).hasSize(1)
@@ -156,7 +158,7 @@ class ResourcesTest {
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(projectDependency)
         project.configurations.getByName(FS_SERVER_COMPILE_CONFIGURATION_NAME).dependencies.add(projectDependency)
 
-        val resources = Resources(project, emptyList()).node
+        val resources = Resources(fsmGradlePluginContext, emptyList()).node
 
         assertThat(resources.children).hasSize(2)
         val fsmResource = resources.children[1] as Node
@@ -181,7 +183,7 @@ class ResourcesTest {
         val subProjectDependency = subProject.dependencies.project(mapOf("path" to ":subSubProject"))
         subProject.configurations.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME).dependencies.add(subProjectDependency)
 
-        val resources = Resources(project, emptyList()).node
+        val resources = Resources(fsmGradlePluginContext, emptyList()).node
 
         assertThat(resources.children).hasSize(3)
         val resource = resources.filter { it.attributes["name"] == "test:subSubProject-content.txt" }.single()
@@ -194,7 +196,7 @@ class ResourcesTest {
         val dependency = project.dependencies.create("org.slf4j:slf4j-api:1.7.32")
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
 
-        val resources = Resources(project, emptyList()).node
+        val resources = Resources(fsmGradlePluginContext, emptyList()).node
 
         val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
@@ -209,7 +211,7 @@ class ResourcesTest {
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
         project.extensions.getByType(FSMPluginExtension::class.java).appendDefaultMinVersion = false
 
-        val resources = Resources(project, emptyList()).node
+        val resources = Resources(fsmGradlePluginContext, emptyList()).node
 
         val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
@@ -224,7 +226,7 @@ class ResourcesTest {
         val dependency = project.dependencies.create(fsDependency)
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
 
-        val resources = Resources(project, emptyList()).node
+        val resources = Resources(fsmGradlePluginContext, emptyList()).node
 
         val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
@@ -243,7 +245,7 @@ class ResourcesTest {
         val dependency = project.dependencies.create(fsDependency)
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
 
-        val resources = Resources(project, emptyList()).node
+        val resources = Resources(fsmGradlePluginContext, emptyList()).node
 
         val resource = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("1.7.32")
@@ -258,7 +260,7 @@ class ResourcesTest {
         val dependency = project.dependencies.create("de.espirit.firstspirit:fs-api:5.2.221111:javadoc")
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
 
-        val resources = Resources(project, emptyList()).node
+        val resources = Resources(fsmGradlePluginContext, emptyList()).node
 
         val resource = resources.filter { it.attributes["name"] == "de.espirit.firstspirit:fs-api:javadoc" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("5.2.221111")
@@ -274,7 +276,7 @@ class ResourcesTest {
         project.dependencies.add(FS_MODULE_COMPILE_CONFIGURATION_NAME, project.files(localModuleJar))
         project.dependencies.add(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, project.files(localImplJar))
 
-        val resources = Resources(project, emptyList()).node
+        val resources = Resources(fsmGradlePluginContext, emptyList()).node
 
         assertThat(resources.children).hasSize(1) // Contains only project jar resource
     }
@@ -284,7 +286,7 @@ class ResourcesTest {
         val dependency = project.dependencies.create("com.espirit.moddev.basicworkflows:basicworkflows-fsm:1.3.846@fsm")
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
 
-        val resources = Resources(project, emptyList()).node
+        val resources = Resources(fsmGradlePluginContext, emptyList()).node
 
         val resource = resources.filter { it.attributes["name"] == "com.espirit.moddev.basicworkflows:basicworkflows-fsm@fsm" }.single()
         assertThat(resource.attributes["version"]).isEqualTo("1.3.846")
@@ -298,7 +300,7 @@ class ResourcesTest {
         project.dependencies.add(FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
         project.dependencies.add(FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.25")
 
-        val resources = Resources(project, emptyList()).node
+        val resources = Resources(fsmGradlePluginContext, emptyList()).node
 
         val jodaConvert = resources.filter { it.attributes["name"] == "org.joda:joda-convert" }.single()
         val slf4j = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
@@ -316,7 +318,7 @@ class ResourcesTest {
         project.dependencies.add(FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.0")
         project.dependencies.add(FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
 
-        val resources = Resources(project, emptyList()).node
+        val resources = Resources(fsmGradlePluginContext, emptyList()).node
 
         val slf4j = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
         assertThat(slf4j.attributes["scope"]).isEqualTo("server")
@@ -336,7 +338,7 @@ class ResourcesTest {
         project.dependencies.add(FS_SERVER_COMPILE_CONFIGURATION_NAME, "org.slf4j:slf4j-api:1.7.1")
         project.dependencies.add(FS_MODULE_COMPILE_CONFIGURATION_NAME, "org.joda:joda-convert:2.1.1")
 
-        val resources = Resources(project, emptyList()).node
+        val resources = Resources(fsmGradlePluginContext, emptyList()).node
 
         val slf4j = resources.filter { it.attributes["name"] == "org.slf4j:slf4j-api" }.single()
         assertThat(slf4j.attributes["scope"]).isEqualTo("server")
@@ -353,7 +355,7 @@ class ResourcesTest {
         val dependency = project.dependencies.create("org.slf4j:slf4j-api:1.7.32")
         project.configurations.getByName(FS_MODULE_COMPILE_CONFIGURATION_NAME).dependencies.add(dependency)
 
-        val resources = Resources(project, emptyList())
+        val resources = Resources(fsmGradlePluginContext, emptyList())
 
         assertThat(resources.innerResourcesToString()).isEqualTo("""
             <resource name=":test" version="1.6" scope="module" mode="isolated">lib/test-1.6.jar</resource>

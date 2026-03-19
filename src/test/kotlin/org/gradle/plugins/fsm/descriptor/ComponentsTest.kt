@@ -15,18 +15,21 @@ class ComponentsTest {
 
     val project: Project = ProjectBuilder.builder().build()
     lateinit var components: Node
+    lateinit var moduleDescriptor: ModuleDescriptor
 
     @BeforeEach
     fun setup() {
         project.plugins.apply("java-library")
         project.plugins.apply(FSMAnnotationsPlugin::class.java)
-        project.plugins.apply(FSMConfigurationsPlugin::class.java)
-        project.extensions.create("fsmPlugin", FSMPluginExtension::class.java)
+        val configurationsPlugin = project.plugins.apply(FSMConfigurationsPlugin::class.java)
+        val extension = project.extensions.create("fsmPlugin", FSMPluginExtension::class.java)
         project.setArtifactoryCredentialsFromLocalProperties()
         project.defineArtifactoryForProject()
         project.copyTestJar()
 
-        val moduleDescriptor = ModuleDescriptor(project)
+        moduleDescriptor = ModuleDescriptor(
+            fsmGradlePluginContext = FSMGradlePluginContext(project)
+        )
         components = moduleDescriptor.components.node
     }
 
@@ -297,7 +300,6 @@ class ComponentsTest {
 
     @Test
     fun `valid string representation of components`() {
-        val moduleDescriptor = ModuleDescriptor(project)
         val inner = moduleDescriptor.components.innerComponentsToString()
         assertThat(inner).containsIgnoringWhitespaces("""
             <public>

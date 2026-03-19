@@ -1,3 +1,10 @@
+# Upgrading to 8.0.0
+
+* This version provides compatibility with the Gradle Configuration Cache. Since this
+  [disallows the usage of certain types](https://docs.gradle.org/9.4.1/userguide/configuration_cache_requirements.html#config_cache:requirements:disallowed_types) after the configuration phase, it is no
+  longer possible to reference custom project properties in annotations for project-apps or web-apps.
+* The placeholder `$artifact` is no longer available in module descriptor templates.
+
 # Upgrading to 7.0.3
 
 * The deprecated module descriptor `module.xml` is no longer supported, please rename any existing template

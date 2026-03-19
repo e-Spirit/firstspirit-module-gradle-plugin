@@ -31,7 +31,7 @@ class TestWebAppB: TestWebApp()
 
 @WebAppComponent(name = "WebApp with project properties", webXml = "/abc/nonexistent.txt",
     webResources = [
-        WebResource(name = "\${project.group}-\${project.name}-res", version = "\${project.myCustomVersionPropertyString}", path = "/abc/nonexistent.txt"),
-        WebResource(name = "\${project.group}-\${project.name}-res2", version = "\${project.version}", path = "/abc/nonexistent2.txt")
+        WebResource(name = $$"${project.group}-${project.name}-res", version = "5", path = "/abc/nonexistent.txt"),
+        WebResource(name = $$"${project.group}-${project.name}-res2", version = $$"${project.version}", path = "/abc/nonexistent2.txt")
     ])
 class TestWebAppWithProjectProperties: TestWebApp()

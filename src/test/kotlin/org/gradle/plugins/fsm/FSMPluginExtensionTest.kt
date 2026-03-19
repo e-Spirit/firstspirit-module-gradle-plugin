@@ -25,8 +25,8 @@ class FSMPluginExtensionTest {
         val webAppSubprojectB = ProjectBuilder.builder().withParent(project).withName("web_b").build()
         testling.webAppComponent("WebAppA", webAppSubprojectA)
         testling.webAppComponent(webAppSubprojectB)
-        assertThat(testling.getWebApps()).containsEntry("WebAppA", webAppSubprojectA)
-        assertThat(testling.getWebApps()).containsEntry("web_b", webAppSubprojectB)
+        assertThat(testling.getWebApps()).containsEntry("WebAppA", webAppSubprojectA.path)
+        assertThat(testling.getWebApps()).containsEntry("web_b", webAppSubprojectB.path)
 
         // Ensure the project has a compile dependency on the subprojects
         val dependencyProjects = project.configurations.getByName(FSMPlugin.WEBAPPS_CONFIGURATION_NAME)

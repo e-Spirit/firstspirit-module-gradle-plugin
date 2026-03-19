@@ -3,6 +3,7 @@ package org.gradle.plugins.fsm.tasks.verification
 import de.espirit.mavenplugins.fsmchecker.ComplianceLevel
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.file.ProjectLayout
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
@@ -10,13 +11,17 @@ import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.isolationcheck.ComplianceCheck
 import org.gradle.plugins.fsm.isolationcheck.WebServiceConnector
 import java.net.URI
+import javax.inject.Inject
 
 /**
  * Checks the degree of compliance in terms of isolation a module has towards a given version of FirstSpirit. Depends
  * on the Java-Implementation within the corresponding Maven-Plugin 'fsm-dependency-checker-maven-plugin'. The
  * IsolationCheck-Task is very similar to the Mojo-Implementation 'FsmVerifier' in the above project.
  */
-open class IsolationCheck: DefaultTask() {
+abstract class IsolationCheck: DefaultTask() {
+
+    @get:Inject
+    abstract val layout: ProjectLayout
 
     private val pluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
 
@@ -45,7 +50,7 @@ open class IsolationCheck: DefaultTask() {
         val connector = WebServiceConnector(uri, getFirstSpiritVersion(), getMaxBytecodeVersion(),
             getIsolationDetectorUsername(), getIsolationDetectorPassword())
 
-        val complianceCheck = ComplianceCheck(getComplianceLevel(), project.layout.buildDirectory.get().asFile.toPath(), connector)
+        val complianceCheck = ComplianceCheck(getComplianceLevel(), layout.buildDirectory.get().asFile.toPath(), connector)
         pluginExtension.isolationDetectorWhitelist.forEach { complianceCheck.addWhitelistedResource(it) }
         pluginExtension.contentCreatorComponents.forEach { complianceCheck.addContentCreatorComponent(it) }
 

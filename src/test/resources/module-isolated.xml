@@ -8,13 +8,9 @@
     <licenses>$licensesFile</licenses>
     <custom-tag>custom</custom-tag>
     <components>
-
         $components
-
     </components>
-
     <resources>
-        <resource>$artifact</resource>
         $resources
     </resources>
 </module>

@@ -9,15 +9,10 @@ java {
     sourceCompatibility = JavaVersion.VERSION_11
 }
 
-rootProject.ext {
-    webappIconName = 'com.espirit.moddev.example.icon.png'
-    commonsIOWebDependencyName = 'commons-io:commons-io'
-}
-
 dependencies {
     compileOnly 'de.espirit.firstspirit:fs-isolated-runtime:5.2.230212'
     use (FSMConfigurationsPluginKt) {
         fsWebCompile fsDependency(dependency:'org.apache.commons:commons-lang3:3.8.1')
     }
-    implementation "$commonsIOWebDependencyName:2.6"
+    implementation "commons-io:commons-io:2.6"
 }

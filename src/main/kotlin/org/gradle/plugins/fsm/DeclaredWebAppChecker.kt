@@ -3,7 +3,6 @@ package org.gradle.plugins.fsm
 import com.espirit.moddev.components.annotations.WebAppComponent
 import io.github.classgraph.AnnotationInfo
 import io.github.classgraph.ClassInfo
-import org.gradle.api.Project
 import org.gradle.plugins.fsm.descriptor.getString
 import org.gradle.plugins.fsm.descriptor.isClass
 
@@ -12,7 +11,7 @@ import org.gradle.plugins.fsm.descriptor.isClass
  * declared in [FSMPluginExtension.getWebApps]. Reports web app annotations that do not have a corresponding
  * declaration or vice-versa.
  */
-class DeclaredWebAppChecker(val project: Project, webAppClasses: Collection<ClassInfo>) {
+class DeclaredWebAppChecker(val extension: FSMPluginExtension, webAppClasses: Collection<ClassInfo>) {
 
     private val classes = webAppClasses.toMutableList()
 
@@ -33,7 +32,7 @@ class DeclaredWebAppChecker(val project: Project, webAppClasses: Collection<Clas
         }
 
     private fun scanWebApps() {
-        val declaredWebapps = project.extensions.getByType(FSMPluginExtension::class.java).getWebApps()
+        val declaredWebapps = extension.getWebApps()
 
         val projects = declaredWebapps.keys.toMutableSet()
         val annotations = mutableSetOf<AnnotationInfo>()

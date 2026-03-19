@@ -151,6 +151,7 @@ class FSMTest {
         pluginExtension.minimalFirstSpiritVersion = "5.2.230909"
         val resource = this::class.java.classLoader.getResource("module-isolated.xml")!!
         pluginExtension.moduleDirName = Paths.get(resource.toURI()).parent.toString()
+        copyTestJar()
 
         fsm.get().execute()
 
@@ -162,7 +163,7 @@ class FSMTest {
             <description>${project.description}</description>
             <vendor>${pluginExtension.vendor}</vendor>
         """.replaceIndent("\t"))
-            .contains("<resource>test-${project.version}.jar</resource>")
+            .contains("""<resource mode="isolated" name=":test" scope="module" version="${project.version}">lib/test-${project.version}.jar</resource>""")
     }
 
     @Test

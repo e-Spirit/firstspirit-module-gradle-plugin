@@ -9,13 +9,19 @@ import de.espirit.firstspirit.module.GadgetFactory
 import de.espirit.firstspirit.module.GadgetSpecification
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
 import io.github.classgraph.ClassInfo
-import org.gradle.api.Project
+import org.gradle.plugins.fsm.FSMPluginExtension
+import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.PrintOptions
 import org.redundent.kotlin.xml.xml
 import kotlin.reflect.KClass
 
-class Components(private val project: Project, private val scanResult: ComponentScan) {
+class Components(
+    private val scanResult: ComponentScan,
+    extension: FSMPluginExtension,
+    configurationsPlugin: FSMConfigurationsPlugin,
+    fsmGradlePluginContext: FSMGradlePluginContext
+) {
 
     lateinit var webXmlPaths: List<String>
     val node: Node
@@ -28,10 +34,10 @@ class Components(private val project: Project, private val scanResult: Component
             components(UrlFactoryComponent::class, ::nodesForUrlFactoryComponent, scanResult).forEach(this::addElement)
             components(ServiceComponent::class, ::nodesForServiceComponent, scanResult).forEach(this::addElement)
             components(WebServerComponent::class, ::nodesForWebServerComponent, scanResult).forEach(this::addElement)
-            ProjectAppComponents(project, scanResult).nodes.forEach(this::addElement)
-            LibraryComponents(project).nodes.forEach(this::addElement)
+            ProjectAppComponents(scanResult, fsmGradlePluginContext).nodes.forEach(this::addElement)
+            LibraryComponents(fsmGradlePluginContext, fsmGradlePluginContext.runtimeArtifacts).nodes.forEach(this::addElement)
 
-            val webAppComponents = WebAppComponents(project, scanResult)
+            val webAppComponents = WebAppComponents(scanResult, fsmGradlePluginContext)
             webAppComponents.nodes.forEach(this::addElement)
             webXmlPaths = webAppComponents.webXmlPaths
         }

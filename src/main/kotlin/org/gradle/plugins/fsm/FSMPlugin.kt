@@ -7,7 +7,6 @@ import com.github.jk1.license.task.ReportTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.artifacts.Dependency
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.plugins.JavaBasePlugin.VERIFICATION_GROUP
@@ -62,10 +61,8 @@ class FSMPlugin : Plugin<Project> {
         project: Project,
         validateTask: TaskProvider<ValidateDescriptor>
     ): TaskProvider<FSM> {
-        removeDefaultJarArtifactFromArchives(project)
-
         val fsmTask = project.tasks.register(FSM_TASK_NAME, FSM::class.java) {
-            description = "Assembles an fsmTask archive containing the FirstSpirit module."
+            description = "Assembles the FSM archive."
             group = BasePlugin.BUILD_GROUP
 
             dependsOn(project.tasks.getByName(GENERATE_LICENSE_REPORT_TASK_NAME))
@@ -78,12 +75,6 @@ class FSMPlugin : Plugin<Project> {
         project.tasks.getByName("assemble").dependsOn(fsmTask)
 
         return fsmTask
-    }
-
-    private fun removeDefaultJarArtifactFromArchives(project: Project) {
-        // remove jar artifact added by java the plugin (see http://issues.gradle.org/browse/GRADLE-687)
-        val archivesConfig = project.configurations.getByName(Dependency.ARCHIVES_CONFIGURATION)
-        archivesConfig.artifacts.clear()
     }
 
     private fun configureValidateTask(validateTask: TaskProvider<ValidateDescriptor>, fsmTask: TaskProvider<FSM>) {
