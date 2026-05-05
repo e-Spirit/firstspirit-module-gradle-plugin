@@ -9,7 +9,7 @@ A Gradle plugin system for building FirstSpirit modules (FSM archives). Ships th
 - **`de.espirit.firstspirit-module-annotations`** — Adds FSM component annotations as `compileOnly` dependency
 - **`de.espirit.firstspirit-module-configurations`** — Adds custom Gradle dependency configurations (`fsServerCompile`, `fsModuleCompile`, `fsWebCompile`)
 
-Written in **Kotlin** (with two Java files for compliance checking), targets **Java 11+** and **Gradle 8.11+**. Uses Gradle 9.3.0 wrapper. Build file is `build.gradle.kts`.
+Written in **Kotlin** (with two Java files for compliance checking), targets **Java 11+** and **Gradle 8.11+**. Uses Gradle 9.3.1 wrapper. Build file is `build.gradle.kts`.
 
 ## Build Commands
 

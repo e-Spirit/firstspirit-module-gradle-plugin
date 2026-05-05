@@ -1,18 +1,19 @@
 plugins {
     `java-library`
+    kotlin("jvm") version "2.2.21"
     id("de.espirit.firstspirit-module-annotations")
     id("org.springframework.boot") version "3.4.0"
 }
 
 dependencies {
     // Since this is in a webapp project, this should be included in the license report...
-    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.16")
+    implementation("org.slf4j:slf4j-api:2.0.16")
 
     // ...but not this compileOnly dependency
-    compileOnly(group = "de.espirit.firstspirit", name = "fs-isolated-runtime", version = "5.2.241212")
+    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.241212")
 
     // ...and also not this SpringBoot dependency
-    developmentOnly(group = "de.espirit.firstspirit", name = "fs-isolated-webrt", version = "5.2.241212")
+    developmentOnly("de.espirit.firstspirit:fs-isolated-webrt:5.2.241212")
 }
 
 springBoot {

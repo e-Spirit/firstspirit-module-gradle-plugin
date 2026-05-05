@@ -16,8 +16,8 @@ repositories {
 
 dependencies {
     // - compile classpath dependencies - should not be included in licenseInfo
-    compileOnly(group = "de.espirit.firstspirit", name = "fs-isolated-runtime", version = "5.2.220309")
-    compileOnly(group = "joda-time", name = "joda-time", version = "2.9")
+    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.220309")
+    compileOnly("joda-time:joda-time:2.9")
 
     // - test dependency - should also appear in FSM or license info
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")

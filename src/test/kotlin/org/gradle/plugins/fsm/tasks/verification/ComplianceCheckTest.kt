@@ -106,6 +106,28 @@ class ComplianceCheckTest {
     }
 
     @Test
+    fun `detect non-api usage in kotlin source`(@TempDir testDir: File) {
+        prepareKotlinSources(testDir, """
+            import de.espirit.common.FactoryRegistry
+
+            class Broken {
+                fun getFactoryRegistry(): FactoryRegistry? = null
+            }
+        """.trimIndent())
+
+        val result = GradleRunner.create()
+            .withProjectDir(testDir)
+            .withArguments(JavaBasePlugin.BUILD_TASK_NAME, FSMPlugin.COMPLIANCE_CHECK_TASK_NAME)
+            .withPluginClasspath()
+            .buildAndFail()
+
+        // Check ./gradlew build first to ensure the build itself was successful...
+        assertThat(result.task(':' + JavaBasePlugin.BUILD_TASK_NAME)?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+        // ...but complianceCheck should've failed
+        assertThat(result.task(':' + FSMPlugin.COMPLIANCE_CHECK_TASK_NAME)?.outcome).isEqualTo(TaskOutcome.FAILED)
+    }
+
+    @Test
     fun `use specified FirstSpirit version`(@TempDir testDir: File) {
         prepareSources(testDir, """
             import de.espirit.firstspirit.access.ServiceLocator;
@@ -133,19 +155,15 @@ class ComplianceCheckTest {
     private fun testWithNonApiClass(testDir: File, source: String) {
         prepareSources(testDir, source)
 
-        // First try a build without compliance check
-        GradleRunner.create()
-            .withProjectDir(testDir)
-            .withArguments(JavaBasePlugin.BUILD_TASK_NAME)
-            .withPluginClasspath()
-            .build()
-
-        // Execute the gradle build
         val result = GradleRunner.create()
             .withProjectDir(testDir)
-            .withArguments(FSMPlugin.COMPLIANCE_CHECK_TASK_NAME)
+            .withArguments(JavaBasePlugin.BUILD_TASK_NAME, FSMPlugin.COMPLIANCE_CHECK_TASK_NAME)
             .withPluginClasspath()
             .buildAndFail()
+
+        // Check ./gradlew build first to ensure the build itself was successful...
+        assertThat(result.task(':' + JavaBasePlugin.BUILD_TASK_NAME)?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+        // ...but complianceCheck should've failed
         assertThat(result.task(':' + FSMPlugin.COMPLIANCE_CHECK_TASK_NAME)?.outcome).isEqualTo(TaskOutcome.FAILED)
     }
 
@@ -156,6 +174,17 @@ class ComplianceCheckTest {
         resourcesPath.toFile().copyRecursively(testDir)
 
         testDir.resolve("webapp-project/src/main/java/Broken.java").writeText(source)
+    }
+
+    private fun prepareKotlinSources(testDir: File, source: String) {
+        val resourcesUrl = ComplianceCheckTest::class.java.classLoader.getResource("webapp-project")
+            ?: error("test project files not found")
+        val resourcesPath = Paths.get(resourcesUrl.toURI())
+        resourcesPath.toFile().copyRecursively(testDir)
+
+        val kotlinSrcDir = testDir.resolve("webapp-project/src/main/kotlin")
+        kotlinSrcDir.mkdirs()
+        kotlinSrcDir.resolve("Broken.kt").writeText(source)
     }
 
 }

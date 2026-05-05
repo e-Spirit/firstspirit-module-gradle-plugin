@@ -18,10 +18,10 @@ val customLib: Configuration by configurations.creating
 
 dependencies {
     // custom library dependency should be included
-    customLib(group = "joda-time", name = "joda-time", version = "2.12.2")
+    customLib("joda-time:joda-time:2.12.2")
 
     // FSM dependency
-    fsModuleCompile(group = "com.fasterxml.jackson.core", name = "jackson-databind", version = "2.10.0")
+    fsModuleCompile("com.fasterxml.jackson.core:jackson-databind:2.10.0")
 }
 
 firstSpiritModule {

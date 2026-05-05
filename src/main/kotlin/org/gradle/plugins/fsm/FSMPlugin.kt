@@ -206,9 +206,9 @@ class FSMPlugin : Plugin<Project> {
         copyComplianceCheckClassesTask.configure {
             doLast {
                 val classesToCopy = listOf(
+                    "com/crownpeak/plugins/fsm/compliance/ClassesDirVisitor.class",
                     "com/crownpeak/plugins/fsm/compliance/ComplianceCheck.class",
-                    "com/crownpeak/plugins/fsm/compliance/ModLocationProvider.class",
-                    "com/crownpeak/plugins/fsm/compliance/ModLocationProvider$1.class"
+                    "com/crownpeak/plugins/fsm/compliance/ModLocationProvider.class"
                 )
 
                 classesToCopy.forEach { classToCopy ->

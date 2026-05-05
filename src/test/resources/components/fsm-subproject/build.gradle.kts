@@ -7,6 +7,6 @@ val externalProject = project(":external-subproject")
 evaluationDependsOn(":external-subproject")
 
 dependencies {
-    compileOnly(group = "de.espirit.firstspirit", name = "fs-isolated-runtime", version = "5.2.220309")
+    compileOnly("de.espirit.firstspirit:fs-isolated-runtime:5.2.220309")
     implementation(externalProject.tasks.getByName("jar").outputs.files)
 }

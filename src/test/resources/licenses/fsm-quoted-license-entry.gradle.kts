@@ -16,5 +16,5 @@ repositories {
 
 dependencies {
     // TableLayout has a licenses.csv entry containing quotes, which must be escaped correctly
-    fsModuleCompile(group = "tablelayout", name = "TableLayout", version = "20050920")
+    fsModuleCompile("tablelayout:TableLayout:20050920")
 }
