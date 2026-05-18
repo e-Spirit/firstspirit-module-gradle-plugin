@@ -270,7 +270,6 @@ class FSMTest {
 
     @Test
     fun `resource is configured as isolated by default`() {
-        project.repositories.add(project.repositories.mavenCentral())
         project.dependencies.add("fsModuleCompile", "com.google.guava:guava:24.0-jre")
 
         fsm.get().execute()
@@ -280,7 +279,6 @@ class FSMTest {
 
     @Test
     fun `resource has min and max version when configured`() {
-        project.repositories.add(project.repositories.mavenCentral())
         project.dependencies.add("fsModuleCompile", project.fsDependency("com.google.guava:guava:24.0-jre", "0.0.1", "99.0.0"))
 
         val dependencyConfigurations = project.plugins.getPlugin(FSMConfigurationsPlugin::class.java).getDependencyConfigurations()

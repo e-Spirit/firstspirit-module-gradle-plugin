@@ -52,7 +52,6 @@ class FSMConfigurationsPluginTest {
     @Test
     fun `project provides and handles fsDependency method`() {
         project.plugins.apply(FSMConfigurationsPlugin.NAME)
-        project.repositories.add(project.repositories.mavenCentral())
         val resultingDependency = project.fsDependency("com.google.guava:guava:24.0-jre")
 
         assertThat(resultingDependency).isEqualTo("com.google.guava:guava:24.0-jre")
@@ -61,7 +60,6 @@ class FSMConfigurationsPluginTest {
     @Test
     fun `fsDependency method fails for duplicated excluded dependency`() {
         project.plugins.apply(FSMConfigurationsPlugin.NAME)
-        project.repositories.add(project.repositories.mavenCentral())
         project.fsDependency(mapOf("dependency" to "com.google.guava:guava:24.0-jre", "maxVersion" to "31.0"))
 
         assertThatThrownBy { project.fsDependency(mapOf("dependency" to "com.google.guava:guava:24.0-jre", "minVersion" to "2.0")) }
@@ -71,7 +69,6 @@ class FSMConfigurationsPluginTest {
     @Test
     fun `fsDependency method fails on non-String type for minVersion argument`() {
         project.plugins.apply(FSMConfigurationsPlugin.NAME)
-        project.repositories.add(project.repositories.mavenCentral())
 
         assertThatThrownBy { project.fsDependency("com.google.guava:guava:24.0-jre", true, true) }
             .isInstanceOf(ClassCastException::class.java)
@@ -80,7 +77,6 @@ class FSMConfigurationsPluginTest {
     @Test
     fun `fsDependency method fails on non-String type for maxVersion argument`() {
         project.plugins.apply(FSMConfigurationsPlugin.NAME)
-        project.repositories.add(project.repositories.mavenCentral())
 
         assertThatThrownBy { project.fsDependency("com.google.guava:guava:24.0-jre", true, "1.0.0", true) }
             .isInstanceOf(ClassCastException::class.java)

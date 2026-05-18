@@ -198,7 +198,8 @@ class WebAppComponentsTest {
         val webAppAProject = ProjectBuilder.builder().withParent(project).withName("web_a").build()
         webAppAProject.plugins.apply("java")
         webAppAProject.version = "0.1"
-        webAppAProject.repositories.add(webAppAProject.repositories.mavenCentral())
+        webAppAProject.setArtifactoryCredentialsFromLocalProperties()
+        webAppAProject.defineArtifactoryForProject()
         webAppAProject.dependencies.add("implementation", "org.joda:joda-convert:2.1.2")   //  Version higher than for fsWebCompile, should  use higher version
         webAppAProject.dependencies.add("implementation", "org.slf4j:slf4j-api:1.7.24")
         webAppAProject.dependencies.add("implementation", "commons-logging:commons-logging:1.2")
@@ -206,7 +207,8 @@ class WebAppComponentsTest {
         val webAppBProject = ProjectBuilder.builder().withParent(project).withName("web_b").build()
         webAppBProject.plugins.apply("java")
         webAppBProject.version = "0.2"
-        webAppBProject.repositories.add(webAppBProject.repositories.mavenCentral())
+        webAppBProject.setArtifactoryCredentialsFromLocalProperties()
+        webAppBProject.defineArtifactoryForProject()
         webAppBProject.dependencies.add("implementation", "org.slf4j:slf4j-api:1.7.25")    // Higher Version
 
         val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
@@ -239,7 +241,8 @@ class WebAppComponentsTest {
         val webAppProject = ProjectBuilder.builder().withParent(project).withName("web").build()
         webAppProject.plugins.apply("java")
         webAppProject.version = "0.1"
-        webAppProject.repositories.add(webAppProject.repositories.mavenCentral())
+        webAppProject.setArtifactoryCredentialsFromLocalProperties()
+        webAppProject.defineArtifactoryForProject()
         webAppProject.writeJarFileWithEntries("de/espirit/Test.class")
 
         val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
@@ -260,13 +263,15 @@ class WebAppComponentsTest {
         val webAppProject = ProjectBuilder.builder().withParent(project).withName("web").build()
         webAppProject.plugins.apply("java")
         webAppProject.version = "0.1"
-        webAppProject.repositories.add(webAppProject.repositories.mavenCentral())
+        webAppProject.setArtifactoryCredentialsFromLocalProperties()
+        webAppProject.defineArtifactoryForProject()
         webAppProject.dependencies.add("implementation", "org.slf4j:slf4j-api:2.0.17")
 
         val webAppSubProject = ProjectBuilder.builder().withParent(webAppProject).withName("web_sub").build()
         webAppSubProject.plugins.apply("java")
         webAppSubProject.version = "0.1"
-        webAppSubProject.repositories.add(webAppProject.repositories.mavenCentral())
+        webAppSubProject.setArtifactoryCredentialsFromLocalProperties()
+        webAppSubProject.defineArtifactoryForProject()
         webAppSubProject.dependencies.add("implementation", "tools.jackson.core:jackson-core:3.0.4")
 
         project.dependencies.add(FSMConfigurationsPlugin.FS_WEB_COMPILE_CONFIGURATION_NAME, webAppProject)
@@ -295,7 +300,8 @@ class WebAppComponentsTest {
         val webAppSubProject = ProjectBuilder.builder().withParent(webAppProject).withName("web_sub").build()
         webAppSubProject.plugins.apply("java")
         webAppSubProject.version = "0.1"
-        webAppSubProject.repositories.add(webAppProject.repositories.mavenCentral())
+        webAppSubProject.setArtifactoryCredentialsFromLocalProperties()
+        webAppSubProject.defineArtifactoryForProject()
 
         val webAppSubResourceFile = webAppSubProject.projectDir.resolve(FSM.FSM_RESOURCES_PATH).resolve("web_sub.png")
         Files.createDirectories(webAppSubResourceFile.toPath().parent)
@@ -319,7 +325,8 @@ class WebAppComponentsTest {
         val webAppProject = ProjectBuilder.builder().withParent(project).withName("web").build()
         webAppProject.plugins.apply("java")
         webAppProject.version = "0.1"
-        webAppProject.repositories.add(webAppProject.repositories.mavenCentral())
+        webAppProject.setArtifactoryCredentialsFromLocalProperties()
+        webAppProject.defineArtifactoryForProject()
         webAppProject.writeJarFileWithEntries()
 
         val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
@@ -340,11 +347,13 @@ class WebAppComponentsTest {
         val webAppProjectA = ProjectBuilder.builder().withParent(project).withName("webA").build()
         webAppProjectA.plugins.apply("java")
         webAppProjectA.version = "0.1"
-        webAppProjectA.repositories.add(webAppProjectA.repositories.mavenCentral())
+        webAppProjectA.setArtifactoryCredentialsFromLocalProperties()
+        webAppProjectA.defineArtifactoryForProject()
         val webAppProjectB = ProjectBuilder.builder().withParent(project).withName("webB").build()
         webAppProjectB.plugins.apply("java")
         webAppProjectB.version = "0.1"
-        webAppProjectB.repositories.add(webAppProjectB.repositories.mavenCentral())
+        webAppProjectB.setArtifactoryCredentialsFromLocalProperties()
+        webAppProjectB.defineArtifactoryForProject()
 
         val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
         fsmPluginExtension.webAppComponent("TestWebAppA", webAppProjectA)
@@ -370,11 +379,13 @@ class WebAppComponentsTest {
         val webAppProjectA = ProjectBuilder.builder().withParent(project).withName("webA").build()
         webAppProjectA.plugins.apply("java")
         webAppProjectA.version = "0.1"
-        webAppProjectA.repositories.add(webAppProjectA.repositories.mavenCentral())
+        webAppProjectA.setArtifactoryCredentialsFromLocalProperties()
+        webAppProjectA.defineArtifactoryForProject()
         val webAppProjectB = ProjectBuilder.builder().withParent(project).withName("webB").build()
         webAppProjectB.plugins.apply("java")
         webAppProjectB.version = "0.1"
-        webAppProjectB.repositories.add(webAppProjectB.repositories.mavenCentral())
+        webAppProjectB.setArtifactoryCredentialsFromLocalProperties()
+        webAppProjectB.defineArtifactoryForProject()
 
         val fsmPluginExtension = project.extensions.getByType(FSMPluginExtension::class.java)
         fsmPluginExtension.webAppComponent("TestWebAppA", webAppProjectA)

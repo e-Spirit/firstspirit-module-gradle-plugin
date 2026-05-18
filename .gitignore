@@ -23,3 +23,6 @@ build/
 out
 
 src/test/resources/test.properties
+
+# Claude Code
+.claude/settings.local.json
