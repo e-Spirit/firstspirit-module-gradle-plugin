@@ -11,6 +11,7 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.jvm.tasks.Jar
+import org.gradle.work.DisableCachingByDefault
 import org.gradle.plugins.fsm.FSMPlugin.Companion.WEBAPPS_CONFIGURATION_NAME
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
@@ -29,6 +30,7 @@ import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 import javax.inject.Inject
 
+@DisableCachingByDefault(because = "Not yet evaluated for build cache compatibility")
 abstract class FSM: Jar() {
 
     private val pluginExtension: FSMPluginExtension

@@ -1,4 +1,17 @@
 team: core-platform
-docker:
+docker: &docker
   images:
     - docker.artifactory.e-spirit.de/core-platform/base:jdk-17
+plans:
+  - name: Build Test Project
+    branches: .*
+    triggers:
+      - changes
+    jobs:
+      - name: Build
+        task: buildTestProject buildTestProjectWithTemplate
+        docker: *docker
+        artifacts:
+          - name: FirstSpirit Module
+            location: "test-project/fsm/build/fsm"
+            pattern: "*.fsm"

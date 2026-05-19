@@ -1,0 +1,16 @@
+<module>
+    <name>$name</name>
+    <displayname>$displayName</displayname>
+    <version>$version</version>
+    <description>$description</description>
+    <vendor>$vendor</vendor>
+$class
+    <!-- Custom element in the FSM Template -->
+    <custom-marker>fixture custom template</custom-marker>
+    <components>
+$components
+    </components>
+    <resources>
+$resources
+    </resources>
+</module>

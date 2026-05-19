@@ -5,6 +5,7 @@ import org.apache.maven.artifact.versioning.ComparableVersion
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.TaskAction
+import org.gradle.work.DisableCachingByDefault
 import org.gradle.plugins.fsm.descriptor.textContent
 import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.TextElement
@@ -12,6 +13,7 @@ import org.redundent.kotlin.xml.parse
 import java.io.ByteArrayInputStream
 import java.util.zip.ZipFile
 
+@DisableCachingByDefault(because = "Validation is cheap; outputs are diagnostics, not artifacts")
 abstract class ValidateDescriptor : DefaultTask() {
 
     private lateinit var fsm: ZipFile

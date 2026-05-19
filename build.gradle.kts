@@ -65,7 +65,6 @@ gradlePlugin {
 val fsRuntimeVersion = "5.2.251108" // FirstSpirit 2025-11
 
 dependencies {
-    implementation(gradleApi())
     implementation("io.github.classgraph:classgraph:4.8.184")
     implementation("com.github.jk1:gradle-license-report:3.1.1")
     implementation("org.redundent:kotlin-xml-builder:1.9.3")
@@ -83,7 +82,6 @@ dependencies {
     testImplementation("org.assertj:assertj-core:3.27.7")
     testImplementation("org.mockito:mockito-junit-jupiter:5.21.0")
     testImplementation("org.ow2.asm:asm:9.9")
-    testImplementation(gradleTestKit())
 }
 
 licenseReport {
@@ -249,6 +247,32 @@ publishing {
 
 rootProject.tasks.afterReleaseBuild {
     dependsOn(tasks.publish)
+}
+
+// CI-facing wrappers that build the test-project/ fixture from the repo root.
+// The Bamboo plan invokes Gradle on the root project, so we expose
+// the two interesting fixture invocations (default descriptor + custom template)
+// as separate tasks so a CI run shows a distinct failure per code path.
+
+val testProjectDir = layout.projectDirectory.dir("test-project")
+val testProjectWrapper = if (Os.isFamily(Os.FAMILY_WINDOWS)) "gradlew.bat" else "gradlew"
+
+val buildTestProject by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Builds the test-project/ fixture with the plugin-provided default descriptor template."
+    workingDir(testProjectDir)
+    commandLine(testProjectDir.file(testProjectWrapper).asFile.absolutePath, ":fsm:build")
+}
+
+val buildTestProjectWithTemplate by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Builds the test-project/ fixture with the fixture's own custom descriptor template."
+    workingDir(testProjectDir)
+    commandLine(
+        testProjectDir.file(testProjectWrapper).asFile.absolutePath,
+        ":fsm:build",
+        "-PuseModuleDescriptorTemplate=true"
+    )
 }
 
 configure<ReleaseExtension> {

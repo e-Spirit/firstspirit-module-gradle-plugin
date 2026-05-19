@@ -7,6 +7,7 @@ import org.gradle.api.file.ProjectLayout
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
+import org.gradle.work.DisableCachingByDefault
 import org.gradle.plugins.fsm.FSMPluginExtension
 import org.gradle.plugins.fsm.isolationcheck.ComplianceCheck
 import org.gradle.plugins.fsm.isolationcheck.WebServiceConnector
@@ -18,6 +19,7 @@ import javax.inject.Inject
  * on the Java-Implementation within the corresponding Maven-Plugin 'fsm-dependency-checker-maven-plugin'. The
  * IsolationCheck-Task is very similar to the Mojo-Implementation 'FsmVerifier' in the above project.
  */
+@DisableCachingByDefault(because = "Talks to an external FSM Dependency Detector web service")
 abstract class IsolationCheck: DefaultTask() {
 
     @get:Inject
