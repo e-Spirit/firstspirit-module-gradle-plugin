@@ -20,7 +20,6 @@ import org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin
 import org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin.Companion.FS_CONFIGURATIONS
 import org.gradle.plugins.fsm.tasks.bundling.FSM
-import org.gradle.plugins.fsm.tasks.verification.IsolationCheck
 import org.gradle.plugins.fsm.tasks.verification.ValidateDescriptor
 import java.util.*
 
@@ -40,9 +39,8 @@ class FSMPlugin : Plugin<Project> {
         val fsmTask = configureFsmTask(project, validateTask)
 
         configureValidateTask(validateTask, fsmTask)
-        val isolationCheck = configureIsolationCheckTask(project, fsmTask)
         val checkTask = project.tasks.getByName(JavaBasePlugin.CHECK_TASK_NAME)
-        checkTask.dependsOn(validateTask, isolationCheck)
+        checkTask.dependsOn(validateTask)
 
         configureJarTask(project)
         configureLicenseReport(project)
@@ -84,17 +82,6 @@ class FSMPlugin : Plugin<Project> {
             inputs.file(fsmTask.map { it.outputs.files.singleFile })
             dependsOn(fsmTask)
         }
-    }
-
-    private fun configureIsolationCheckTask(project: Project, fsmTask: TaskProvider<FSM>): TaskProvider<IsolationCheck> {
-        val isolationCheck = project.tasks.register(ISOLATION_CHECK_TASK_NAME, IsolationCheck::class.java) {
-            description = "Verifies the isolation of resources in the FSM."
-            group = LifecycleBasePlugin.VERIFICATION_GROUP
-            inputs.file(fsmTask.map { it.outputs.files.singleFile })
-            dependsOn(fsmTask)
-        }
-
-        return isolationCheck
     }
 
     private fun configureJarTask(project: Project) {
@@ -247,7 +234,6 @@ class FSMPlugin : Plugin<Project> {
         const val FSM_EXTENSION_NAME = "firstSpiritModule"
         const val FSM_TASK_NAME = "assembleFSM"
         const val VALIDATE_DESCRIPTOR_TASK_NAME = "validateDescriptor"
-        const val ISOLATION_CHECK_TASK_NAME = "checkIsolation"
         const val COMPLIANCE_CHECK_TASK_NAME = "checkCompliance"
         const val GENERATE_LICENSE_REPORT_TASK_NAME = "generateLicenseReport"
         const val WEBAPPS_CONFIGURATION_NAME = "fsmWebappsRuntime"

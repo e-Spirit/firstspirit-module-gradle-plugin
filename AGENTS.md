@@ -5,7 +5,7 @@ This file provides guidance to coding agents (e.g., Claude Code) when working wi
 ## Project Overview
 
 A Gradle plugin system for building FirstSpirit modules (FSM archives). Ships three plugins in one artifact:
-- **`de.espirit.firstspirit-module`** — Main plugin: applies the other two, adds `assembleFSM`, `checkIsolation`, and `checkCompliance` tasks
+- **`de.espirit.firstspirit-module`** — Main plugin: applies the other two, adds `assembleFSM` and `checkCompliance` tasks
 - **`de.espirit.firstspirit-module-annotations`** — Adds FSM component annotations as `compileOnly` dependency
 - **`de.espirit.firstspirit-module-configurations`** — Adds custom Gradle dependency configurations (`fsServerCompile`, `fsModuleCompile`, `fsWebCompile`)
 
@@ -31,18 +31,17 @@ Tests use **JUnit 5 (Jupiter) + AssertJ + Mockito + Gradle TestKit**. Max heap 2
 
 ### Plugin Entry Points (registered in `build.gradle.kts` → `gradlePlugin` block)
 
-| Plugin ID | Implementation Class |
-|---|---|
-| `de.espirit.firstspirit-module` | `org.gradle.plugins.fsm.FSMPlugin` |
-| `de.espirit.firstspirit-module-annotations` | `org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin` |
+| Plugin ID                                      | Implementation Class                                            |
+|------------------------------------------------|-----------------------------------------------------------------|
+| `de.espirit.firstspirit-module`                | `org.gradle.plugins.fsm.FSMPlugin`                              |
+| `de.espirit.firstspirit-module-annotations`    | `org.gradle.plugins.fsm.annotations.FSMAnnotationsPlugin`       |
 | `de.espirit.firstspirit-module-configurations` | `org.gradle.plugins.fsm.configurations.FSMConfigurationsPlugin` |
 
 ### Source Layout (`src/main/kotlin/org/gradle/plugins/fsm/`)
 
-- **`FSMPlugin.kt`** — Main plugin: applies Java plugin + sub-plugins, creates `firstSpiritModule` extension, registers `assembleFSM` (FSM task), `checkIsolation` (IsolationCheck), `checkCompliance`, and `validateDescriptor` tasks. Replaces JAR artifact with FSM in publications.
-- **`FSMPluginExtension.kt`** — Extension properties (`moduleName`, `displayName`, `isolationDetectorUrl`, `webApps`, `fsmDependencies`, `libraries`, etc.) and `webAppComponent()` registration method.
+- **`FSMPlugin.kt`** — Main plugin: applies Java plugin + sub-plugins, creates `firstSpiritModule` extension, registers `assembleFSM` (FSM task), `checkCompliance`, and `validateDescriptor` tasks. Replaces JAR artifact with FSM in publications.
+- **`FSMPluginExtension.kt`** — Extension properties (`moduleName`, `displayName`, `webApps`, `fsmDependencies`, `libraries`, etc.) and `webAppComponent()` registration method.
 - **`tasks/bundling/FSM.kt`** — Core bundling task. Creates the `.fsm` archive: collects JARs into `lib/`, generates `module-isolated.xml` in `META-INF/`, merges `fsm-resources/` directories, includes license reports.
-- **`tasks/verification/IsolationCheck.kt`** — Connects to FSM Dependency Detector web service to verify isolation compliance (MINIMAL/DEFAULT/HIGHEST levels).
 - **`tasks/verification/ValidateDescriptor.kt`** — Validates the generated module descriptor XML.
 - **`descriptor/`** — Module descriptor generation package:
   - `ModuleDescriptor.kt` — Orchestrates XML generation from scanned components
@@ -74,6 +73,10 @@ Tests use **JUnit 5 (Jupiter) + AssertJ + Mockito + Gradle TestKit**. Max heap 2
 ### Branch Versioning
 
 The build script auto-detects JIRA ticket IDs from branch names (e.g., `feature/DEVEX-123-description` → version `DEVEX-123-SNAPSHOT`). On `master`, version comes from `gradle.properties`.
+
+### Versions in README.md
+
+On every feature branch the version numbers used in README.md should be updated to the next expected version.
 
 ## Publishing
 

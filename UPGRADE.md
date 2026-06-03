@@ -1,3 +1,22 @@
+# Upgrading to 9.0.0
+
+The `checkIsolation` task and the FSM Dependency Detector integration have been removed
+because the FSM Dependency Detector service has been discontinued. The following
+`firstSpiritModule` extension properties no longer exist:
+
+* `isolationDetectorUrl`
+* `isolationDetectorUsername`
+* `isolationDetectorPassword`
+* `isolationDetectorWhitelist`
+* `contentCreatorComponents`
+* `complianceLevel`
+* `maxBytecodeVersion`
+* `firstSpiritVersion`
+
+Build scripts that set any of these properties or invoke `checkIsolation` must remove
+those settings. The `checkCompliance` task (ArchUnit-based, fully local) is unaffected
+and continues to work as before.
+
 # Upgrading to 8.0.0
 
 * This version provides compatibility with the Gradle Configuration Cache. Since this

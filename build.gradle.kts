@@ -68,9 +68,7 @@ dependencies {
     implementation("io.github.classgraph:classgraph:4.8.184")
     implementation("com.github.jk1:gradle-license-report:3.1.1")
     implementation("org.redundent:kotlin-xml-builder:1.9.3")
-    implementation("org.json:json:20250517")
     implementation("org.apache.maven:maven-artifact:3.9.11")
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.5.1")
     implementation("com.espirit.moddev.components:annotations:${fsmAnnotationsVersion}")
     implementation("de.espirit.firstspirit:fs-isolated-runtime:${fsRuntimeVersion}")
 

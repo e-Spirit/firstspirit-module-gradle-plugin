@@ -89,7 +89,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module") version "8.0.3"
+    id("de.espirit.firstspirit-module") version "9.0.0"
 }
 ```
 
@@ -105,7 +105,7 @@ To use the plugin, include the following snippet on top of your build script:
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-annotations") version "8.0.3"
+    id("de.espirit.firstspirit-module-annotations") version "9.0.0"
 }
 ```
 
@@ -117,7 +117,7 @@ Please take a loot at (#dependency-management) for a detailed description of the
 
 ```kotlin
 plugins {
-    id("de.espirit.firstspirit-module-configurations") version "8.0.3"
+    id("de.espirit.firstspirit-module-configurations") version "9.0.0"
 }
 ```
 
@@ -148,11 +148,10 @@ dependencies {
 
 The _de.espirit.firstspirit-module_ plugin defines the following tasks:
 
-| Task            | Depends on | Type           | Description                                                                                                                   |
-|-----------------|------------|----------------|-------------------------------------------------------------------------------------------------------------------------------|
-| assembleFSM     | jar        | FSM            | Assembles an fsm archive containing the FirstSpirit module.                                                                   |
-| checkCompliance | classes    | Test           | Checks if the FSM is compliant to the isolated runtime                                                                        |
-| checkIsolation  | fsm        | IsolationCheck | Checks if the FSM is compliant to the isolated runtime (requires access to a configured FSM Dependency Detector web service). |
+| Task            | Depends on | Type | Description                                                    |
+|-----------------|------------|------|----------------------------------------------------------------|
+| assembleFSM     | jar        | FSM  | Assembles an fsm archive containing the FirstSpirit module.    |
+| checkCompliance | classes    | Test | Checks if the FSM is compliant to the isolated runtime         |
 
 ### assembleFSM
 The assembleFSM task has the goal to create a FirstSpirit module file (.fsm). The .fsm file contains the module libraries and their dependencies, the module-isolated.xml meta file, and possibly other module resources from the project directory.
@@ -164,10 +163,6 @@ In order for further dependencies to have a resource entry in the module-isolate
 ### checkCompliance
 Usage of classes available in the `fs-isolated-runtime.jar` that are marked as internal API may result in incompatibilities with future versions of FirstSpirit. This task validates the module and reports any problems found. Additional checks may be added in the future.
 
-
-### checkIsolation
-Like the `checkCompliance` task, this one checks for non-compliant class usages. It requires a running instance of the "FSM Dependency Detector" web application.
-
 ## Extension properties
 
 The _de.espirit.firstspirit-module_ plugin defines the following extension properties in the `fsm` closure:
@@ -177,14 +172,6 @@ The _de.espirit.firstspirit-module_ plugin defines the following extension prope
 | moduleName			                         | String          | *unset* (project name)	 | The name of the module. If not set the project name is used                                                                                                                |
 | displayName                           | String          | *unset*             		  | Human-readable name of the module                                                                                                                                          |
 | moduleDirName                         | String          | *unset*             		  | The name of the directory containing the module-isolated.xml, relative to the project directory.                                                                           |
-| isolationDetectorUrl                  | String          | *unset*             		  | If set, this URL is used to connect to the FSM Dependency Detector                                                                                                         |
-| isolationDetectorUsername             | String          | *unset*             		  | If set, this username is used to connect to the FSM Dependency Detector                                                                                                    |
-| isolationDetectorPassword             | String          | *unset*             		  | If set, this password is used to connect to the FSM Dependency Detector                                                                                                    |
-| isolationDetectorWhitelist            | String[]        | *unset*                 | Contains all resources that should not be scanned for dependencies                                                                                                         |
-| contentCreatorComponents              | String[]        | *unset*                 | Names of components which are meant to be installed with the ContentCreator.                                                                                               |
-| complianceLevel                       | ComplianceLevel | DEFAULT                 | Compliance level to check for if isolationDetectorUrl is set                                                                                                               |
-| maxBytecodeVersion                    | int             | 61                      | Maximum bytecode version for all JAR files of the FSM. Defaults to 61 (JDK 17).                                                                                            |
-| firstSpiritVersion                    | String          | *unset*             		  | FirstSpirit version used in the isolation check                                                                                                                            |
 | minimalFirstSpiritVersion             | String          | *unset*                 | Minimal FirstSpirit server version required to install the module. *Supported by FirstSpirit 2023.10 and later.*                                                           |
 | appendDefaultMinVersion               | boolean         | true                    | If set to true, appends the artifact version as the minVersion attribute to all resource tags (except resources which were explicitly set within FS component annotations) |
 | projectJarScope                       | String          | "module"                | Scope used for the automatically added jar which is built by the default jar task                                                                                          |
@@ -193,18 +180,10 @@ The _de.espirit.firstspirit-module_ plugin defines the following extension prope
 ### Example
 
 ```kotlin
-import de.espirit.mavenplugins.fsmchecker.ComplianceLevel.HIGHEST
-
 firstSpiritModule {
     // set a different directory containing the module-isolated.xml
     moduleDirName = "src/main/module"
-    isolationDetectorUrl = "https://..."
-    isolationDetectorUsername = property("isolation_detector_username") as String  // Read sensitive credentials from external properties file
-    isolationDetectorPassword = property("isolation_detector_password") as String  
-    isolationDetectorWhitelist = listOf("org.freemarker:freemarker:2.3.28")
-    firstSpiritVersion = "5.2.230909"
-    minimalFirstSpiritVersion = "5.2.230909" 
-    complianceLevel = HIGHEST
+    minimalFirstSpiritVersion = "5.2.230909"
 }
 ```
 
@@ -513,22 +492,6 @@ Modules built with this plug-in will only work with FirstSpirit servers running 
 "isolation mode", which has been the default for some time now. All resources will
 be marked "isolated" automatically, thus reducing conflicts on the classpath.
 
-It is possible to perform an isolation check on the resulting module file to ensure a certain level of compliance to the isolated mode. This check requires access to an *FSM Depedency Detector* web service and can be configured using the extension properties as explained above. Valid values for the compliance level are:
-
-| name    | Description                                                                                                                                                                                                                                                                                                                                                                                                                             |
-|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| MINIMAL | Asserts that there is no use of implementation classes that are not available in the isolated runtime. This ist the minimal requirement to run a module with a server in isolated mode (prevents IMPL_USAGE type dependencies).                                                                                                                                                                                                         |
-| DEFAULT | In addition to MINIMAL, the default compliance level asserts that there is no use of internal FirstSpirit classes, that are not part of the public API. These classes are available in the isolated runtime of the current version and will work in isolated mode, but they are subject to change without prior notice and should therefore be removed for sake of longevity (prevents IMPL_USAGE and RUNTIME_USAGE type dependencies). |
-| HIGHEST | The highest setting further prohibits the usage of deprecated FirstSpirit API (prevents IMPL_USAGE, RUNTIME_USAGE and DEPRECATED API_USAGE type dependencies)                                                                                                                                                                                                                                                                           |
-
-#### Dependency types (Isolation level)
-
-| name                 | Description                                                 |
-|----------------------|-------------------------------------------------------------|
-| IMPL_USAGE           | Usage of classes which are not part of the isolated runtime |
-| RUNTIME_USAGE        | Usage of classes that are not part of the public API        |
-| DEPRECATED_API_USAGE | Usage of FirstSpirit API that has been deprecated           |
-
 ## Adding WebApps
 
 To add a WebApp to the FSM, use the following steps:
@@ -573,7 +536,7 @@ You can use the following snippet as a starting point:
 // Groovy
 
 plugins {
-    id 'de.espirit.firstspirit-module' version '8.0.3'
+    id 'de.espirit.firstspirit-module' version '9.0.0'
 }
 
 description = 'Example FSM Gradle build'
@@ -606,7 +569,7 @@ firstSpiritModule {
 // Kotlin
 
 plugins {
-    id("de.espirit.firstspirit-module") version "8.0.3"
+    id("de.espirit.firstspirit-module") version "9.0.0"
 }
 
 description = "Example FSM Gradle build"

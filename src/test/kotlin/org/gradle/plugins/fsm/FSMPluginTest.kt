@@ -69,11 +69,11 @@ class FSMPluginTest {
     }
 
     @Test
-    fun `check-task depends on isolation-check task`() {
+    fun `check-task depends on validate-descriptor task`() {
         project.plugins.apply(FSMPlugin.NAME)
 
         val check = project.tasks.getByName(JavaBasePlugin.CHECK_TASK_NAME)
-        assertThat(check).dependsOn(JavaPlugin.TEST_TASK_NAME, FSMPlugin.ISOLATION_CHECK_TASK_NAME)
+        assertThat(check).dependsOn(JavaPlugin.TEST_TASK_NAME, FSMPlugin.VALIDATE_DESCRIPTOR_TASK_NAME)
     }
 
     @Test
@@ -104,27 +104,6 @@ class FSMPluginTest {
         val fsmTask = project.tasks.getByName(FSMPlugin.FSM_TASK_NAME)
         val finalizers = fsmTask.finalizedBy.getDependencies(fsmTask)
         assertThat(finalizers.stream().anyMatch { it.name == FSMPlugin.VALIDATE_DESCRIPTOR_TASK_NAME }).isTrue
-    }
-
-    @Test
-    fun `isolation-check-task uses FSM output as input`() {
-        project.plugins.apply(FSMPlugin.NAME)
-
-        val fsm = project.tasks.getByName(FSMPlugin.FSM_TASK_NAME)
-        val fsmFile = fsm.outputs.files.singleFile
-        val isolationCheck = project.tasks.getByName(FSMPlugin.ISOLATION_CHECK_TASK_NAME)
-
-        assertThat(isolationCheck.inputs.files.singleFile).isEqualTo(fsmFile)
-    }
-
-    @Test
-    fun `isolation-check-task depends on FSM-task`() {
-        project.plugins.apply(FSMPlugin.NAME)
-
-        val fsmTask = project.tasks.getByName(FSMPlugin.FSM_TASK_NAME)
-        val checkIsolationTask = project.tasks.getByName(FSMPlugin.ISOLATION_CHECK_TASK_NAME)
-
-        assertThat(checkIsolationTask).dependsOn(fsmTask.name)
     }
 
     @Test

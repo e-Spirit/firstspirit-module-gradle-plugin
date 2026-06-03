@@ -1,6 +1,5 @@
 package org.gradle.plugins.fsm
 
-import de.espirit.mavenplugins.fsmchecker.ComplianceLevel
 import org.gradle.api.Project
 
 open class FSMPluginExtension(project: Project) {
@@ -62,48 +61,6 @@ open class FSMPluginExtension(project: Project) {
      * Responsible vendor of the module
      */
     var vendor: String? = null
-
-    /**
-     * If set, the plugin will use this username to connect to the FSM Dependency Detector
-     */
-    var isolationDetectorUsername: String? = null
-
-    /**
-     * If set, the plugin will use this password to connect to the FSM Dependency Detector
-     */
-    var isolationDetectorPassword: String? = null
-
-    /**
-     * If set, this URL is used to connect to the FSM Dependency Detector
-     */
-    var isolationDetectorUrl: String? = null
-
-    /**
-     * Resource identifiers of the form 'groupId:artifactId:version' of resources
-     * which should not be scanned for external dependencies
-     */
-    var isolationDetectorWhitelist: Collection<String> = emptySet()
-
-    /**
-     * Names of web components to be deployed as part of a ContentCreator web-app.
-     */
-    var contentCreatorComponents: Collection<String> = emptySet()
-
-    /**
-     * The compliance level to check for if {#link isolationDetectorUrl} is set. Defaults to
-     * [ComplianceLevel#DEFAULT]
-     */
-    var complianceLevel: ComplianceLevel = ComplianceLevel.DEFAULT
-
-    /**
-     * The maximum bytecode level allowed for all Java classes
-     */
-    var maxBytecodeVersion: Int = 61 // JDK 17
-
-    /**
-     * The FirstSpirit version to check against with the isolation detector service.
-     */
-    var firstSpiritVersion: String? = null
 
     /**
      * Defines the minimal version of the FirstSpirit server that is required
