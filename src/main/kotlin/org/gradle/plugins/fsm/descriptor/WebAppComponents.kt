@@ -96,7 +96,7 @@ class WebAppComponents(
         sharedWebCompileDependencies: Set<ResolvedDependencyInfo>
     ): Node {
         // Report if WebApp does not seem to implement WebApp or AbstractWebApp
-        if (webAppClass.superclass?.name !in WEB_APP_TYPES) {
+        if (!webAppClass.hasSupertype(WEB_APP_TYPES)) {
             LOGGER.info("Web App '${webAppClass.name}' does not appear to implement interface '${WebApp::class.qualifiedName}'.")
             LOGGER.info("This might be because the class implements or extends an intermediary type inheriting from ${WebApp::class.simpleName}.")
         }

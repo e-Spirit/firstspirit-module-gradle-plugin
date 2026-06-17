@@ -57,3 +57,13 @@ fun AnnotationInfo.getEnumValues(parameter: String): List<AnnotationEnumValue> {
 fun AnnotationInfo.getAnnotationValues(parameter: String): List<AnnotationInfo> {
     return (parameterValues[parameter].value as Array<*>).map { it as AnnotationInfo }
 }
+
+/**
+ * Returns `true` if this class extends or implements any of the given fully-qualified type names,
+ * considering both the superclass chain and implemented interfaces. `superclass` alone never reports
+ * interfaces, so an interface-typed supertype (e.g. `WebApp`, `ProjectApp`) must be matched here.
+ */
+fun ClassInfo.hasSupertype(typeNames: Set<String?>): Boolean {
+    val supertypes = (superclasses + interfaces).map { it.name } + name
+    return supertypes.any { it in typeNames }
+}

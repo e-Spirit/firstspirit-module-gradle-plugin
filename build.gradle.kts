@@ -159,6 +159,9 @@ val testJar by tasks.registering(Jar::class) {
     exclude("org/gradle/plugins/fsm/TestModuleImpl.class")
     exclude("org/gradle/plugins/fsm/TestWebAppWithProjectProperties.class")
     exclude("org/gradle/plugins/fsm/TestProjectAppComponentWithProperties.class")
+    exclude("org/gradle/plugins/fsm/AbstractWebAppComponent.class")
+    exclude("org/gradle/plugins/fsm/NoInterfaceWebAppComponent.class")
+    exclude("org/gradle/plugins/fsm/NoInterfaceProjectAppComponent.class")
 }
 
 tasks.test {

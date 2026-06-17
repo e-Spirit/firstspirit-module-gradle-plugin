@@ -24,7 +24,7 @@ class ProjectAppComponents(
     @Suppress("DuplicatedCode") // No refactoring possible because of incompatible annotations
     private fun nodeForProjectApp(projectApp: ClassInfo): Node {
         // Report if ProjectApp does not seem to implement ProjectApp
-        if (projectApp.superclass?.name !in PROJECT_APP_TYPES) {
+        if (!projectApp.hasSupertype(PROJECT_APP_TYPES)) {
             LOGGER.info("Project App '${projectApp.name}' does not appear to implement interface '${ProjectApp::class.qualifiedName}'.")
             LOGGER.info("This might be because the class implements or extends an intermediary type inheriting from ${ProjectApp::class.simpleName}.")
         }

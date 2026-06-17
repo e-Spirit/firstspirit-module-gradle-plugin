@@ -381,3 +381,16 @@ class TestHiddenWebServerComponent: BaseWebServer()
 class TestWebServerComponentWithParameters : BaseWebServer() {
     class TestConfigurable : BaseConfiguration()
 }
+
+// Supertype-detection fixtures for ClassScanExtensionsTest. Excluded from the shared testJar
+// (see build.gradle.kts) and added on demand, since the non-implementing variants would otherwise
+// trigger the "does not appear to implement interface" warning in every other component-scan test.
+
+@WebAppComponent(name = "AbstractWebAppComponent", webXml = "/web.xml")
+class AbstractWebAppComponent : AbstractWebApp()
+
+@WebAppComponent(name = "NoInterfaceWebAppComponent", webXml = "/web.xml")
+class NoInterfaceWebAppComponent
+
+@ProjectAppComponent(name = "NoInterfaceProjectAppComponent")
+class NoInterfaceProjectAppComponent
