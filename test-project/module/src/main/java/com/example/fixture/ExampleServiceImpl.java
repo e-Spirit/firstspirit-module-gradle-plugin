@@ -2,11 +2,12 @@ package com.example.fixture;
 
 import com.espirit.moddev.components.annotations.ServiceComponent;
 import de.espirit.firstspirit.module.ServerEnvironment;
+import de.espirit.firstspirit.module.Service;
 import de.espirit.firstspirit.module.ServiceProxy;
 import de.espirit.firstspirit.module.descriptor.ServiceDescriptor;
 
 @ServiceComponent(name = "ExampleService")
-public class ExampleServiceImpl implements ExampleService {
+public class ExampleServiceImpl implements ExampleService, Service<ExampleService> {
 
     private boolean _running;
 
