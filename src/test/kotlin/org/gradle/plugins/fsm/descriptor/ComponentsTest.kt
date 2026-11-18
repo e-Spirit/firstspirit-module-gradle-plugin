@@ -1,6 +1,5 @@
 package org.gradle.plugins.fsm.descriptor
 
-import de.espirit.firstspirit.module.GadgetSpecification
 import org.assertj.core.api.Assertions.assertThat
 import org.gradle.api.Project
 import org.gradle.plugins.fsm.FSMPluginExtension
@@ -141,7 +140,7 @@ class ComponentsTest {
     @Test
     fun `gadgetComponent should have GadgetSpecification as class`() {
         val component = componentWithName("Test gadget")
-        assertThat(component.childText("class")).isEqualTo(GadgetSpecification::class.java.name)
+        assertThat(component.childText("class")).isEqualTo("de.espirit.firstspirit.module.GadgetSpecification")
     }
 
     @Test

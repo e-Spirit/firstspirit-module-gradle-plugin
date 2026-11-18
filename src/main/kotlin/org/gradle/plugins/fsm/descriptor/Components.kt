@@ -6,7 +6,6 @@ import de.espirit.firstspirit.generate.FilenameFactory
 import de.espirit.firstspirit.generate.UrlCreatorSpecification
 import de.espirit.firstspirit.module.Configuration
 import de.espirit.firstspirit.module.GadgetFactory
-import de.espirit.firstspirit.module.GadgetSpecification
 import de.espirit.firstspirit.scheduling.ScheduleTaskFormFactory
 import io.github.classgraph.ClassInfo
 import org.gradle.plugins.fsm.FSMPluginExtension
@@ -100,7 +99,7 @@ class Components(
                 xml("public") {
                     "name" { -annotation.getString("name") }
                     "description" { -annotation.getString("description") }
-                    "class" { -GadgetSpecification::class.java.name }
+                    "class" { -"de.espirit.firstspirit.module.GadgetSpecification" }
                     "configuration" {
                         "gom" { -gadgetComponent.name }
 
